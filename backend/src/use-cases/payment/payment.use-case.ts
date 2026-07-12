@@ -82,7 +82,7 @@ export class PaymentUseCase {
     }
   }
 
-  async generateVnPayCheckoutUrl(bookingId: string, userId: string | null, ipAddress: string, returnUrl: string) {
+  async generateVnPayCheckoutUrl(bookingId: string, userId: string | null, ipAddress: string, returnUrl: string, bankCode?: string) {
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId }
     });
@@ -104,7 +104,8 @@ export class PaymentUseCase {
       bookingId,
       amount: Number(booking.finalPrice),
       ipAddress,
-      returnUrl
+      returnUrl,
+      bankCode,
     });
 
     // Upsert Payment

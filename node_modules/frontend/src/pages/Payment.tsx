@@ -73,6 +73,7 @@ export const Payment: React.FC = () => {
   // Submit states
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
+  const [vnpayRedirecting, setVnpayRedirecting] = useState(false);
 
 
 
@@ -172,9 +173,38 @@ export const Payment: React.FC = () => {
     return Object.keys(errs).length === 0;
   };
 
+  const handleVnPaySubmit = async () => {
+    setVnpayRedirecting(true);
+    try {
+      const res = await apiClient.post('/payment/vnpay/url', {
+        bookingId,
+        bankCode: subWallet === 'vnpay' ? 'NCB' : undefined,
+      });
+      if (res.data.success && res.data.data?.paymentUrl) {
+        // Redirect sang trang thanh toán VNPay
+        window.location.href = res.data.data.paymentUrl;
+      } else {
+        setVnpayRedirecting(false);
+        alert(language === 'vi' ? 'Không thể tạo liên kết thanh toán VNPay.' : 'Cannot generate VNPay payment URL.');
+      }
+    } catch (err: any) {
+      setVnpayRedirecting(false);
+      alert(err.response?.data?.message || (language === 'vi' ? 'Lỗi kết nối VNPay.' : 'VNPay connection error.'));
+    }
+  };
+
   const handlePaymentSubmit = async () => {
+    // Nếu chọn ví VNPay → dùng VNPAY gateway
+    if (activeOption === 'wallet' && subWallet === 'vnpay') {
+      await handleVnPaySubmit();
+      return;
+    }
+
+    // Các phương thức khác ngoài card → thông báo demo
     if (activeOption !== 'card') {
-      alert(language === 'vi' ? 'Vui lòng chọn phương thức thanh toán thẻ để thử nghiệm.' : 'Please select Credit Card method for demo.');
+      alert(language === 'vi'
+        ? 'Phương thức này chỉ đang demo. Vui lòng chọn Thẻ thanh toán hoặc VNPay Gateway.'
+        : 'This method is demo only. Please use Credit Card or VNPay Gateway.');
       return;
     }
 
@@ -671,12 +701,35 @@ export const Payment: React.FC = () => {
 
                     <button
                       type="button"
-                      disabled={submitLoading}
+                      disabled={submitLoading || vnpayRedirecting}
                       onClick={handlePaymentSubmit}
-                      className="bg-[#ff5e1f] hover:bg-[#e04f16] text-white font-extrabold text-sm px-8 py-3.5 rounded-xl shadow-lg shadow-orange-500/10 transition-all hover:scale-[1.01] active:scale-95 flex items-center gap-2"
+                      className={`text-white font-extrabold text-sm px-8 py-3.5 rounded-xl shadow-lg transition-all hover:scale-[1.01] active:scale-95 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed ${
+                        activeOption === 'wallet' && subWallet === 'vnpay'
+                          ? 'bg-[#005BAA] hover:bg-[#004a8c] shadow-blue-500/10'
+                          : 'bg-[#ff5e1f] hover:bg-[#e04f16] shadow-orange-500/10'
+                      }`}
                     >
-                      <Lock className="w-4 h-4 text-white" />
-                      <span>{language === 'vi' ? 'Thanh toán Thẻ thanh toán' : 'Pay with Credit Card'}</span>
+                      {vnpayRedirecting ? (
+                        <>
+                          <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                          <span>{language === 'vi' ? 'Đang chuyển sang VNPay...' : 'Redirecting to VNPay...'}</span>
+                        </>
+                      ) : activeOption === 'wallet' && subWallet === 'vnpay' ? (
+                        <>
+                          <img src="/vnpay.jpg" alt="VNPAY" className="w-5 h-5 rounded object-contain" />
+                          <span>{language === 'vi' ? 'Thanh toán qua VNPay' : 'Pay with VNPay'}</span>
+                        </>
+                      ) : activeOption === 'card' ? (
+                        <>
+                          <Lock className="w-4 h-4 text-white" />
+                          <span>{language === 'vi' ? 'Thanh toán Thẻ thanh toán' : 'Pay with Credit Card'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4 text-white" />
+                          <span>{language === 'vi' ? 'Tiếp tục thanh toán' : 'Continue Payment'}</span>
+                        </>
+                      )}
                     </button>
                   </div>
 

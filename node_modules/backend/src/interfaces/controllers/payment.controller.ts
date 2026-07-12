@@ -33,21 +33,31 @@ export class PaymentController {
 
   generateVnPayUrl = async (req: any, res: Response) => {
     try {
-      const { bookingId, returnUrl } = req.body;
+      const { bookingId, bankCode } = req.body;
       const userId = req.user?.userId || null;
-      const ipAddress = req.ip || '127.0.0.1';
+
+      // Xử lý IP: IPv6 loopback ::ffff:127.0.0.1 → 127.0.0.1
+      let ipAddress = req.ip || req.connection?.remoteAddress || '127.0.0.1';
+      if (ipAddress === '::1' || ipAddress.startsWith('::ffff:')) {
+        ipAddress = '127.0.0.1';
+      }
+
+      const returnUrl = process.env.VNPAY_RETURN_URL || 'http://localhost:5000/api/payment/vnpay-callback';
 
       const data = await this.paymentUseCase.generateVnPayCheckoutUrl(
         bookingId,
         userId,
         ipAddress,
-        returnUrl || 'http://localhost:5000/api/payment/vnpay-callback'
+        returnUrl,
+        bankCode
       );
       return res.status(200).json({ success: true, data });
     } catch (err: any) {
+      console.error('[VNPay] Error generating URL:', err.message);
       return res.status(400).json({ success: false, message: err.message });
     }
   };
+
 
   handleVnPayCallback = async (req: AuthenticatedRequest, res: Response) => {
     try {
