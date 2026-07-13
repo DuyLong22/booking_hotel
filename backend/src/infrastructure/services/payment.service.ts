@@ -55,7 +55,7 @@ export class PaymentService {
     locale?: string;
   }): string {
     const tmnCode = process.env.VNPAY_TMN_CODE || 'FCYPSG23';
-    const hashSecret = process.env.VNPAY_HASH_SECRET || 'ODN95MIKS6BPYEN1R6V0ERD5C9AYGP14';
+    const hashSecret = process.env.VNPAY_HASH_SECRET || 'IH7BRN31JDSBSZATTATH3CO2238RO4B6';
     const vnpUrl = process.env.VNPAY_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
 
     const date = new Date();
