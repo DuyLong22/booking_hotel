@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import crypto from 'crypto';
+import qs from 'qs';
 
 export class PaymentService {
   private stripe: Stripe | null = null;
@@ -16,7 +17,6 @@ export class PaymentService {
   // --- STRIPE METHODS ---
   async createPaymentIntent(amount: number, bookingId: string): Promise<{ id: string; clientSecret: string | null }> {
     if (!this.stripe) {
-      // Mock mode khi chạy offline không có key
       console.log(`[Stripe Mock] Creating PaymentIntent for Booking: ${bookingId}, amount: ${amount}`);
       return {
         id: `pi_mock_${crypto.randomBytes(8).toString('hex')}`,
@@ -44,6 +44,8 @@ export class PaymentService {
   }
 
   // --- VNPAY METHODS ---
+  // Theo tài liệu chính thức VNPay NodeJS:
+  // https://sandbox.vnpayment.vn/apis/docs/huong-dan-tich-hop/
   generateVnPayUrl(params: {
     bookingId: string;
     amount: number;
@@ -59,48 +61,49 @@ export class PaymentService {
     const date = new Date();
     const createDate = this.formatDate(date);
 
-    // Build params đúng chuẩn API V2.1.0 VNPay
-    const vnp_Params: Record<string, string> = {
+    // Chuẩn hóa IP
+    let ipAddr = params.ipAddress || '127.0.0.1';
+    if (ipAddr === '::1' || ipAddr.startsWith('::ffff:')) {
+      ipAddr = '127.0.0.1';
+    }
+
+    // Build params theo chuẩn VNPay API V2.1.0
+    let vnp_Params: Record<string, string> = {
       vnp_Version: '2.1.0',
       vnp_Command: 'pay',
       vnp_TmnCode: tmnCode,
       vnp_Locale: params.locale || 'vn',
       vnp_CurrCode: 'VND',
       vnp_TxnRef: params.bookingId,
-      vnp_OrderInfo: `Thanh toan don dat phong ${params.bookingId}`,
+      vnp_OrderInfo: 'Thanh toan don dat phong ' + params.bookingId,
       vnp_OrderType: 'other',
-      vnp_Amount: (Math.round(params.amount) * 100).toString(),
+      vnp_Amount: String(Math.round(params.amount) * 100),
       vnp_ReturnUrl: params.returnUrl,
-      vnp_IpAddr: params.ipAddress === '::1' ? '127.0.0.1' : params.ipAddress,
+      vnp_IpAddr: ipAddr,
       vnp_CreateDate: createDate,
     };
 
-    // Thêm bankCode nếu có (để pre-select ngân hàng)
-    if (params.bankCode) {
+    if (params.bankCode && params.bankCode !== '') {
       vnp_Params['vnp_BankCode'] = params.bankCode;
     }
 
-    // Sắp xếp key theo thứ tự alphabet
-    const sortedKeys = Object.keys(vnp_Params).sort();
+    // Sắp xếp key theo alphabet — BẮT BUỘC theo tài liệu VNPay
+    vnp_Params = this.sortObject(vnp_Params);
 
-    // Build chuỗi ký: KHÔNG encodeURIComponent(key), chỉ encode value
-    // Đây là format chuẩn theo tài liệu VNPay API v2.1.0
-    const signData = sortedKeys
-      .map((key) => `${key}=${encodeURIComponent(vnp_Params[key]).replace(/%20/g, '+')}`)
-      .join('&');
+    // ===================================================
+    // QUAN TRỌNG: Build signData từ các tham số đã được mã hóa URL
+    // ===================================================
+    const signData = qs.stringify(vnp_Params, { encode: false });
 
     const hmac = crypto.createHmac('sha512', hashSecret);
     const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
 
-    // Build query string cho URL (encode cả key lẫn value cho URL)
-    const queryString = sortedKeys
-      .map((key) => `${key}=${encodeURIComponent(vnp_Params[key]).replace(/%20/g, '+')}`)
-      .join('&');
+    // Build URL cuối (có encode value cho trình duyệt)
+    const paymentUrl = `${vnpUrl}?${signData}&vnp_SecureHash=${signed}`;
 
-    const paymentUrl = `${vnpUrl}?${queryString}&vnp_SecureHash=${signed}`;
-
-    console.log(`[VNPay] Generated URL for booking: ${params.bookingId}`);
-    console.log(`[VNPay] Amount: ${params.amount} VND`);
+    console.log(`[VNPay] Booking: ${params.bookingId} | Amount: ${params.amount} VND`);
+    console.log(`[VNPay] SignData: ${signData}`);
+    console.log(`[VNPay] SecureHash: ${signed}`);
 
     return paymentUrl;
   }
@@ -114,28 +117,35 @@ export class PaymentService {
       return false;
     }
 
+    // Xóa SecureHash ra khỏi params trước khi tính lại
     const vnp_Params = { ...queryParams };
     delete vnp_Params['vnp_SecureHash'];
     delete vnp_Params['vnp_SecureHashType'];
 
-    const sortedKeys = Object.keys(vnp_Params).sort();
-
-    // Build chuỗi ký theo format chuẩn VNPay (KHÔNG encode key)
-    const signData = sortedKeys
-      .map((key) => `${key}=${encodeURIComponent(vnp_Params[key]).replace(/%20/g, '+')}`)
-      .join('&');
+    // Sắp xếp và mã hóa URL từng giá trị tham số để kiểm tra chữ ký
+    const sorted = this.sortObject(vnp_Params);
+    const signData = qs.stringify(sorted, { encode: false });
 
     const hmac = crypto.createHmac('sha512', hashSecret);
     const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
 
-    const isValid = secureHash === signed;
-    if (!isValid) {
-      console.error('[VNPay] Hash mismatch!');
-      console.error('[VNPay] Expected:', signed);
-      console.error('[VNPay] Received:', secureHash);
-    }
+    console.log(`[VNPay Callback] SignData: ${signData}`);
+    console.log(`[VNPay Callback] Expected: ${signed}`);
+    console.log(`[VNPay Callback] Received: ${secureHash}`);
 
-    return isValid;
+    return secureHash === signed;
+  }
+
+  // Sắp xếp object theo key alphabet và mã hóa URL từng giá trị theo chuẩn VNPay
+  private sortObject(obj: Record<string, any>): Record<string, string> {
+    const sorted: Record<string, string> = {};
+    const keys = Object.keys(obj).sort();
+    for (const key of keys) {
+      if (obj[key] !== undefined && obj[key] !== null) {
+        sorted[key] = encodeURIComponent(String(obj[key])).replace(/%20/g, '+');
+      }
+    }
+    return sorted;
   }
 
   private formatDate(date: Date): string {
