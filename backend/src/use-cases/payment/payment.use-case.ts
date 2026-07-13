@@ -181,21 +181,21 @@ export class PaymentUseCase {
     });
 
     // 2. Gửi mail kèm vé QR Code cho người dùng!
-    try {
-      await this.mailService.sendBookingTicketEmail({
-        email: booking.guestEmail,
-        guestName: booking.guestName,
-        bookingId: booking.id,
-        hotelName: booking.bookingItems[0]?.roomType.hotel.name || 'Khách sạn của chúng tôi',
-        roomTypeName: booking.bookingItems[0]?.roomType.name || 'Phòng nghỉ',
-        checkInDate: booking.checkInDate,
-        checkOutDate: booking.checkOutDate,
-        finalPrice: Number(booking.finalPrice)
-      });
-      console.log(`[PaymentUseCase] Gửi email thành công tới ${booking.guestEmail}`);
-    } catch (mailError) {
-      console.error('[PaymentUseCase] Lỗi gửi email vé:', mailError);
-    }
+    //try {
+      //await this.mailService.sendBookingTicketEmail({
+      //email: booking.guestEmail,
+      //guestName: booking.guestName,
+      //bookingId: booking.id,
+      //hotelName: booking.bookingItems[0]?.roomType.hotel.name || 'Khách sạn của chúng tôi',
+      //roomTypeName: booking.bookingItems[0]?.roomType.name || 'Phòng nghỉ',
+      //checkInDate: booking.checkInDate,
+      //checkOutDate: booking.checkOutDate,
+      //finalPrice: Number(booking.finalPrice)
+      //});
+      //console.log(`[PaymentUseCase] Gửi email thành công tới ${booking.guestEmail}`);
+    //} catch (mailError) {
+      //console.error('[PaymentUseCase] Lỗi gửi email vé:', mailError);
+    //}
   }
 }
 
