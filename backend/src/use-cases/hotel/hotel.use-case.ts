@@ -284,18 +284,6 @@ export class HotelUseCase {
   }
 
   public async searchHotels(filters: any, userId?: string) {
-    // Tự động giải phóng các phòng từ những đơn hàng hết hạn thanh toán (quá 10 phút)
-    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-    await prisma.booking.updateMany({
-      where: {
-        status: { in: ['PENDING', 'PAYMENT_PROCESSING'] },
-        createdAt: { lt: tenMinutesAgo }
-      },
-      data: {
-        status: 'CANCELLED'
-      }
-    });
-
     const {
       provinceId,
       districtId,
@@ -387,48 +375,63 @@ export class HotelUseCase {
       }
     }
 
-    // Query đếm tổng số bản ghi phục vụ phân trang
-    const total = await prisma.hotel.count({ where });
-
-    // Query lấy dữ liệu chính
-    const hotels = await prisma.hotel.findMany({
-      where,
-      include: {
-        images: true,
-        category: true,
-        province: true,
-        district: true,
-        ward: true,
-        owner: {
-          select: {
-            fullName: true,
-            email: true,
-          },
-        },
-        roomTypes: {
-          select: { basePrice: true },
-          orderBy: { basePrice: 'asc' },
-          take: 1, // Lấy giá phòng thấp nhất
-        },
-        reviews: {
-          select: { ratingOverall: true },
-        },
-        amenities: {
-          include: {
-            amenity: true
-          }
-        }
+    // Tự động giải phóng các phòng từ những đơn hàng hết hạn thanh toán (chạy ngầm ở background, không block request đọc)
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    prisma.booking.updateMany({
+      where: {
+        status: { in: ['PENDING', 'PAYMENT_PROCESSING'] },
+        createdAt: { lt: tenMinutesAgo }
       },
-      skip,
-      take: parsedLimit,
-      orderBy: { createdAt: 'desc' },
-    });
+      data: {
+        status: 'CANCELLED'
+      }
+    }).catch(err => console.error('[Background Job] Failed to auto-cancel bookings:', err));
 
-    // Lấy danh sách favorite của user nếu có
-    const userFavorites = userId ? await prisma.favorite.findMany({
-      where: { userId },
-      select: { hotelId: true }
-    }) : [];
+    // Chạy các truy vấn đọc song song để giảm thiểu Round-trip Database Latency sang Neon DB (US East)
+    const [total, hotels, userFavorites] = await Promise.all([
+      // 1. Đếm tổng số lượng phục vụ phân trang
+      prisma.hotel.count({ where }),
+      // 2. Lấy danh sách khách sạn trang hiện tại
+      prisma.hotel.findMany({
+        relationLoadStrategy: 'join',
+        where,
+        include: {
+          images: true,
+          category: true,
+          province: true,
+          district: true,
+          ward: true,
+          owner: {
+            select: {
+              fullName: true,
+              email: true,
+            },
+          },
+          roomTypes: {
+            select: { basePrice: true },
+            orderBy: { basePrice: 'asc' },
+            take: 1, // Lấy giá phòng thấp nhất
+          },
+          reviews: {
+            select: { ratingOverall: true },
+          },
+          amenities: {
+            include: {
+              amenity: true
+            }
+          }
+        },
+        skip,
+        take: parsedLimit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      // 3. Lấy danh sách favorite của user nếu có
+      userId ? prisma.favorite.findMany({
+        where: { userId },
+        select: { hotelId: true }
+      }) : Promise.resolve([])
+    ]);
+
     const favoriteSet = new Set(userFavorites.map(f => f.hotelId));
 
     // Format kết quả trả về
