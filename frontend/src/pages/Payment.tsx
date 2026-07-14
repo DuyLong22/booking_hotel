@@ -179,6 +179,7 @@ export const Payment: React.FC = () => {
       const res = await apiClient.post('/payment/vnpay/url', {
         bookingId,
         bankCode: subWallet === 'vnpay' ? 'NCB' : undefined,
+        frontendUrl: window.location.origin, // Truyền origin hiện tại để backend callback biết và redirect về đúng cổng (ví dụ: localhost:5173 hoặc localhost:5174)
       });
       if (res.data.success && res.data.data?.paymentUrl) {
         // Redirect sang trang thanh toán VNPay

@@ -33,7 +33,7 @@ export class PaymentController {
 
   generateVnPayUrl = async (req: any, res: Response) => {
     try {
-      const { bookingId, bankCode } = req.body;
+      const { bookingId, bankCode, frontendUrl } = req.body;
       const userId = req.user?.userId || null;
 
       // Xử lý IP: IPv6 loopback ::ffff:127.0.0.1 → 127.0.0.1
@@ -42,7 +42,9 @@ export class PaymentController {
         ipAddress = '127.0.0.1';
       }
 
-      const returnUrl = process.env.VNPAY_RETURN_URL || 'http://localhost:5000/api/payment/vnpay-callback';
+      const baseReturnUrl = process.env.VNPAY_RETURN_URL || 'http://localhost:5000/api/payment/vnpay-callback';
+      // Đính kèm origin để callback điều hướng đúng cổng frontend (đặc biệt hữu ích khi phát triển local)
+      const returnUrl = `${baseReturnUrl}?origin=${encodeURIComponent(frontendUrl || 'http://localhost:5173')}`;
 
       const data = await this.paymentUseCase.generateVnPayCheckoutUrl(
         bookingId,
@@ -64,11 +66,11 @@ export class PaymentController {
       const queryParams = req.query;
       const result = await this.paymentUseCase.handleVnPayCallback(queryParams);
       
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const targetOrigin = (queryParams.origin as string) || process.env.FRONTEND_URL || 'http://localhost:5173';
       if (result.success) {
-        return res.redirect(`${frontendUrl}/my-bookings?payment=success&bookingId=${result.bookingId}`);
+        return res.redirect(`${targetOrigin}/my-bookings?payment=success&bookingId=${result.bookingId}`);
       } else {
-        return res.redirect(`${frontendUrl}/checkout?payment=failed&bookingId=${result.bookingId}`);
+        return res.redirect(`${targetOrigin}/checkout?payment=failed&bookingId=${result.bookingId}`);
       }
     } catch (err: any) {
       return res.status(400).json({ success: false, message: err.message });

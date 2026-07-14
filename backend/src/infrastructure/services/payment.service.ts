@@ -117,10 +117,14 @@ export class PaymentService {
       return false;
     }
 
-    // Xóa SecureHash ra khỏi params trước khi tính lại
-    const vnp_Params = { ...queryParams };
-    delete vnp_Params['vnp_SecureHash'];
-    delete vnp_Params['vnp_SecureHashType'];
+    // Chỉ lấy các tham số bắt đầu bằng "vnp_" và loại bỏ vnp_SecureHash, vnp_SecureHashType
+    // để tránh bị lỗi chữ ký khi đính kèm custom query params (như ?origin=...) vào returnUrl
+    const vnp_Params: Record<string, string> = {};
+    for (const key of Object.keys(queryParams)) {
+      if (key.startsWith('vnp_') && key !== 'vnp_SecureHash' && key !== 'vnp_SecureHashType') {
+        vnp_Params[key] = String(queryParams[key]);
+      }
+    }
 
     // Sắp xếp và mã hóa URL từng giá trị tham số để kiểm tra chữ ký
     const sorted = this.sortObject(vnp_Params);
