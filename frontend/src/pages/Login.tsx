@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Link, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setAuth } from '../store/slices/authSlice';
 import apiClient from '../core/api/client';
@@ -18,6 +18,25 @@ export const Login: React.FC = () => {
 
   // Lấy trang chuyển hướng sau khi login thành công
   const from = (location.state as any)?.from || '/';
+
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      setError(decodeURIComponent(errorParam));
+    }
+  }, [searchParams]);
+
+  const handleGoogleLogin = () => {
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    window.location.href = `${apiBaseUrl}/auth/google`;
+  };
+
+  const handleFacebookLogin = () => {
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    window.location.href = `${apiBaseUrl}/auth/facebook`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,6 +137,38 @@ export const Login: React.FC = () => {
             {loading ? 'Đang xác minh...' : 'Đăng nhập'}
           </button>
         </form>
+
+        <div className="relative flex py-2 items-center">
+          <div className="flex-grow border-t border-slate-100"></div>
+          <span className="flex-shrink mx-4 text-slate-400 text-[10px] font-bold uppercase tracking-wider">Hoặc đăng nhập bằng</span>
+          <div className="flex-grow border-t border-slate-100"></div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 relative">
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs py-2.5 px-4 border border-slate-200 rounded-premium transition-all shadow-sm"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <path
+                fill="#EA4335"
+                d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.05-5.136 4.05-3.324 0-6.023-2.7-6.023-6.023 0-3.324 2.7-6.023 6.023-6.023 1.542 0 2.946.579 4.024 1.53l3.056-3.056C19.23 2.13 15.93.9 12.24.9 6.12.9 1.14 5.88 1.14 12s4.98 11.1 11.1 11.1c5.96 0 10.74-4.26 10.74-10.74 0-.585-.054-1.125-.135-1.665H12.24z"
+              />
+            </svg>
+            Google
+          </button>
+          <button
+            type="button"
+            onClick={handleFacebookLogin}
+            className="flex items-center justify-center gap-2 bg-[#1877F2] hover:bg-[#166FE5] text-white font-bold text-xs py-2.5 px-4 rounded-premium transition-all shadow-sm shadow-[#1877F2]/20"
+          >
+            <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+            </svg>
+            Facebook
+          </button>
+        </div>
 
         <div className="text-center pt-4 border-t border-slate-50 text-xs font-medium text-slate-400">
           Chưa có tài khoản?{' '}

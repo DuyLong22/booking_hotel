@@ -3,6 +3,7 @@ import authUseCase from '../../use-cases/auth/auth.use-case';
 import userUseCase from '../../use-cases/user/user.use-case';
 import { AuthenticatedRequest } from '../../infrastructure/middlewares/auth.middleware';
 import prisma from '../../config/database';
+import axios from 'axios';
 
 export class AuthController {
   public async register(req: Request, res: Response, next: NextFunction) {
@@ -332,6 +333,180 @@ export class AuthController {
       res.status(200).json({ success: true, data: { reviews: formatted, total } });
     } catch (error) {
       next(error);
+    }
+  }
+
+  public async redirectToGoogle(req: Request, res: Response, next: NextFunction) {
+    try {
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      const redirectUri = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/google/callback';
+      
+      if (!clientId) {
+        return res.status(400).send('Google Client ID is not configured in .env');
+      }
+
+      const googleUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(
+        redirectUri
+      )}&response_type=code&scope=profile%20email&prompt=select_account`;
+
+      res.redirect(googleUrl);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public async handleGoogleCallback(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { code } = req.query;
+      const userAgent = req.headers['user-agent'];
+      const ipAddress = req.ip;
+
+      if (!code) {
+        return res.status(400).send('OAuth authorization code is missing');
+      }
+
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+      const redirectUri = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/google/callback';
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+      if (!clientId || !clientSecret) {
+        return res.status(500).send('Google OAuth configuration is incomplete in .env');
+      }
+
+      // 1. Đổi authorization code lấy token
+      const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      });
+
+      const { access_token } = tokenResponse.data;
+
+      // 2. Lấy thông tin user profile
+      const userinfoResponse = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      });
+
+      const profile = userinfoResponse.data;
+
+      // 3. Tiến hành đăng nhập/đăng ký ở UseCase
+      const result = await authUseCase.socialLogin(
+        {
+          email: profile.email,
+          fullName: profile.name,
+          avatarUrl: profile.picture,
+        },
+        userAgent,
+        ipAddress
+      );
+
+      // 4. Lưu Refresh Token vào HTTP-Only Cookie
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      // 5. Chuyển hướng trình duyệt về frontend trang LoginSuccess kèm accessToken
+      return res.redirect(`${frontendUrl}/login-success?token=${result.accessToken}`);
+    } catch (error: any) {
+      console.error('[Google OAuth Callback Error]:', error?.response?.data || error.message);
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent('Đăng nhập Google thất bại')}`);
+    }
+  }
+
+  public async redirectToFacebook(req: Request, res: Response, next: NextFunction) {
+    try {
+      const appId = process.env.FACEBOOK_APP_ID;
+      const redirectUri = process.env.FACEBOOK_CALLBACK_URL || 'http://localhost:5000/api/auth/facebook/callback';
+
+      if (!appId) {
+        return res.status(400).send('Facebook App ID is not configured in .env');
+      }
+
+      const facebookUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(
+        redirectUri
+      )}&scope=email,public_profile`;
+
+      res.redirect(facebookUrl);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public async handleFacebookCallback(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { code } = req.query;
+      const userAgent = req.headers['user-agent'];
+      const ipAddress = req.ip;
+
+      if (!code) {
+        return res.status(400).send('OAuth authorization code is missing');
+      }
+
+      const appId = process.env.FACEBOOK_APP_ID;
+      const appSecret = process.env.FACEBOOK_APP_SECRET;
+      const redirectUri = process.env.FACEBOOK_CALLBACK_URL || 'http://localhost:5000/api/auth/facebook/callback';
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+      if (!appId || !appSecret) {
+        return res.status(500).send('Facebook OAuth configuration is incomplete in .env');
+      }
+
+      // 1. Đổi authorization code lấy token
+      const tokenResponse = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+        params: {
+          client_id: appId,
+          client_secret: appSecret,
+          redirect_uri: redirectUri,
+          code,
+        },
+      });
+
+      const { access_token } = tokenResponse.data;
+
+      // 2. Lấy thông tin user profile từ Facebook Graph API
+      const profileResponse = await axios.get('https://graph.facebook.com/me', {
+        params: {
+          fields: 'id,name,email,picture.type(large)',
+          access_token,
+        },
+      });
+
+      const profile = profileResponse.data;
+
+      // 3. Tiến hành đăng nhập/đăng ký
+      const result = await authUseCase.socialLogin(
+        {
+          email: profile.email || `${profile.id}@facebook.com`, // Đảm bảo email duy nhất nếu Facebook không trả về email công khai
+          fullName: profile.name,
+          avatarUrl: profile.picture?.data?.url || null,
+        },
+        userAgent,
+        ipAddress
+      );
+
+      // 4. Lưu Refresh Token vào Cookie
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      // 5. Chuyển hướng về frontend
+      return res.redirect(`${frontendUrl}/login-success?token=${result.accessToken}`);
+    } catch (error: any) {
+      console.error('[Facebook OAuth Callback Error]:', error?.response?.data || error.message);
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent('Đăng nhập Facebook thất bại')}`);
     }
   }
 }

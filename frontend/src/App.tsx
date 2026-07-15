@@ -17,6 +17,7 @@ import OwnerDashboard from './pages/OwnerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Wishlist from './pages/Wishlist';
 import BecomePartner from './pages/BecomePartner';
+import LoginSuccess from './pages/LoginSuccess';
 
 // --- Các trang Mockup/Placeholder để tránh lỗi điều hướng ---
 const Profile: React.FC = () => (
@@ -90,6 +91,7 @@ const AppContent: React.FC = () => {
             <Route path="/search" element={<Search />} />
             <Route path="/hotel/:id" element={<HotelDetail />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/login-success" element={<LoginSuccess />} />
             <Route path="/register" element={<Register />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/my-bookings" element={<MyBookings />} />

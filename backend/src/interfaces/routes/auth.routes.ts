@@ -23,6 +23,12 @@ router.post('/logout', authController.logout);
 router.post('/forgot-password', validateRequest(forgotPasswordSchema), authController.forgotPassword);
 router.post('/reset-password', validateRequest(resetPasswordSchema), authController.resetPassword);
 
+// --- Google & Facebook OAuth ---
+router.get('/google', authController.redirectToGoogle);
+router.get('/google/callback', authController.handleGoogleCallback);
+router.get('/facebook', authController.redirectToFacebook);
+router.get('/facebook/callback', authController.handleFacebookCallback);
+
 // Các route yêu cầu đăng nhập
 router.get('/me', requireAuth, authController.getMe);
 router.put('/profile', requireAuth, validateRequest(updateProfileSchema), authController.updateProfile);

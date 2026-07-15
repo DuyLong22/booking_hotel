@@ -161,6 +161,7 @@ model Hotel {
   recentlyViewed RecentlyViewed[]
   coupons       Coupon[]
   conversations Conversation[]
+  nearbyLocations NearbyLocation[]
 }
 
 model HotelImage {
@@ -432,3 +433,13 @@ model AiSearchAnalytics {
   executionMs Int      // Thời gian xử lý (ms)
   createdAt   DateTime @default(now())
 }
+
+model NearbyLocation {
+  id        String   @id @default(uuid())
+  hotelId   String
+  name      String
+  distance  String
+  type      String   // "NEARBY" | "TRANSPORT" | "ENTERTAINMENT" | "OTHER"
+  hotel     Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+}
+

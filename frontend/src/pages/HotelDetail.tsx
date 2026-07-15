@@ -19,7 +19,9 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Compass,
+  MoreHorizontal
 } from 'lucide-react';
 import { formatPrice } from '../utils/price';
 
@@ -1657,6 +1659,120 @@ export const HotelDetail: React.FC = () => {
                 );
               })}
             </div>
+          </section>
+
+          {/* Nearby Locations Section */}
+          <section className="space-y-6 pt-4">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+              <span className="w-1.5 h-6 bg-[#006ce4] rounded-full inline-block"></span>
+              {language === 'vi' ? `Xung quanh ${hotel.name} có gì` : `What's around ${hotel.name}`}
+            </h2>
+            {hotel.address && (
+              <p className="text-xs text-slate-500 font-semibold flex items-center gap-1.5 -mt-3">
+                <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                {hotel.address}, {hotel.ward?.name}, {hotel.district?.name}, {hotel.province?.name}
+              </p>
+            )}
+
+            {/* Google Map Embed Iframe */}
+            <div className="w-full h-[280px] rounded-premium overflow-hidden border border-slate-200 shadow-sm relative">
+              <iframe
+                title="Bản đồ khách sạn"
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(hotel.name + ' ' + (hotel.address || ''))}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                className="w-full h-full border-0"
+                allowFullScreen
+                loading="lazy"
+              ></iframe>
+            </div>
+
+            {/* 4 Column Nearby Grid */}
+            {hotel.nearbyLocations && hotel.nearbyLocations.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-2">
+                {/* Column 1: Địa Điểm Lân Cận */}
+                <div className="space-y-3.5">
+                  <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2 border-b border-slate-100 pb-2">
+                    <MapPin className="w-4.5 h-4.5 text-[#006ce4]" />
+                    {language === 'vi' ? 'Địa Điểm Lân Cận' : 'Nearby Landmarks'}
+                  </h3>
+                  <div className="space-y-2.5 text-xs text-slate-655 font-bold">
+                    {hotel.nearbyLocations
+                      .filter((loc: any) => loc.type === 'NEARBY')
+                      .map((loc: any, idx: number) => (
+                        <div key={idx} className="flex justify-between items-center gap-2">
+                          <span className="line-clamp-1 font-semibold text-slate-700">{loc.name}</span>
+                          <span className="text-slate-450 font-normal shrink-0">{loc.distance}</span>
+                        </div>
+                      ))}
+                    {hotel.nearbyLocations.filter((loc: any) => loc.type === 'NEARBY').length === 0 && (
+                      <p className="text-slate-400 font-normal text-[11px] italic">{language === 'vi' ? 'Không có thông tin' : 'No information'}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Column 2: Trung tâm Giao thông */}
+                <div className="space-y-3.5">
+                  <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2 border-b border-slate-100 pb-2">
+                    <Compass className="w-4.5 h-4.5 text-[#006ce4]" />
+                    {language === 'vi' ? 'Trung tâm Giao thông' : 'Transportation'}
+                  </h3>
+                  <div className="space-y-2.5 text-xs text-slate-655 font-bold">
+                    {hotel.nearbyLocations
+                      .filter((loc: any) => loc.type === 'TRANSPORT')
+                      .map((loc: any, idx: number) => (
+                        <div key={idx} className="flex justify-between items-center gap-2">
+                          <span className="line-clamp-1 font-semibold text-slate-700">{loc.name}</span>
+                          <span className="text-slate-450 font-normal shrink-0">{loc.distance}</span>
+                        </div>
+                      ))}
+                    {hotel.nearbyLocations.filter((loc: any) => loc.type === 'TRANSPORT').length === 0 && (
+                      <p className="text-slate-400 font-normal text-[11px] italic">{language === 'vi' ? 'Không có thông tin' : 'No information'}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Column 3: Trung tâm giải trí */}
+                <div className="space-y-3.5">
+                  <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2 border-b border-slate-100 pb-2">
+                    <Sparkles className="w-4.5 h-4.5 text-[#006ce4]" />
+                    {language === 'vi' ? 'Trung tâm giải trí' : 'Entertainment'}
+                  </h3>
+                  <div className="space-y-2.5 text-xs text-slate-655 font-bold">
+                    {hotel.nearbyLocations
+                      .filter((loc: any) => loc.type === 'ENTERTAINMENT')
+                      .map((loc: any, idx: number) => (
+                        <div key={idx} className="flex justify-between items-center gap-2">
+                          <span className="line-clamp-1 font-semibold text-slate-700">{loc.name}</span>
+                          <span className="text-slate-450 font-normal shrink-0">{loc.distance}</span>
+                        </div>
+                      ))}
+                    {hotel.nearbyLocations.filter((loc: any) => loc.type === 'ENTERTAINMENT').length === 0 && (
+                      <p className="text-slate-400 font-normal text-[11px] italic">{language === 'vi' ? 'Không có thông tin' : 'No information'}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Column 4: Khác */}
+                <div className="space-y-3.5">
+                  <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2 border-b border-slate-100 pb-2">
+                    <MoreHorizontal className="w-4.5 h-4.5 text-[#006ce4]" />
+                    {language === 'vi' ? 'Khác' : 'Others'}
+                  </h3>
+                  <div className="space-y-2.5 text-xs text-slate-655 font-bold">
+                    {hotel.nearbyLocations
+                      .filter((loc: any) => loc.type === 'OTHER')
+                      .map((loc: any, idx: number) => (
+                        <div key={idx} className="flex justify-between items-center gap-2">
+                          <span className="line-clamp-1 font-semibold text-slate-700">{loc.name}</span>
+                          <span className="text-slate-450 font-normal shrink-0">{loc.distance}</span>
+                        </div>
+                      ))}
+                    {hotel.nearbyLocations.filter((loc: any) => loc.type === 'OTHER').length === 0 && (
+                      <p className="text-slate-400 font-normal text-[11px] italic">{language === 'vi' ? 'Không có thông tin' : 'No information'}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
 
           <hr className="border-slate-100" />
