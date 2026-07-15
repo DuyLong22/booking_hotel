@@ -269,7 +269,7 @@ export const MyBookings: React.FC = () => {
 
             <div className="space-y-1">
               <h4 className="font-extrabold text-slate-800 text-sm">{selectedQrBooking.bookingItems[0]?.roomType.hotel.name}</h4>
-              <p className="text-[10px] text-slate-400 font-medium">Mã đặt phòng: {selectedQrBooking.id}</p>
+              <p className="text-[10px] text-slate-400 font-medium">Mã đặt phòng: {selectedQrBooking.id.substring(0, 8).toUpperCase()}</p>
             </div>
 
             {/* QR Code generator online service */}
@@ -319,7 +319,7 @@ export const MyBookings: React.FC = () => {
 
             <div className="space-y-1">
               <h4 className="font-extrabold text-slate-800 text-sm">{selectedReviewBooking.bookingItems[0]?.roomType.hotel.name}</h4>
-              <p className="text-[10px] text-slate-400 font-medium">Mã đặt phòng: {selectedReviewBooking.id}</p>
+              <p className="text-[10px] text-slate-400 font-medium">Mã đặt phòng: {selectedReviewBooking.id.substring(0, 8).toUpperCase()}</p>
             </div>
 
             {/* Criteria Scores */}
