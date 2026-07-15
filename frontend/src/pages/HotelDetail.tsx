@@ -24,6 +24,8 @@ import {
   MoreHorizontal
 } from 'lucide-react';
 import { formatPrice } from '../utils/price';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 const StarIcon = ({ size = 16 }: { size?: number }) => (
   <svg
@@ -284,6 +286,9 @@ interface HotelDetailData {
   roomTypes: RoomTypeDetail[];
   reviews: ReviewDetail[];
   averageRating: number;
+  latitude: number | null;
+  longitude: number | null;
+  nearbyLocations?: { name: string; distance: string; type: string }[];
 }
 
 const detailTranslations = {
@@ -499,6 +504,116 @@ const translateProvinceName = (name: string, lang: string) => {
   if (lower.includes('đà lạt') || lower.includes('da lat')) return 'Da Lat';
   if (lower.includes('vũng tàu') || lower.includes('vung tau')) return 'Vung Tau';
   return removeVietnameseTones(name);
+};
+
+interface LeafletMapProps {
+  lat: number;
+  lng: number;
+  hotelName: string;
+  queryPlace?: string;
+  nearbyLocations?: { name: string; distance: string; type: string }[];
+}
+
+const LeafletMap: React.FC<LeafletMapProps> = ({ lat, lng, hotelName, queryPlace, nearbyLocations }) => {
+  const mapContainerRef = React.useRef<HTMLDivElement>(null);
+  const mapRef = React.useRef<L.Map | null>(null);
+  const markerGroupRef = React.useRef<L.LayerGroup | null>(null);
+
+  React.useEffect(() => {
+    if (!mapContainerRef.current) return;
+
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+    });
+
+    if (!mapRef.current) {
+      mapRef.current = L.map(mapContainerRef.current, {
+        scrollWheelZoom: true,
+        zoomControl: true,
+      }).setView([lat, lng], 15);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(mapRef.current);
+
+      markerGroupRef.current = L.layerGroup().addTo(mapRef.current);
+    }
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        markerGroupRef.current = null;
+      }
+    };
+  }, [lat, lng]);
+
+  React.useEffect(() => {
+    const map = mapRef.current;
+    const markerGroup = markerGroupRef.current;
+    if (!map || !markerGroup) return;
+
+    markerGroup.clearLayers();
+
+    const hotelIcon = L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41],
+    });
+
+    const hotelMarker = L.marker([lat, lng], { icon: hotelIcon })
+      .bindPopup(`<b>${hotelName}</b><br/>Địa điểm khách sạn`)
+      .addTo(markerGroup);
+
+    if (queryPlace && queryPlace !== hotelName) {
+      const matchedLoc = nearbyLocations?.find(
+        (loc) => loc.name === queryPlace.split(' ')[0] || queryPlace.includes(loc.name)
+      );
+
+      const attractionIcon = L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41],
+      });
+
+      let angle = Math.random() * Math.PI * 2;
+      let distanceMultiplier = 0.005;
+      if (matchedLoc) {
+        const distNum = parseFloat(matchedLoc.distance);
+        if (matchedLoc.distance.includes('m')) {
+          distanceMultiplier = (distNum / 1000) * 0.009;
+        } else {
+          distanceMultiplier = distNum * 0.009;
+        }
+      }
+
+      const targetLat = lat + Math.sin(angle) * distanceMultiplier;
+      const targetLng = lng + Math.cos(angle) * distanceMultiplier;
+
+      const marker = L.marker([targetLat, targetLng], { icon: attractionIcon })
+        .bindPopup(`<b>${queryPlace}</b><br/>Địa điểm lân cận`)
+        .addTo(markerGroup);
+
+      marker.openPopup();
+
+      const group = L.featureGroup([hotelMarker, marker]);
+      map.fitBounds(group.getBounds().pad(0.2));
+    } else {
+      hotelMarker.openPopup();
+      map.setView([lat, lng], 15);
+    }
+  }, [lat, lng, queryPlace, hotelName, nearbyLocations]);
+
+  return <div ref={mapContainerRef} className="w-full h-full z-0" />;
 };
 
 export const HotelDetail: React.FC = () => {
@@ -1694,12 +1809,11 @@ export const HotelDetail: React.FC = () => {
                   {language === 'vi' ? 'Nhấn để mở bản đồ tương tác' : 'Click to open interactive map'}
                 </span>
               </div>
-              <iframe
-                title="Bản đồ khách sạn"
-                src={`https://maps.google.com/maps?q=${encodeURIComponent(hotel.name + ' ' + (hotel.address || ''))}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
-                className="w-full h-full border-0 pointer-events-none"
-                loading="lazy"
-              ></iframe>
+              <LeafletMap
+                lat={hotel.latitude || 11.94}
+                lng={hotel.longitude || 108.44}
+                hotelName={hotel.name}
+              />
             </div>
 
             {/* 4 Column Nearby Grid */}
@@ -1906,13 +2020,13 @@ export const HotelDetail: React.FC = () => {
           <div className="flex-grow flex flex-col md:flex-row overflow-hidden">
             {/* Map (70% width on desktop) */}
             <div className="flex-grow h-[45vh] md:h-full relative bg-slate-50 border-r border-slate-100">
-              <iframe
-                title="Bản đồ tương tác khách sạn"
-                src={`https://maps.google.com/maps?q=${encodeURIComponent(activeMapQuery)}&t=&z=16&ie=UTF8&iwloc=&output=embed`}
-                className="w-full h-full border-0"
-                allowFullScreen
-                loading="lazy"
-              ></iframe>
+              <LeafletMap
+                lat={hotel.latitude || 11.94}
+                lng={hotel.longitude || 108.44}
+                hotelName={hotel.name}
+                queryPlace={activeMapQuery}
+                nearbyLocations={hotel.nearbyLocations}
+              />
               {/* Floating current location badge */}
               <div className="absolute top-4 left-4 bg-white/95 border border-slate-200 px-4 py-2.5 rounded-xl shadow-lg z-10 max-w-sm backdrop-blur-sm">
                 <p className="text-[9px] text-slate-455 font-bold uppercase tracking-wider leading-none">VỊ TRÍ ĐANG XEM</p>
