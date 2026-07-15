@@ -517,6 +517,11 @@ export const HotelDetail: React.FC = () => {
   const [activeImageIndices, setActiveImageIndices] = useState<Record<string, number>>({});
   const [selectedRoomForModal, setSelectedRoomForModal] = useState<RoomTypeDetail | null>(null);
 
+  // States cho Bản đồ tương tác
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [activeMapQuery, setActiveMapQuery] = useState('');
+  const [selectedMapCategory, setSelectedMapCategory] = useState<'ALL' | 'NEARBY' | 'TRANSPORT' | 'ENTERTAINMENT' | 'OTHER'>('ALL');
+
   // States đồng bộ cho ô tìm kiếm
   const [provinceId, setProvinceId] = useState(searchCriteria.provinceId || '');
   const [destInputText, setDestInputText] = useState('');
@@ -1674,13 +1679,25 @@ export const HotelDetail: React.FC = () => {
               </p>
             )}
 
-            {/* Google Map Embed Iframe */}
-            <div className="w-full h-[280px] rounded-premium overflow-hidden border border-slate-200 shadow-sm relative">
+            {/* Google Map Embed Iframe Container (Click to open Fullscreen Modal) */}
+            <div
+              onClick={() => {
+                setActiveMapQuery(hotel.name + ' ' + (hotel.address || ''));
+                setIsMapModalOpen(true);
+              }}
+              className="w-full h-[280px] rounded-premium overflow-hidden border border-slate-200 shadow-sm relative cursor-pointer group"
+            >
+              {/* Overlay blocking events and showing prompt on hover */}
+              <div className="absolute inset-0 z-10 bg-transparent hover:bg-slate-900/5 transition-all flex items-center justify-center">
+                <span className="bg-white/95 text-slate-800 font-extrabold text-xs py-2.5 px-4 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 flex items-center gap-1.5 border border-slate-100">
+                  <Compass className="w-3.5 h-3.5 animate-spin-slow text-[#006ce4]" />
+                  {language === 'vi' ? 'Nhấn để mở bản đồ tương tác' : 'Click to open interactive map'}
+                </span>
+              </div>
               <iframe
                 title="Bản đồ khách sạn"
                 src={`https://maps.google.com/maps?q=${encodeURIComponent(hotel.name + ' ' + (hotel.address || ''))}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
-                className="w-full h-full border-0"
-                allowFullScreen
+                className="w-full h-full border-0 pointer-events-none"
                 loading="lazy"
               ></iframe>
             </div>
@@ -1861,6 +1878,126 @@ export const HotelDetail: React.FC = () => {
           currency={currency}
           onBook={handleBookRoom}
         />
+      )}
+
+      {/* Fullscreen Interactive Map Modal */}
+      {isMapModalOpen && (
+        <div className="fixed inset-0 z-55 bg-white flex flex-col h-screen overflow-hidden animate-in fade-in duration-150">
+          {/* Modal Header */}
+          <div className="h-16 border-b border-slate-200 px-6 flex items-center justify-between shrink-0 bg-white">
+            <div className="space-y-0.5">
+              <h3 className="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                <Compass className="w-5 h-5 text-[#006ce4]" />
+                {language === 'vi' ? `Bản đồ vị trí xung quanh ${hotel.name}` : `Map around ${hotel.name}`}
+              </h3>
+              <p className="text-[10px] text-slate-455 font-bold uppercase tracking-wider">
+                {language === 'vi' ? 'Chọn địa điểm để ghim trên bản đồ' : 'Select a location to pin on the map'}
+              </p>
+            </div>
+            <button
+              onClick={() => setIsMapModalOpen(false)}
+              className="bg-slate-105 hover:bg-slate-200 text-slate-705 font-extrabold text-xs py-2 px-4 rounded-xl transition-all flex items-center gap-1.5 active:scale-95 shadow-sm"
+            >
+              <span>✕</span> {language === 'vi' ? 'Đóng / Quay lại' : 'Close / Go back'}
+            </button>
+          </div>
+
+          {/* Modal Body (Flex layout: Map Left, Sidebar Right) */}
+          <div className="flex-grow flex flex-col md:flex-row overflow-hidden">
+            {/* Map (70% width on desktop) */}
+            <div className="flex-grow h-[45vh] md:h-full relative bg-slate-50 border-r border-slate-100">
+              <iframe
+                title="Bản đồ tương tác khách sạn"
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(activeMapQuery)}&t=&z=16&ie=UTF8&iwloc=&output=embed`}
+                className="w-full h-full border-0"
+                allowFullScreen
+                loading="lazy"
+              ></iframe>
+              {/* Floating current location badge */}
+              <div className="absolute top-4 left-4 bg-white/95 border border-slate-200 px-4 py-2.5 rounded-xl shadow-lg z-10 max-w-sm backdrop-blur-sm">
+                <p className="text-[9px] text-slate-455 font-bold uppercase tracking-wider leading-none">VỊ TRÍ ĐANG XEM</p>
+                <p className="text-xs font-black text-[#006ce4] mt-1 line-clamp-1">{activeMapQuery}</p>
+              </div>
+            </div>
+
+            {/* Sidebar (30% width on desktop, scrollable) */}
+            <div className="w-full md:w-[350px] shrink-0 h-[55vh] md:h-full flex flex-col bg-slate-50">
+              {/* Category tabs filters */}
+              <div className="bg-white border-b border-slate-200 p-3 flex gap-1.5 overflow-x-auto shrink-0">
+                {[
+                  { id: 'ALL', label: language === 'vi' ? 'Tất cả' : 'All' },
+                  { id: 'NEARBY', label: language === 'vi' ? 'Lân cận' : 'Nearby' },
+                  { id: 'TRANSPORT', label: language === 'vi' ? 'Giao thông' : 'Transit' },
+                  { id: 'ENTERTAINMENT', label: language === 'vi' ? 'Giải trí' : 'Leisure' },
+                  { id: 'OTHER', label: language === 'vi' ? 'Khác' : 'Other' }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setSelectedMapCategory(tab.id as any)}
+                    className={`text-[10px] font-black px-3 py-1.5 rounded-full transition-all shrink-0 uppercase tracking-wider ${
+                      selectedMapCategory === tab.id
+                        ? 'bg-[#006ce4] text-white shadow-sm shadow-blue-500/20'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-605'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Locations List */}
+              <div className="flex-grow overflow-y-auto p-4 space-y-2">
+                {/* Hotel default location card */}
+                <div
+                  onClick={() => setActiveMapQuery(hotel.name + ' ' + (hotel.address || ''))}
+                  className={`p-3 rounded-xl border transition-all cursor-pointer flex flex-col gap-1 ${
+                    activeMapQuery === hotel.name + ' ' + (hotel.address || '')
+                      ? 'bg-blue-50/50 border-blue-500 shadow-sm'
+                      : 'bg-white border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-[#006ce4]" />
+                      {hotel.name}
+                    </span>
+                    <span className="bg-[#006ce4] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">HOTEL</span>
+                  </div>
+                  <p className="text-[10px] text-slate-455 font-medium line-clamp-1">{hotel.address}</p>
+                </div>
+
+                {/* Nearby list filter */}
+                {hotel.nearbyLocations && hotel.nearbyLocations
+                  .filter((loc: any) => selectedMapCategory === 'ALL' || loc.type === selectedMapCategory)
+                  .map((loc: any, idx: number) => {
+                    const getIcon = () => {
+                      if (loc.type === 'NEARBY') return <MapPin className="w-3.5 h-3.5 text-[#006ce4]" />;
+                      if (loc.type === 'TRANSPORT') return <Compass className="w-3.5 h-3.5 text-[#006ce4]" />;
+                      if (loc.type === 'ENTERTAINMENT') return <Sparkles className="w-3.5 h-3.5 text-[#006ce4]" />;
+                      return <MoreHorizontal className="w-3.5 h-3.5 text-[#006ce4]" />;
+                    };
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => setActiveMapQuery(loc.name + ' ' + (hotel.address?.split(',').pop() || ''))}
+                        className={`p-3 rounded-xl border transition-all cursor-pointer flex justify-between items-center gap-3 ${
+                          activeMapQuery === loc.name + ' ' + (hotel.address?.split(',').pop() || '')
+                            ? 'bg-blue-50/50 border-blue-500 shadow-sm'
+                            : 'bg-white border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <span className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5 line-clamp-1">
+                          {getIcon()}
+                          {loc.name}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-455 shrink-0">{loc.distance}</span>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
