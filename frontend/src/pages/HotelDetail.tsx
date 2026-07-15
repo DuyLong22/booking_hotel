@@ -1882,7 +1882,7 @@ export const HotelDetail: React.FC = () => {
 
       {/* Fullscreen Interactive Map Modal */}
       {isMapModalOpen && (
-        <div className="fixed inset-0 z-55 bg-white flex flex-col h-screen overflow-hidden animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] bg-white flex flex-col h-screen overflow-hidden animate-in fade-in duration-150">
           {/* Modal Header */}
           <div className="h-16 border-b border-slate-200 px-6 flex items-center justify-between shrink-0 bg-white">
             <div className="space-y-0.5">
