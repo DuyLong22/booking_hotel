@@ -75,7 +75,7 @@ export class PaymentService {
       vnp_Locale: params.locale || 'vn',
       vnp_CurrCode: 'VND',
       vnp_TxnRef: params.bookingId,
-      vnp_OrderInfo: 'Thanh toan don dat phong ' + params.bookingId,
+      vnp_OrderInfo: 'Thanh toan don dat phong ' + params.bookingId.substring(0, 8).toUpperCase(),
       vnp_OrderType: 'other',
       vnp_Amount: String(Math.round(params.amount) * 100),
       vnp_ReturnUrl: params.returnUrl,

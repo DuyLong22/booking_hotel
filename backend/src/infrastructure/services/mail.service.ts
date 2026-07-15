@@ -116,7 +116,7 @@ export class MailService {
           <div style="text-align: center; margin-bottom: 20px;">
             <span style="font-size: 24px; font-weight: 800; color: #2563eb;">CloudBooking<span style="color: #0ea5e9;">.AI</span></span>
             <h2 style="color: #0f172a; margin-top: 10px;">Đặt Phòng Đã Được Xác Nhận!</h2>
-            <p style="color: #64748b; font-size: 14px;">Mã đặt phòng: <strong>${params.bookingId}</strong></p>
+            <p style="color: #64748b; font-size: 14px;">Mã đặt phòng: <strong>${params.bookingId.substring(0, 8).toUpperCase()}</strong></p>
           </div>
 
           <div style="background-color: #f8fafc; border: 1px solid #f1f5f9; border-radius: 12px; padding: 20px; margin-bottom: 25px;">

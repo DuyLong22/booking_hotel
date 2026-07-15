@@ -775,24 +775,8 @@ export const Payment: React.FC = () => {
                     </h2>
                     <div className="font-medium text-sm leading-tight mt-0.5" style={{ color: 'rgb(104, 113, 118)' }}>
                       {language === 'vi' 
-                        ? `Mã đặt chỗ  ${booking ? (() => {
-                            let hash = 0;
-                            const idStr = booking.id;
-                            for (let i = 0; i < idStr.length; i++) {
-                              hash = (hash << 5) - hash + idStr.charCodeAt(i);
-                              hash |= 0;
-                            }
-                            return Math.abs(hash) % 900000000 + 1000000000;
-                          })() : ''}`
-                        : `Booking ID  ${booking ? (() => {
-                            let hash = 0;
-                            const idStr = booking.id;
-                            for (let i = 0; i < idStr.length; i++) {
-                              hash = (hash << 5) - hash + idStr.charCodeAt(i);
-                              hash |= 0;
-                            }
-                            return Math.abs(hash) % 900000000 + 1000000000;
-                          })() : ''}`}
+                        ? `Mã đặt chỗ  ${booking ? booking.id.substring(0, 8).toUpperCase() : ''}`
+                        : `Booking ID  ${booking ? booking.id.substring(0, 8).toUpperCase() : ''}`}
                     </div>
                   </div>
                 </div>
