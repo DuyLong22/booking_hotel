@@ -1670,7 +1670,7 @@ export const HotelDetail: React.FC = () => {
             {hotel.address && (
               <p className="text-xs text-slate-500 font-semibold flex items-center gap-1.5 -mt-3">
                 <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                {hotel.address}, {hotel.ward?.name}, {hotel.district?.name}, {hotel.province?.name}
+                {translateAddress(hotel.address, hotel.district.name, hotel.province.name, language)}
               </p>
             )}
 
