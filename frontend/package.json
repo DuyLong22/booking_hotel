@@ -14,6 +14,7 @@
     "@stripe/stripe-js": "^9.8.0",
     "axios": "^1.7.2",
     "framer-motion": "^11.2.10",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.395.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -23,6 +24,7 @@
     "socket.io-client": "^4.7.5"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^20.12.12",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",

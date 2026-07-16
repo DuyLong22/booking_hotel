@@ -506,6 +506,20 @@ const translateProvinceName = (name: string, lang: string) => {
   return removeVietnameseTones(name);
 };
 
+const normalizeRating = (rating: number) => {
+  if (!rating) return 0;
+  return rating <= 5 ? rating * 2 : rating;
+};
+
+const getRatingLabel = (score: number, lang: string) => {
+  if (score >= 9.0) return lang === 'vi' ? 'Tuyệt hảo' : 'Exceptional';
+  if (score >= 8.0) return lang === 'vi' ? 'Rất tốt' : 'Very Good';
+  if (score >= 7.0) return lang === 'vi' ? 'Tốt' : 'Good';
+  if (score >= 5.0) return lang === 'vi' ? 'Chấp nhận được' : 'Pleasant';
+  return lang === 'vi' ? 'Điểm kém' : 'Disappointing';
+};
+
+
 interface LeafletMapProps {
   lat: number;
   lng: number;
@@ -638,11 +652,11 @@ export const HotelDetail: React.FC = () => {
 
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewComment, setReviewComment] = useState('');
-  const [ratingCleanliness, setRatingCleanliness] = useState(5);
-  const [ratingLocation, setRatingLocation] = useState(5);
-  const [ratingService, setRatingService] = useState(5);
-  const [ratingFacilities, setRatingFacilities] = useState(5);
-  const [ratingValue, setRatingValue] = useState(5);
+  const [ratingCleanliness, setRatingCleanliness] = useState(10);
+  const [ratingLocation, setRatingLocation] = useState(10);
+  const [ratingService, setRatingService] = useState(10);
+  const [ratingFacilities, setRatingFacilities] = useState(10);
+  const [ratingValue, setRatingValue] = useState(10);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState('');
 
@@ -681,11 +695,11 @@ export const HotelDetail: React.FC = () => {
         });
 
         setReviewComment('');
-        setRatingCleanliness(5);
-        setRatingLocation(5);
-        setRatingService(5);
-        setRatingFacilities(5);
-        setRatingValue(5);
+        setRatingCleanliness(10);
+        setRatingLocation(10);
+        setRatingService(10);
+        setRatingFacilities(10);
+        setRatingValue(10);
         setShowReviewForm(false);
 
         alert(language === 'vi' ? 'Cảm ơn bạn đã gửi đánh giá!' : 'Thank you for your review!');
@@ -1092,12 +1106,16 @@ export const HotelDetail: React.FC = () => {
 
   // Tính điểm đánh giá theo tiêu chí mẫu nếu chưa lưu chi tiết
   const criteriaScores = hotel.reviews.length > 0 ? {
-    cleanliness: parseFloat((hotel.reviews.reduce((s, r) => s + r.ratingCleanliness, 0) / hotel.reviews.length).toFixed(1)),
-    location: parseFloat((hotel.reviews.reduce((s, r) => s + r.ratingLocation, 0) / hotel.reviews.length).toFixed(1)),
-    service: parseFloat((hotel.reviews.reduce((s, r) => s + r.ratingService, 0) / hotel.reviews.length).toFixed(1)),
-    facilities: parseFloat((hotel.reviews.reduce((s, r) => s + r.ratingFacilities, 0) / hotel.reviews.length).toFixed(1)),
-    value: parseFloat((hotel.reviews.reduce((s, r) => s + r.ratingValue, 0) / hotel.reviews.length).toFixed(1)),
+    cleanliness: parseFloat((hotel.reviews.reduce((s, r) => s + normalizeRating(r.ratingCleanliness), 0) / hotel.reviews.length).toFixed(1)),
+    location: parseFloat((hotel.reviews.reduce((s, r) => s + normalizeRating(r.ratingLocation), 0) / hotel.reviews.length).toFixed(1)),
+    service: parseFloat((hotel.reviews.reduce((s, r) => s + normalizeRating(r.ratingService), 0) / hotel.reviews.length).toFixed(1)),
+    facilities: parseFloat((hotel.reviews.reduce((s, r) => s + normalizeRating(r.ratingFacilities), 0) / hotel.reviews.length).toFixed(1)),
+    value: parseFloat((hotel.reviews.reduce((s, r) => s + normalizeRating(r.ratingValue), 0) / hotel.reviews.length).toFixed(1)),
   } : { cleanliness: 0, location: 0, service: 0, facilities: 0, value: 0 };
+
+  const displayAverageRating = hotel.reviews.length > 0
+    ? parseFloat((hotel.reviews.reduce((s, r) => s + normalizeRating(r.ratingOverall), 0) / hotel.reviews.length).toFixed(1))
+    : 0;
 
   return (
     <div>
@@ -1954,295 +1972,218 @@ export const HotelDetail: React.FC = () => {
                 {/* Column 4: Khác */}
                 <div className="space-y-3.5">
                   <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2 border-b border-slate-100 pb-2">
-                    <MoreHorizontal className="w-4.5 h-4.5 text-[#006ce4]" />
-                    {language === 'vi' ? 'Khác' : 'Others'}
-                  </h3>
-                  <div className="space-y-2.5 text-xs text-slate-655 font-bold">
-                    {hotel.nearbyLocations
-                      .filter((loc: any) => loc.type === 'OTHER')
-                      .map((loc: any, idx: number) => (
-                        <div key={idx} className="flex justify-between items-center gap-2">
-                          <span className="line-clamp-1 font-semibold text-slate-700">{loc.name}</span>
-                          <span className="text-slate-450 font-normal shrink-0">{loc.distance}</span>
-                        </div>
-                      ))}
-                    {hotel.nearbyLocations.filter((loc: any) => loc.type === 'OTHER').length === 0 && (
-                      <p className="text-slate-400 font-normal text-[11px] italic">{language === 'vi' ? 'Không có thông tin' : 'No information'}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </section>
-
-          <hr className="border-slate-100" />
-
-          {/* Review and Ratings */}
-          <section className="space-y-6">
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-              <span className="w-1.5 h-6 bg-[#006ce4] rounded-full inline-block"></span>
+                    <MoreHorizontal           <section className="space-y-6">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+              <span className="w-1.5 h-6.5 bg-[#006ce4] rounded-full inline-block"></span>
               {t.reviewsTitle}
             </h2>
-            
-            {hotel.reviews.length === 0 ? (
-              <div className="bg-slate-50 border border-slate-200/60 p-8 rounded-2xl text-center space-y-4">
-                <p className="text-slate-400 text-xs font-semibold">{t.noReviews}</p>
-                {isLoggedIn ? (
-                  <div>
+
+            {/* Top Part: Ratings Summary (Horizontal Layout) */}
+            {hotel.reviews.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 border border-slate-200/50 p-6 rounded-2xl">
+                {/* Column 1: Big Overall Rating Score */}
+                <div className="flex flex-col justify-center items-center text-center p-4 border-b md:border-b-0 md:border-r border-slate-200">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-6xl font-black text-[#006ce4] tracking-tighter">
+                      {displayAverageRating}
+                    </span>
+                    <span className="text-base font-bold text-slate-400">/ 10</span>
+                  </div>
+                  <div className="mt-3">
+                    <p className="font-extrabold text-slate-800 text-lg">
+                      {getRatingLabel(displayAverageRating, language)}
+                    </p>
+                    <p className="text-xs text-slate-455 font-bold mt-0.5">
+                      {t.reviewsCount(hotel.reviews.length)}
+                    </p>
+                  </div>
+
+                  {/* Write review button */}
+                  {isLoggedIn ? (
                     <button
                       type="button"
                       onClick={() => setShowReviewForm(!showReviewForm)}
-                      className="bg-[#006ce4] hover:bg-[#0056b3] text-white font-extrabold text-xs py-2.5 px-5 rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-2 mx-auto"
+                      className="mt-5 w-full bg-[#006ce4] hover:bg-[#0056b3] text-white font-extrabold text-sm py-2.5 px-4 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
                     >
-                      <Sparkles className="w-3.5 h-3.5" />
+                      <Sparkles className="w-4 h-4" />
+                      {showReviewForm 
+                        ? (language === 'vi' ? 'Đóng khung đánh giá' : 'Close review form')
+                        : (language === 'vi' ? 'Viết đánh giá của bạn' : 'Write a review')
+                      }
+                    </button>
+                  ) : (
+                    <p className="text-xs text-slate-500 font-bold mt-5 text-center bg-slate-100/60 px-3 py-2.5 rounded-xl border border-slate-250/50 w-full">
+                      {language === 'vi' ? 'Đăng nhập để gửi đánh giá' : 'Log in to submit a review'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Column 2 & 3: 5 Criteria Progress Bars */}
+                <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 p-2 justify-center content-center text-sm font-bold text-slate-600">
+                  {[
+                    { name: t.cleanliness, score: criteriaScores.cleanliness },
+                    { name: t.location, score: criteriaScores.location },
+                    { name: t.service, score: criteriaScores.service },
+                    { name: t.facilities, score: criteriaScores.facilities },
+                    { name: t.valueRating, score: criteriaScores.value },
+                  ].map((crit) => (
+                    <div key={crit.name} className="space-y-1.5">
+                      <div className="flex justify-between text-slate-700 text-sm">
+                        <span>{crit.name}</span>
+                        <span className="text-[#006ce4] font-extrabold">{crit.score} / 10</span>
+                      </div>
+                      <div className="w-full bg-slate-200/60 h-2.5 rounded-full overflow-hidden">
+                        <div className="bg-[#006ce4] h-full rounded-full" style={{ width: `${(crit.score / 10) * 100}%` }}></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Bottom Part: Review Form & Comments List */}
+            <div className="space-y-6">
+              {/* If no reviews and logged in */}
+              {hotel.reviews.length === 0 && (
+                <div className="bg-slate-50 border border-slate-200/60 p-8 rounded-2xl text-center space-y-4">
+                  <p className="text-slate-400 text-sm font-semibold">{t.noReviews}</p>
+                  {isLoggedIn ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowReviewForm(!showReviewForm)}
+                      className="bg-[#006ce4] hover:bg-[#0056b3] text-white font-extrabold text-sm py-2.5 px-5 rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-2 mx-auto"
+                    >
+                      <Sparkles className="w-4 h-4" />
                       {showReviewForm 
                         ? (language === 'vi' ? 'Đóng khung đánh giá' : 'Close review form')
                         : (language === 'vi' ? 'Viết đánh giá đầu tiên' : 'Write the first review')
                       }
                     </button>
+                  ) : (
+                    <p className="text-xs text-slate-455 font-bold">
+                      {language === 'vi' ? 'Vui lòng đăng nhập để gửi đánh giá.' : 'Please log in to submit a review.'}
+                    </p>
+                  )}
+                </div>
+              )}
 
-                    {showReviewForm && (
-                      <div className="max-w-2xl mx-auto mt-6 text-left">
-                        <form onSubmit={handleSubmitReview} className="bg-white border border-slate-200 p-5 rounded-2xl space-y-4 shadow-sm">
-                          <h3 className="font-extrabold text-slate-800 text-sm">
-                            {language === 'vi' ? 'Gửi nhận xét & Đánh giá của bạn' : 'Submit your Rating & Review'}
-                          </h3>
+              {/* Review Submission Form (full-width) */}
+              {showReviewForm && (
+                <form onSubmit={handleSubmitReview} className="bg-slate-50 border border-slate-200/60 p-6 rounded-2xl space-y-5 animate-in slide-in-from-top-3 duration-200">
+                  <div className="border-b border-slate-200/80 pb-3">
+                    <h3 className="font-black text-slate-800 text-base">
+                      {language === 'vi' ? 'Gửi nhận xét & Đánh giá của bạn' : 'Submit your Rating & Review'}
+                    </h3>
+                    <p className="text-[11px] text-slate-455 font-bold uppercase tracking-wider mt-0.5">Thang điểm đánh giá từ 1 đến 10</p>
+                  </div>
 
-                          {reviewError && (
-                            <div className="bg-red-50 text-red-700 text-xs font-semibold p-2.5 rounded-lg border-l-4 border-red-500">
-                              {reviewError}
-                            </div>
-                          )}
+                  {reviewError && (
+                    <div className="bg-red-50 text-red-700 text-sm font-semibold p-3 rounded-lg border-l-4 border-red-500">
+                      {reviewError}
+                    </div>
+                  )}
 
-                          {/* Criteria selection grid */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-bold text-slate-600">
-                            {[
-                              { name: t.cleanliness, value: ratingCleanliness, setter: setRatingCleanliness },
-                              { name: t.location, value: ratingLocation, setter: setRatingLocation },
-                              { name: t.service, value: ratingService, setter: setRatingService },
-                              { name: t.facilities, value: ratingFacilities, setter: setRatingFacilities },
-                              { name: t.valueRating, value: ratingValue, setter: setRatingValue },
-                            ].map((crit) => (
-                              <div key={crit.name} className="flex justify-between items-center bg-slate-50 border border-slate-100 p-2.5 rounded-xl">
-                                <span className="text-slate-700 font-semibold">{crit.name}</span>
-                                <div className="flex gap-0.5">
-                                  {[1, 2, 3, 4, 5].map((star) => (
-                                    <button
-                                      type="button"
-                                      key={star}
-                                      onClick={() => crit.setter(star)}
-                                      className={`text-base leading-none focus:outline-none transition-all ${
-                                        star <= crit.value ? 'text-amber-400 scale-110' : 'text-slate-200 hover:text-amber-200'
-                                      }`}
-                                    >
-                                      ★
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
+                  {/* 10-Star Criteria selection grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-sm font-bold text-slate-600">
+                    {[
+                      { name: t.cleanliness, value: ratingCleanliness, setter: setRatingCleanliness },
+                      { name: t.location, value: ratingLocation, setter: setRatingLocation },
+                      { name: t.service, value: ratingService, setter: setRatingService },
+                      { name: t.facilities, value: ratingFacilities, setter: setRatingFacilities },
+                      { name: t.valueRating, value: ratingValue, setter: setRatingValue },
+                    ].map((crit) => (
+                      <div key={crit.name} className="flex justify-between items-center bg-white border border-slate-100 p-3.5 rounded-xl shadow-sm">
+                        <span className="text-slate-700 font-extrabold">{crit.name}</span>
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="flex gap-0.5">
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                              <button
+                                type="button"
+                                key={star}
+                                onClick={() => crit.setter(star)}
+                                className={`text-lg leading-none focus:outline-none transition-all ${
+                                  star <= crit.value ? 'text-amber-400 scale-110' : 'text-slate-200 hover:text-amber-200'
+                                }`}
+                              >
+                                ★
+                              </button>
                             ))}
                           </div>
-
-                          {/* Text Comment */}
-                          <div className="space-y-1.5 text-xs font-bold text-slate-600">
-                            <label className="text-[10px] text-slate-400 uppercase">Nhận xét chi tiết</label>
-                            <textarea
-                              required
-                              rows={3}
-                              value={reviewComment}
-                              onChange={(e) => setReviewComment(e.target.value)}
-                              placeholder={language === 'vi' ? 'Hãy chia sẻ trải nghiệm lưu trú của bạn...' : 'Share your stay experience...'}
-                              className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs focus:outline-none focus:border-blue-600 text-slate-800 font-semibold placeholder-slate-400 transition-all shadow-sm"
-                            />
-                          </div>
-
-                          {/* Actions */}
-                          <div className="flex justify-end gap-2 pt-2">
-                            <button
-                              type="button"
-                              onClick={() => setShowReviewForm(false)}
-                              className="px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 rounded-xl text-xs font-bold transition-all"
-                            >
-                              {language === 'vi' ? 'Hủy bỏ' : 'Cancel'}
-                            </button>
-                            <button
-                              type="submit"
-                              disabled={submittingReview}
-                              className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm"
-                            >
-                              {submittingReview ? (language === 'vi' ? 'Đang gửi...' : 'Submitting...') : (language === 'vi' ? 'Gửi đánh giá' : 'Submit')}
-                            </button>
-                          </div>
-                        </form>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-slate-450 font-bold">
-                    {language === 'vi' ? 'Vui lòng đăng nhập để gửi đánh giá.' : 'Please log in to submit a review.'}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Core review bar graphs */}
-                <div className="space-y-4 border-r border-slate-100 pr-0 md:pr-8">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl font-black text-[#006ce4]">{hotel.averageRating}</span>
-                    <div>
-                      <p className="font-extrabold text-slate-700 text-sm">{t.avgScore}</p>
-                      <p className="text-[10px] text-slate-455 font-bold">{t.reviewsCount(hotel.reviews.length)}</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2.5 pt-2 text-xs font-bold text-slate-600">
-                    {/* 5 Criteria */}
-                    {[
-                      { name: t.cleanliness, score: criteriaScores.cleanliness },
-                      { name: t.location, score: criteriaScores.location },
-                      { name: t.service, score: criteriaScores.service },
-                      { name: t.facilities, score: criteriaScores.facilities },
-                      { name: t.valueRating, score: criteriaScores.value },
-                    ].map((crit) => (
-                      <div key={crit.name} className="space-y-1">
-                        <div className="flex justify-between">
-                          <span>{crit.name}</span>
-                          <span className="text-[#006ce4]">{crit.score} / 5</span>
-                        </div>
-                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                          <div className="bg-[#006ce4] h-full rounded-full" style={{ width: `${(crit.score / 5) * 100}%` }}></div>
+                          <span className="text-xs text-[#006ce4] font-black">{crit.value} / 10</span>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  {/* Toggle review form button for logged-in users */}
-                  {isLoggedIn ? (
-                    <div className="pt-4 border-t border-slate-50">
-                      <button
-                        type="button"
-                        onClick={() => setShowReviewForm(!showReviewForm)}
-                        className="w-full bg-[#006ce4] hover:bg-[#0056b3] text-white font-extrabold text-xs py-2.5 px-4 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        {showReviewForm 
-                          ? (language === 'vi' ? 'Đóng khung đánh giá' : 'Close review form')
-                          : (language === 'vi' ? 'Viết đánh giá của bạn' : 'Write a review')
-                        }
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="text-[10px] text-slate-455 font-bold pt-4 border-t border-slate-50 text-center">
-                      {language === 'vi' ? 'Vui lòng đăng nhập để gửi đánh giá.' : 'Please log in to submit a review.'}
-                    </p>
-                  )}
-                </div>
+                  {/* Text Comment */}
+                  <div className="space-y-1.5 text-sm font-bold text-slate-600">
+                    <label className="text-[11px] text-slate-400 uppercase">Nhận xét chi tiết</label>
+                    <textarea
+                      required
+                      rows={4}
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      placeholder={language === 'vi' ? 'Hãy chia sẻ chi tiết trải nghiệm lưu trú của bạn tại đây...' : 'Share your detailed stay experience here...'}
+                      className="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-600 text-slate-800 font-semibold placeholder-slate-400 transition-all shadow-sm"
+                    />
+                  </div>
 
-                {/* List of comments & Review form */}
-                <div className="md:col-span-2 space-y-4 pr-2">
-                  {showReviewForm && (
-                    <form onSubmit={handleSubmitReview} className="bg-slate-50 border border-slate-200/60 p-5 rounded-2xl space-y-4 animate-in slide-in-from-top-3 duration-200">
-                      <h3 className="font-extrabold text-slate-800 text-sm">
-                        {language === 'vi' ? 'Gửi nhận xét & Đánh giá của bạn' : 'Submit your Rating & Review'}
-                      </h3>
+                  {/* Actions */}
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowReviewForm(false)}
+                      className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 rounded-xl text-sm font-bold transition-all"
+                    >
+                      {language === 'vi' ? 'Hủy bỏ' : 'Cancel'}
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submittingReview}
+                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-md"
+                    >
+                      {submittingReview ? (language === 'vi' ? 'Đang gửi...' : 'Submitting...') : (language === 'vi' ? 'Gửi đánh giá' : 'Submit Review')}
+                    </button>
+                  </div>
+                </form>
+              )}
 
-                      {reviewError && (
-                        <div className="bg-red-50 text-red-700 text-xs font-semibold p-2.5 rounded-lg border-l-4 border-red-500">
-                          {reviewError}
-                        </div>
-                      )}
-
-                      {/* Criteria selection grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-bold text-slate-600">
-                        {[
-                          { name: t.cleanliness, value: ratingCleanliness, setter: setRatingCleanliness },
-                          { name: t.location, value: ratingLocation, setter: setRatingLocation },
-                          { name: t.service, value: ratingService, setter: setRatingService },
-                          { name: t.facilities, value: ratingFacilities, setter: setRatingFacilities },
-                          { name: t.valueRating, value: ratingValue, setter: setRatingValue },
-                        ].map((crit) => (
-                          <div key={crit.name} className="flex justify-between items-center bg-white border border-slate-100 p-2.5 rounded-xl">
-                            <span className="text-slate-700 font-semibold">{crit.name}</span>
-                            <div className="flex gap-0.5">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <button
-                                  type="button"
-                                  key={star}
-                                  onClick={() => crit.setter(star)}
-                                  className={`text-base leading-none focus:outline-none transition-all ${
-                                    star <= crit.value ? 'text-amber-400 scale-110' : 'text-slate-200 hover:text-amber-200'
-                                  }`}
-                                >
-                                  ★
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Text Comment */}
-                      <div className="space-y-1.5 text-xs font-bold text-slate-600">
-                        <label className="text-[10px] text-slate-450 uppercase">Nhận xét chi tiết</label>
-                        <textarea
-                          required
-                          rows={3}
-                          value={reviewComment}
-                          onChange={(e) => setReviewComment(e.target.value)}
-                          placeholder={language === 'vi' ? 'Hãy chia sẻ trải nghiệm lưu trú của bạn...' : 'Share your stay experience...'}
-                          className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs focus:outline-none focus:border-blue-600 text-slate-800 font-semibold placeholder-slate-400 transition-all shadow-sm"
-                        />
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex justify-end gap-2 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowReviewForm(false)}
-                          className="px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 rounded-xl text-xs font-bold transition-all"
-                        >
-                          {language === 'vi' ? 'Hủy bỏ' : 'Cancel'}
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={submittingReview}
-                          className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm"
-                        >
-                          {submittingReview ? (language === 'vi' ? 'Đang gửi...' : 'Submitting...') : (language === 'vi' ? 'Gửi đánh giá' : 'Submit')}
-                        </button>
-                      </div>
-                    </form>
-                  )}
-
-                  <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+              {/* List of comments (Full-width card layout) */}
+              {hotel.reviews.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="font-extrabold text-slate-800 text-lg border-b border-slate-100 pb-2">
+                    {language === 'vi' ? 'Ý kiến chi tiết từ khách hàng' : 'Detailed Guest Reviews'}
+                  </h3>
+                  <div className="space-y-4 max-h-[600px] overflow-y-auto pr-3">
                     {hotel.reviews.map((rev) => (
-                      <div key={rev.id} className="space-y-2 border-b border-slate-50 pb-4 last:border-b-0">
+                      <div key={rev.id} className="space-y-3 bg-white border border-slate-100 p-5 rounded-2xl shadow-sm hover:border-slate-200 transition-all">
                         <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 border border-slate-200">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 border border-slate-200">
                               {rev.user.avatarUrl ? (
                                 <img src={rev.user.avatarUrl} alt="Avatar" className="w-full h-full rounded-full object-cover" />
                               ) : (
-                                <User className="w-4 h-4 text-slate-450" />
+                                <User className="w-5 h-5 text-slate-450" />
                               )}
                             </div>
                             <div>
-                              <h4 className="font-extrabold text-slate-800 text-xs">{rev.user.fullName}</h4>
-                              <span className="text-[9px] text-[#006ce4] font-bold">{new Date(rev.createdAt).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')}</span>
+                              <h4 className="font-black text-slate-800 text-sm">{rev.user.fullName}</h4>
+                              <span className="text-[10px] text-[#006ce4] font-extrabold">{new Date(rev.createdAt).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')}</span>
                             </div>
                           </div>
-                          <span className="bg-[#ebf3ff] text-[#006ce4] px-2 py-0.5 rounded-full font-extrabold text-xs border border-blue-100">
-                            ★ {rev.ratingOverall}
+                          <span className="bg-[#ebf3ff] text-[#006ce4] px-3.5 py-1.5 rounded-full font-black text-sm border border-blue-100">
+                            ★ {normalizeRating(rev.ratingOverall)} / 10
                           </span>
                         </div>
-                        <p className="text-xs text-slate-655 leading-relaxed italic pl-1">
+                        <p className="text-sm text-slate-700 leading-relaxed font-semibold pl-1">
                           "{rev.comment}"
                         </p>
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </section>
 
         </div>
