@@ -10,6 +10,7 @@ import {
   updateRoomTypeSchema,
   createRoomSchema,
   updatePriceCalendarSchema,
+  createAmenitySchema,
 } from '../dtos/hotel.dto';
 
 const router = Router();
@@ -22,6 +23,14 @@ router.get('/favorites/my', requireAuth, hotelController.getMyFavorites);
 router.get('/:id', hotelController.getDetail);
 
 // --- Các route yêu cầu đăng nhập & phân quyền ---
+router.post(
+  '/meta/amenities',
+  requireAuth,
+  requireRole([Role.HOTEL_OWNER]),
+  validateRequest(createAmenitySchema),
+  hotelController.createAmenity
+);
+
 router.post('/:id/favorite', requireAuth, hotelController.toggleFavorite);
 router.post('/:id/reviews', requireAuth, hotelController.createReview);
 router.post(

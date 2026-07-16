@@ -9,8 +9,8 @@ export const createHotelSchema = z.object({
     provinceId: z.string().min(1, 'Tỉnh/Thành phố không được để trống'),
     districtId: z.string().min(1, 'Quận/Huyện không được để trống'),
     wardId: z.string().min(1, 'Phường/Xã không được để trống'),
-    latitude: z.number().optional(),
-    longitude: z.number().optional(),
+    latitude: z.number().nullable().optional(),
+    longitude: z.number().nullable().optional(),
     starRating: z.number().int().min(1).max(5).default(3),
     amenityIds: z.array(z.string().uuid('ID tiện ích không hợp lệ')).default([]),
     images: z.array(z.object({
@@ -31,10 +31,14 @@ export const updateHotelSchema = z.object({
     provinceId: z.string().optional(),
     districtId: z.string().optional(),
     wardId: z.string().optional(),
-    latitude: z.number().optional(),
-    longitude: z.number().optional(),
+    latitude: z.number().nullable().optional(),
+    longitude: z.number().nullable().optional(),
     starRating: z.number().int().min(1).max(5).optional(),
     amenityIds: z.array(z.string().uuid()).optional(),
+    images: z.array(z.object({
+      url: z.string().url('Đường dẫn ảnh không hợp lệ'),
+      isPrimary: z.boolean().default(false)
+    })).optional(),
     checkInTime: z.string().optional(),
     checkOutTime: z.string().optional()
   })
@@ -87,4 +91,11 @@ export const updatePriceCalendarSchema = z.object({
       })
     ),
   }),
+});
+
+export const createAmenitySchema = z.object({
+  body: z.object({
+    name: z.string().min(2, 'Tên tiện ích phải từ 2 ký tự trở lên'),
+    icon: z.string().optional()
+  })
 });

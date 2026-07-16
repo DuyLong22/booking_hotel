@@ -301,6 +301,31 @@ export class HotelController {
     }
   }
 
+  public async createAmenity(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { name, icon } = req.body;
+      const existing = await prisma.amenity.findFirst({
+        where: { name: { equals: name, mode: 'insensitive' } }
+      });
+      if (existing) {
+        res.status(200).json({
+          success: true,
+          data: existing
+        });
+        return;
+      }
+      const newAmenity = await prisma.amenity.create({
+        data: { name, icon: icon || 'Sparkles' }
+      });
+      res.status(201).json({
+        success: true,
+        data: newAmenity
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   public async getLocations(req: Request, res: Response, next: NextFunction) {
     try {
       const { provinceId, districtId } = req.query;

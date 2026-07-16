@@ -123,6 +123,7 @@ export const OwnerDashboard: React.FC = () => {
   const [systemAmenities, setSystemAmenities] = useState<{ id: string; name: string }[]>([]);
   const [systemCategories, setSystemCategories] = useState<{ id: string; name: string }[]>([]);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  const [customAmenityName, setCustomAmenityName] = useState('');
   const [hotelImages, setHotelImages] = useState<{ url: string; isPrimary: boolean }[]>([]);
   const [newImageUrl, setNewImageUrl] = useState('');
 
@@ -599,6 +600,86 @@ export const OwnerDashboard: React.FC = () => {
       console.error(err);
       alert('Không thể cập nhật thông tin hồ sơ.');
     }
+  };
+
+  const handleAddCustomAmenity = async () => {
+    if (!customAmenityName.trim()) return;
+    try {
+      const res = await apiClient.post('/hotels/meta/amenities', {
+        name: customAmenityName.trim()
+      });
+      if (res.data.success) {
+        const newAmenity = res.data.data;
+        setSystemAmenities(prev => {
+          if (prev.some(a => a.id === newAmenity.id)) return prev;
+          return [...prev, newAmenity].sort((a, b) => a.name.localeCompare(b.name));
+        });
+        setSelectedAmenities(prev => {
+          if (prev.includes(newAmenity.id)) return prev;
+          return [...prev, newAmenity.id];
+        });
+        setCustomAmenityName('');
+        triggerToast('Đã thêm tiện ích mới thành công!');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Không thể thêm tiện ích mới.');
+    }
+  };
+
+  const getGroupedSystemAmenities = () => {
+    const grouped: Record<string, { title: string; items: { id: string; name: string }[] }> = {
+      internet: { title: 'Internet & Truyền thông', items: [] },
+      parking: { title: 'Chỗ đậu xe', items: [] },
+      bathroom: { title: 'Phòng tắm', items: [] },
+      bedroom: { title: 'Phòng ngủ', items: [] },
+      outdoor: { title: 'Ngoài trời', items: [] },
+      kitchen: { title: 'Nhà bếp', items: [] },
+      room: { title: 'Tiện ích trong phòng', items: [] },
+      media: { title: 'Truyền thông & Công nghệ', items: [] },
+      services: { title: 'Dịch vụ & Tiện ích giải trí', items: [] },
+      security: { title: 'An ninh', items: [] },
+      general: { title: 'Tổng quát', items: [] },
+      languages: { title: 'Ngôn ngữ được sử dụng', items: [] },
+      other: { title: 'Tiện ích khác', items: [] }
+    };
+
+    systemAmenities.forEach((amenity) => {
+      const lower = amenity.name.toLowerCase();
+      if (lower.includes('wifi') || lower.includes('internet')) {
+        grouped.internet.items.push(amenity);
+      } else if (lower.includes('đỗ xe') || lower.includes('đậu xe') || lower.includes('bãi xe') || lower.includes('parking')) {
+        grouped.parking.items.push(amenity);
+      } else if (lower.includes('tắm') || lower.includes('sen') || lower.includes('toilet') || lower.includes('bồn') || lower.includes('khăn tắm') || lower.includes('vệ sinh')) {
+        grouped.bathroom.items.push(amenity);
+      } else if (lower.includes('giường') || lower.includes('mền') || lower.includes('gối') || lower.includes('chăn') || lower.includes('tủ quần áo') || lower.includes('bed')) {
+        grouped.bedroom.items.push(amenity);
+      } else if (lower.includes('ngoài trời') || lower.includes('sân') || lower.includes('vườn') || lower.includes('ban công') || lower.includes('hiên') || lower.includes('thượng')) {
+        grouped.outdoor.items.push(amenity);
+      } else if (lower.includes('bếp') || lower.includes('lò') || lower.includes('ấm đun') || lower.includes('nấu') || lower.includes('tủ lạnh')) {
+        grouped.kitchen.items.push(amenity);
+      } else if (lower.includes('tv') || lower.includes('tivi') || lower.includes('màn hình') || lower.includes('truyền hình')) {
+        grouped.media.items.push(amenity);
+      } else if (lower.includes('an ninh') || lower.includes('bảo vệ') || lower.includes('cctv') || lower.includes('báo cháy') || lower.includes('báo động') || lower.includes('chữa cháy')) {
+        grouped.security.items.push(amenity);
+      } else if (lower.includes('tiếng') || lower.includes('ngôn ngữ') || lower.includes('dịch thuật')) {
+        grouped.languages.items.push(amenity);
+      } else if (lower.includes('dọn phòng') || lower.includes('giặt') || lower.includes('đón tiễn') || lower.includes('lễ tân') || lower.includes('trông trẻ')) {
+        grouped.services.items.push(amenity);
+      } else if (lower.includes('điều hòa') || lower.includes('máy lạnh') || lower.includes('thang máy') || lower.includes('hút thuốc') || lower.includes('cách âm') || lower.includes('quạt')) {
+        grouped.general.items.push(amenity);
+      } else if (lower.includes('giá treo') || lower.includes('két sắt') || lower.includes('tiện ích phòng') || lower.includes('bàn làm việc')) {
+        grouped.room.items.push(amenity);
+      } else {
+        if (lower.includes('dịch vụ') || lower.includes('spa') || lower.includes('massage') || lower.includes('bar') || lower.includes('hồ bơi') || lower.includes('bể bơi') || lower.includes('gym')) {
+          grouped.services.items.push(amenity);
+        } else {
+          grouped.other.items.push(amenity);
+        }
+      }
+    });
+
+    return Object.values(grouped).filter(g => g.items.length > 0);
   };
 
   const handleDeleteRoomType = async (rtId: string) => {
@@ -1232,29 +1313,70 @@ export const OwnerDashboard: React.FC = () => {
               <div className="border-t border-[#E2E8F0] pt-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-xs font-semibold">
                 
                 {/* 3. Tiện ích khách sạn */}
-                <div className="space-y-3">
-                  <h4 className="font-black text-[#2563EB] uppercase tracking-wider text-[10px]">3. Tiện ích khách sạn</h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-50 border border-slate-100 p-4 rounded-2xl max-h-[220px] overflow-y-auto">
-                    {systemAmenities.map(amenity => {
-                      const isChecked = selectedAmenities.includes(amenity.id);
-                      return (
-                        <label key={amenity.id} className="flex items-center gap-2 cursor-pointer py-1 text-[#334155] font-bold text-[10px] hover:text-[#2563EB] select-none">
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => {
-                              if (isChecked) {
-                                setSelectedAmenities(prev => prev.filter(id => id !== amenity.id));
-                              } else {
-                                setSelectedAmenities(prev => [...prev, amenity.id]);
-                              }
-                            }}
-                            className="w-3.5 h-3.5 rounded border-slate-300 text-[#2563EB] focus:ring-[#2563EB]"
-                          />
-                          <span>{amenity.name}</span>
-                        </label>
-                      );
-                    })}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center border-b border-[#E2E8F0] pb-2">
+                    <h4 className="font-black text-[#2563EB] uppercase tracking-wider text-[10px]">3. Tiện ích khách sạn</h4>
+                    <span className="text-[9px] text-[#64748B] font-bold bg-slate-100 px-2 py-0.5 rounded-full">
+                      Đã chọn {selectedAmenities.length}
+                    </span>
+                  </div>
+
+                  {/* Tự thêm tiện ích mới */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Tự thêm tiện ích... (VD: Sân golf, Lò nướng...)"
+                      value={customAmenityName}
+                      onChange={(e) => setCustomAmenityName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddCustomAmenity();
+                        }
+                      }}
+                      className="flex-1 bg-white border border-[#CBD5E1] text-[#1E293B] px-3 py-2 rounded-xl outline-none focus:border-[#2563EB] text-[10px] font-semibold placeholder-[#94A3B8]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomAmenity}
+                      className="bg-[#2563EB] text-white px-3 py-2 rounded-xl font-bold text-[10px] hover:bg-[#1d4ed8] active:scale-95 transition-all whitespace-nowrap"
+                    >
+                      Thêm
+                    </button>
+                  </div>
+
+                  {/* Danh sách tiện ích phân loại */}
+                  <div className="space-y-4 bg-slate-50 border border-slate-200/60 p-4 rounded-2xl max-h-[260px] overflow-y-auto">
+                    {getGroupedSystemAmenities().map((group) => (
+                      <div key={group.title} className="space-y-2">
+                        <h5 className="font-bold text-slate-800 text-[10px] border-b border-slate-200 pb-1 flex items-center justify-between">
+                          <span>{group.title}</span>
+                          <span className="text-[8px] text-slate-400 font-normal">({group.items.length})</span>
+                        </h5>
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                          {group.items.map((amenity) => {
+                            const isChecked = selectedAmenities.includes(amenity.id);
+                            return (
+                              <label key={amenity.id} className="flex items-center gap-1.5 cursor-pointer py-0.5 text-[#334155] font-bold text-[9px] hover:text-[#2563EB] select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => {
+                                    if (isChecked) {
+                                      setSelectedAmenities(prev => prev.filter(id => id !== amenity.id));
+                                    } else {
+                                      setSelectedAmenities(prev => [...prev, amenity.id]);
+                                    }
+                                  }}
+                                  className="w-3 h-3 rounded border-slate-300 text-[#2563EB] focus:ring-[#2563EB]"
+                                />
+                                <span className="line-clamp-1" title={amenity.name}>{amenity.name}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
