@@ -553,7 +553,7 @@ export const AdminDashboard: React.FC = () => {
       <div className="flex-1 flex flex-col lg:flex-row relative">
         
         {/* COLLAPSIBLE SIDEBAR */}
-        <aside className={`shrink-0 z-35 transition-all duration-300 ${sidebarCollapsed ? 'w-0 lg:w-20' : 'w-full lg:w-72'} bg-[#0F172A] border-r border-[#1E293B]`}>
+        <aside className={`shrink-0 z-35 transition-all duration-300 lg:sticky lg:top-[70px] lg:h-[calc(100vh-70px)] ${sidebarCollapsed ? 'w-0 lg:w-20' : 'w-full lg:w-72'} bg-[#0F172A] border-r border-[#1E293B]`}>
           <div className="p-5 flex flex-col gap-1.5 h-full overflow-y-auto">
             
             {/* Category Groups */}
