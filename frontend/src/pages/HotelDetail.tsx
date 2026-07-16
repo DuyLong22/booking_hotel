@@ -1972,7 +1972,31 @@ export const HotelDetail: React.FC = () => {
                 {/* Column 4: Khác */}
                 <div className="space-y-3.5">
                   <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2 border-b border-slate-100 pb-2">
-                    <MoreHorizontal           <section className="space-y-6">
+                    <MoreHorizontal className="w-4.5 h-4.5 text-[#006ce4]" />
+                    {language === 'vi' ? 'Khác' : 'Others'}
+                  </h3>
+                  <div className="space-y-2.5 text-xs text-slate-655 font-bold">
+                    {hotel.nearbyLocations
+                      .filter((loc: any) => loc.type === 'OTHER')
+                      .map((loc: any, idx: number) => (
+                        <div key={idx} className="flex justify-between items-center gap-2">
+                          <span className="line-clamp-1 font-semibold text-slate-700">{loc.name}</span>
+                          <span className="text-slate-450 font-normal shrink-0">{loc.distance}</span>
+                        </div>
+                      ))}
+                    {hotel.nearbyLocations.filter((loc: any) => loc.type === 'OTHER').length === 0 && (
+                      <p className="text-slate-400 font-normal text-[11px] italic">{language === 'vi' ? 'Không có thông tin' : 'No information'}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <hr className="border-slate-100" />
+
+          {/* Review and Ratings */}
+          <section className="space-y-6">
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
               <span className="w-1.5 h-6.5 bg-[#006ce4] rounded-full inline-block"></span>
               {t.reviewsTitle}
