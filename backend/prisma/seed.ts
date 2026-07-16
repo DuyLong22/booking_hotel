@@ -224,159 +224,172 @@ async function main() {
   console.log('Đã seed các tài khoản cơ bản.');
 
   // 5. Seed Khách sạn mẫu (Đà Lạt & Sơn Trà Đà Nẵng)
-  const hotelDalat = await prisma.hotel.create({
-    data: {
-      ownerId: ownerUser.id,
-      categoryId: seededCategories.find(c => c.slug === 'hotel')?.id || seededCategories[0].id,
-      name: 'Dalat Flower Hotel & Spa',
-      description: 'Khách sạn phong cách thơ mộng nằm ngay trung tâm thành phố Đà Lạt, cách hồ Xuân Hương chỉ 200m đi bộ. Rất phù hợp cho gia đình có con nhỏ nghỉ ngơi thư giãn.',
-      address: '22 Bùi Thị Xuân, Phường 2',
-      provinceId: '68',
-      districtId: '672',
-      wardId: '24826',
-      latitude: 11.9472,
-      longitude: 108.4419,
-      starRating: 4,
-      status: HotelStatus.APPROVED,
-      images: {
-        create: [
-          { url: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80', isPrimary: true },
-          { url: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80', isPrimary: false }
-        ]
-      },
-      amenities: {
-        create: seededAmenities.map(am => ({
-          amenityId: am.id
-        }))
-      },
-      roomTypes: {
-        create: [
-          {
-            name: 'Phòng Deluxe Double (Hướng Hồ)',
-            description: 'Phòng rộng 30m2 giường đôi cực lớn, hướng nhìn thẳng ra Hồ Xuân Hương thơ mộng.',
-            basePrice: 1200000.00,
-            capacity: 2,
-            bedCount: 1,
-            size: 30,
-            amenities: ['Wifi', 'Điều hòa', 'Mini Bar', 'Ấm đun nước'],
-            images: {
-              create: [
-                { url: 'https://images.unsplash.com/photo-1611891405788-d880227f73b4?auto=format&fit=crop&w=800&q=80', isPrimary: true }
-              ]
-            },
-            rooms: {
-              create: [
-                { roomNumber: '201' },
-                { roomNumber: '202' },
-                { roomNumber: '203' },
-                { roomNumber: '204' },
-                { roomNumber: '205' }
-              ]
-            }
-          },
-          {
-            name: 'Phòng Gia Đình Family Suite',
-            description: 'Phòng gia đình rộng 50m2 với 2 giường đôi lớn, bồn tắm nằm và khu vực ban công rộng rãi.',
-            basePrice: 2200000.00,
-            capacity: 4,
-            bedCount: 2,
-            size: 50,
-            amenities: ['Wifi', 'Hồ bơi riêng', 'Điều hòa', 'Khu bếp nhẹ'],
-            images: {
-              create: [
-                { url: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80', isPrimary: true }
-              ]
-            },
-            rooms: {
-              create: [
-                { roomNumber: '301' },
-                { roomNumber: '302' },
-                { roomNumber: '303' }
-              ]
-            }
-          }
-        ]
-      }
-    }
+  // 5. Seed Khách sạn mẫu (Đà Lạt & Sơn Trà Đà Nẵng)
+  let hotelDalat = await prisma.hotel.findFirst({
+    where: { name: 'Dalat Flower Hotel & Spa' }
   });
 
-  const hotelDanang = await prisma.hotel.create({
-    data: {
-      ownerId: ownerUser.id,
-      categoryId: seededCategories.find(c => c.slug === 'resort')?.id || seededCategories[1].id,
-      name: 'Danang Beachside Resort & Villas',
-      description: 'Resort nghỉ dưỡng sát bãi biển Mỹ Khê tuyệt đẹp. Có hồ bơi ngoài trời tràn viền lớn, bãi đỗ xe ô tô rộng rãi và spa chuyên nghiệp.',
-      address: '292 Võ Nguyên Giáp, Phường Phước Mỹ',
-      provinceId: '48',
-      districtId: '492',
-      wardId: '20203',
-      latitude: 16.0612,
-      longitude: 108.2471,
-      starRating: 5,
-      status: HotelStatus.APPROVED,
-      images: {
-        create: [
-          { url: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80', isPrimary: true },
-          { url: 'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=800&q=80', isPrimary: false }
-        ]
-      },
-      amenities: {
-        create: seededAmenities.map(am => ({
-          amenityId: am.id
-        }))
-      },
-      roomTypes: {
-        create: [
-          {
-            name: 'Standard Twin Room',
-            description: 'Phòng đôi tiêu chuẩn hướng vườn rộng 35m2 với 2 giường đơn.',
-            basePrice: 1500000.00,
-            capacity: 2,
-            bedCount: 2,
-            size: 35,
-            amenities: ['Wifi', 'Điều hòa', 'Tivi'],
-            images: {
-              create: [
-                { url: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=800&q=80', isPrimary: true }
-              ]
+  if (!hotelDalat) {
+    hotelDalat = await prisma.hotel.create({
+      data: {
+        ownerId: ownerUser.id,
+        categoryId: seededCategories.find(c => c.slug === 'hotel')?.id || seededCategories[0].id,
+        name: 'Dalat Flower Hotel & Spa',
+        description: 'Khách sạn phong cách thơ mộng nằm ngay trung tâm thành phố Đà Lạt, cách hồ Xuân Hương chỉ 200m đi bộ. Rất phù hợp cho gia đình có con nhỏ nghỉ ngơi thư giãn.',
+        address: '22 Bùi Thị Xuân, Phường 2',
+        provinceId: '68',
+        districtId: '672',
+        wardId: '24826',
+        latitude: 11.9472,
+        longitude: 108.4419,
+        starRating: 4,
+        status: HotelStatus.APPROVED,
+        images: {
+          create: [
+            { url: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80', isPrimary: true },
+            { url: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80', isPrimary: false }
+          ]
+        },
+        amenities: {
+          create: seededAmenities.map(am => ({
+            amenityId: am.id
+          }))
+        },
+        roomTypes: {
+          create: [
+            {
+              name: 'Phòng Deluxe Double (Hướng Hồ)',
+              description: 'Phòng rộng 30m2 giường đôi cực lớn, hướng nhìn thẳng ra Hồ Xuân Hương thơ mộng.',
+              basePrice: 1200000.00,
+              capacity: 2,
+              bedCount: 1,
+              size: 30,
+              amenities: ['Wifi', 'Điều hòa', 'Mini Bar', 'Ấm đun nước'],
+              images: {
+                create: [
+                  { url: 'https://images.unsplash.com/photo-1611891405788-d880227f73b4?auto=format&fit=crop&w=800&q=80', isPrimary: true }
+                ]
+              },
+              rooms: {
+                create: [
+                  { roomNumber: '201' },
+                  { roomNumber: '202' },
+                  { roomNumber: '203' },
+                  { roomNumber: '204' },
+                  { roomNumber: '205' }
+                ]
+              }
             },
-            rooms: {
-              create: [
-                { roomNumber: '101' },
-                { roomNumber: '102' },
-                { roomNumber: '103' },
-                { roomNumber: '104' },
-                { roomNumber: '105' },
-                { roomNumber: '106' }
-              ]
+            {
+              name: 'Phòng Gia Đình Family Suite',
+              description: 'Phòng gia đình rộng 50m2 với 2 giường đôi lớn, bồn tắm nằm và khu vực ban công rộng rãi.',
+              basePrice: 2200000.00,
+              capacity: 4,
+              bedCount: 2,
+              size: 50,
+              amenities: ['Wifi', 'Hồ bơi riêng', 'Điều hòa', 'Khu bếp nhẹ'],
+              images: {
+                create: [
+                  { url: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80', isPrimary: true }
+                ]
+              },
+              rooms: {
+                create: [
+                  { roomNumber: '301' },
+                  { roomNumber: '302' },
+                  { roomNumber: '303' }
+                ]
+              }
             }
-          },
-          {
-            name: 'Ocean View Villa',
-            description: 'Villa biệt thự riêng biệt view biển, có bồn Jacuzzi ngoài trời cực kỳ lãng mạn.',
-            basePrice: 4500000.00,
-            capacity: 2,
-            bedCount: 1,
-            size: 80,
-            amenities: ['Wifi', 'Bể sục jacuzzi', 'Điều hòa', 'Quầy bar nhỏ'],
-            images: {
-              create: [
-                { url: 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=800&q=80', isPrimary: true }
-              ]
-            },
-            rooms: {
-              create: [
-                { roomNumber: 'V-01' },
-                { roomNumber: 'V-02' },
-                { roomNumber: 'V-03' },
-                { roomNumber: 'V-04' }
-              ]
-            }
-          }
-        ]
+          ]
+        }
       }
-    }
+    });
+  }
+
+  let hotelDanang = await prisma.hotel.findFirst({
+    where: { name: 'Danang Beachside Resort & Villas' }
   });
+
+  if (!hotelDanang) {
+    hotelDanang = await prisma.hotel.create({
+      data: {
+        ownerId: ownerUser.id,
+        categoryId: seededCategories.find(c => c.slug === 'resort')?.id || seededCategories[1].id,
+        name: 'Danang Beachside Resort & Villas',
+        description: 'Resort nghỉ dưỡng sát bãi biển Mỹ Khê tuyệt đẹp. Có hồ bơi ngoài trời tràn viền lớn, bãi đỗ xe ô tô rộng rãi và spa chuyên nghiệp.',
+        address: '292 Võ Nguyên Giáp, Phường Phước Mỹ',
+        provinceId: '48',
+        districtId: '492',
+        wardId: '20203',
+        latitude: 16.0612,
+        longitude: 108.2471,
+        starRating: 5,
+        status: HotelStatus.APPROVED,
+        images: {
+          create: [
+            { url: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80', isPrimary: true },
+            { url: 'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=800&q=80', isPrimary: false }
+          ]
+        },
+        amenities: {
+          create: seededAmenities.map(am => ({
+            amenityId: am.id
+          }))
+        },
+        roomTypes: {
+          create: [
+            {
+              name: 'Standard Twin Room',
+              description: 'Phòng đôi tiêu chuẩn hướng vườn rộng 35m2 với 2 giường đơn.',
+              basePrice: 1500000.00,
+              capacity: 2,
+              bedCount: 2,
+              size: 35,
+              amenities: ['Wifi', 'Điều hòa', 'Tivi'],
+              images: {
+                create: [
+                  { url: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=800&q=80', isPrimary: true }
+                ]
+              },
+              rooms: {
+                create: [
+                  { roomNumber: '101' },
+                  { roomNumber: '102' },
+                  { roomNumber: '103' },
+                  { roomNumber: '104' },
+                  { roomNumber: '105' },
+                  { roomNumber: '106' }
+                ]
+              }
+            },
+            {
+              name: 'Ocean View Villa',
+              description: 'Villa biệt thự riêng biệt view biển, có bồn Jacuzzi ngoài trời cực kỳ lãng mạn.',
+              basePrice: 4500000.00,
+              capacity: 2,
+              bedCount: 1,
+              size: 80,
+              amenities: ['Wifi', 'Bể sục jacuzzi', 'Điều hòa', 'Quầy bar nhỏ'],
+              images: {
+                create: [
+                  { url: 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=800&q=80', isPrimary: true }
+                ]
+              },
+              rooms: {
+                create: [
+                  { roomNumber: 'V-01' },
+                  { roomNumber: 'V-02' },
+                  { roomNumber: 'V-03' },
+                  { roomNumber: 'V-04' }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    });
+  }
 
   console.log('Đã seed khách sạn và loại phòng mẫu.');
 
