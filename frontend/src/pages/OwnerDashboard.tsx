@@ -98,6 +98,8 @@ export const OwnerDashboard: React.FC = () => {
   const [inputMsg, setInputMsg] = useState('');
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const notificationsDropdownRef = useRef<HTMLDivElement>(null);
 
   // Hotel Info States
   const [hotelId, setHotelId] = useState('');
@@ -362,6 +364,23 @@ export const OwnerDashboard: React.FC = () => {
 
     return () => {
       socketRef.current?.disconnect();
+    };
+  }, []);
+
+  // Click outside listener to close header dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setProfileDropdownOpen(false);
+      }
+      if (notificationsDropdownRef.current && !notificationsDropdownRef.current.contains(event.target as Node)) {
+        setNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
@@ -781,7 +800,7 @@ export const OwnerDashboard: React.FC = () => {
           </button>
 
           {/* Notification bell */}
-          <div className="relative">
+          <div ref={notificationsDropdownRef} className="relative">
             <button 
               onClick={() => setNotificationsOpen(!notificationsOpen)}
               className="p-2.5 rounded-xl hover:bg-slate-100 relative transition-colors text-[#64748B] hover:text-[#2563EB]"
@@ -794,7 +813,7 @@ export const OwnerDashboard: React.FC = () => {
               <div className="absolute right-0 mt-3 w-80 rounded-2xl border border-[#E2E8F0] p-4 bg-white shadow-[0_4px_12px_rgba(15,23,42,0.08)] z-55 animate-in fade-in slide-in-from-top-3 duration-200">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
                   <h4 className="font-extrabold text-xs text-[#1E293B]">{language === 'vi' ? 'Hộp thư thông báo' : 'Notifications'}</h4>
-                  <span className="text-[8px] bg-rose-50 text-rose-500 px-1.5 py-0.5 rounded font-black uppercase">NEW</span>
+                  <span className="text-[8px] bg-rose-55 text-rose-500 px-1.5 py-0.5 rounded font-black uppercase">NEW</span>
                 </div>
                 <div className="space-y-3">
                   <div className="p-2 hover:bg-slate-50 rounded-lg cursor-pointer text-[10px] space-y-1 text-[#1E293B]">
@@ -807,7 +826,7 @@ export const OwnerDashboard: React.FC = () => {
           </div>
 
           {/* User Profile dropdown */}
-          <div className="relative">
+          <div ref={profileDropdownRef} className="relative">
             <button 
               onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
               className="flex items-center gap-2 focus:outline-none"
