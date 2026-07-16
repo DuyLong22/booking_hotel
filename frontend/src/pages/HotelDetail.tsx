@@ -21,7 +21,13 @@ import {
   X,
   Calendar as CalendarIcon,
   Compass,
-  MoreHorizontal
+  MoreHorizontal,
+  Bath,
+  Bed,
+  Trees,
+  ShieldCheck,
+  Tv,
+  Globe
 } from 'lucide-react';
 import { formatPrice } from '../utils/price';
 import L from 'leaflet';
@@ -1037,33 +1043,37 @@ export const HotelDetail: React.FC = () => {
   }, [id, checkIn, checkOut]);
 
   // Icon mapping
-  const getAmenityIcon = (name: string) => {
-    switch (name) {
-      case 'Wifi miễn phí': return <Wifi className="w-5 h-5" />;
-      case 'Hồ bơi': return <Waves className="w-5 h-5" />;
-      case 'Bãi đỗ xe': return <ParkingCircle className="w-5 h-5" />;
-      case 'Phòng Gym / Thể hình': return <Dumbbell className="w-5 h-5" />;
-      case 'Điều hòa nhiệt độ': return <Sparkles className="w-5 h-5" />;
-      case 'Nhà hàng ăn uống': return <Utensils className="w-5 h-5" />;
-      case 'Dịch vụ Spa / Massage': return <Sparkles className="w-5 h-5" />;
-      case 'Quầy bar / Lounge': return <GlassWater className="w-5 h-5" />;
-      default: return <Sparkles className="w-5 h-5" />;
-    }
+  const getAmenityIcon = (name: string, className: string = "w-5 h-5") => {
+    const lower = name.toLowerCase();
+    if (lower.includes('wifi') || lower.includes('internet')) return <Wifi className={className} />;
+    if (lower.includes('hồ bơi') || lower.includes('bể bơi') || lower.includes('pool') || lower.includes('bể sục')) return <Waves className={className} />;
+    if (lower.includes('đỗ xe') || lower.includes('đậu xe') || lower.includes('bãi xe') || lower.includes('parking')) return <ParkingCircle className={className} />;
+    if (lower.includes('gym') || lower.includes('thể hình') || lower.includes('fitness') || lower.includes('tập thể dục')) return <Dumbbell className={className} />;
+    if (lower.includes('điều hòa') || lower.includes('máy lạnh') || lower.includes('air') || lower.includes('lạnh')) return <Sparkles className={className} />;
+    if (lower.includes('nhà hàng') || lower.includes('ăn uống') || lower.includes('dining')) return <Utensils className={className} />;
+    if (lower.includes('bar') || lower.includes('lounge') || lower.includes('cocktail')) return <GlassWater className={className} />;
+    if (lower.includes('spa') || lower.includes('massage') || lower.includes('xông hơi')) return <Sparkles className={className} />;
+    if (lower.includes('tắm') || lower.includes('vòi sen') || lower.includes('toilet') || lower.includes('bath') || lower.includes('vệ sinh')) return <Bath className={className} />;
+    if (lower.includes('giường') || lower.includes('phòng ngủ') || lower.includes('tủ') || lower.includes('ga') || lower.includes('pillow') || lower.includes('bed')) return <Bed className={className} />;
+    if (lower.includes('ngoài trời') || lower.includes('sân') || lower.includes('vườn') || lower.includes('hiên') || lower.includes('ban công') || lower.includes('outdoor')) return <Trees className={className} />;
+    if (lower.includes('an ninh') || lower.includes('bảo vệ') || lower.includes('cctv') || lower.includes('báo cháy') || lower.includes('báo động') || lower.includes('security')) return <ShieldCheck className={className} />;
+    if (lower.includes('tv') || lower.includes('tivi') || lower.includes('truyền hình') || lower.includes('màn hình')) return <Tv className={className} />;
+    if (lower.includes('tiếng') || lower.includes('ngôn ngữ') || lower.includes('language')) return <Globe className={className} />;
+    return <Sparkles className={className} />;
   };
 
   const translateAmenityName = (name: string) => {
     if (language === 'vi') return name;
-    switch (name) {
-      case 'Wifi miễn phí': return 'Free Wifi';
-      case 'Hồ bơi': return 'Swimming Pool';
-      case 'Bãi đỗ xe': return 'Parking Space';
-      case 'Phòng Gym / Thể hình': return 'Fitness Center / Gym';
-      case 'Điều hòa nhiệt độ': return 'Air Conditioning';
-      case 'Nhà hàng ăn uống': return 'Restaurant & Dining';
-      case 'Dịch vụ Spa / Massage': return 'Spa / Massage Service';
-      case 'Quầy bar / Lounge': return 'Bar / Lounge';
-      default: return name;
-    }
+    const lower = name.toLowerCase().trim();
+    if (lower.includes('wifi') || lower.includes('internet')) return 'Free Wifi';
+    if (lower === 'hồ bơi') return 'Swimming Pool';
+    if (lower === 'bãi đỗ xe') return 'Parking Space';
+    if (lower === 'phòng gym / thể hình') return 'Fitness Center / Gym';
+    if (lower === 'điều hòa nhiệt độ') return 'Air Conditioning';
+    if (lower === 'nhà hàng ăn uống') return 'Restaurant & Dining';
+    if (lower === 'dịch vụ spa / massage') return 'Spa & Massage';
+    if (lower === 'quầy bar / lounge') return 'Bar & Lounge';
+    return name;
   };
 
   const handleBookRoom = (roomTypeId: string) => {
@@ -1116,6 +1126,125 @@ export const HotelDetail: React.FC = () => {
   const displayAverageRating = hotel.reviews.length > 0
     ? parseFloat((hotel.reviews.reduce((s, r) => s + normalizeRating(r.ratingOverall), 0) / hotel.reviews.length).toFixed(1))
     : 0;
+
+  // Group amenities by category for detailed display
+  const groupAmenities = () => {
+    const grouped: Record<string, { titleVi: string; titleEn: string; icon: React.ReactNode; items: string[] }> = {
+      bathroom: {
+        titleVi: 'Phòng tắm',
+        titleEn: 'Bathroom',
+        icon: <Bath className="w-5 h-5 text-slate-800" />,
+        items: []
+      },
+      bedroom: {
+        titleVi: 'Phòng ngủ',
+        titleEn: 'Bedroom',
+        icon: <Bed className="w-5 h-5 text-slate-800" />,
+        items: []
+      },
+      outdoor: {
+        titleVi: 'Ngoài trời',
+        titleEn: 'Outdoors',
+        icon: <Trees className="w-5 h-5 text-slate-800" />,
+        items: []
+      },
+      kitchen: {
+        titleVi: 'Nhà bếp',
+        titleEn: 'Kitchen',
+        icon: <Utensils className="w-5 h-5 text-slate-800" />,
+        items: []
+      },
+      room: {
+        titleVi: 'Tiện ích trong phòng',
+        titleEn: 'Room Amenities',
+        icon: <Sparkles className="w-5 h-5 text-slate-800" />,
+        items: []
+      },
+      media: {
+        titleVi: 'Truyền thông & Công nghệ',
+        titleEn: 'Media & Technology',
+        icon: <Tv className="w-5 h-5 text-slate-800" />,
+        items: []
+      },
+      internet: {
+        titleVi: 'Internet',
+        titleEn: 'Internet',
+        icon: <Wifi className="w-5 h-5 text-slate-800" />,
+        items: []
+      },
+      parking: {
+        titleVi: 'Chỗ đậu xe',
+        titleEn: 'Parking',
+        icon: <ParkingCircle className="w-5 h-5 text-slate-800" />,
+        items: []
+      },
+      services: {
+        titleVi: 'Dịch vụ & Tiện ích giải trí',
+        titleEn: 'Services & Leisure',
+        icon: <User className="w-5 h-5 text-slate-800" />,
+        items: []
+      },
+      security: {
+        titleVi: 'An ninh',
+        titleEn: 'Security',
+        icon: <ShieldCheck className="w-5 h-5 text-slate-800" />,
+        items: []
+      },
+      general: {
+        titleVi: 'Tổng quát',
+        titleEn: 'General',
+        icon: <Building2 className="w-5 h-5 text-slate-800" />,
+        items: []
+      },
+      languages: {
+        titleVi: 'Ngôn ngữ được sử dụng',
+        titleEn: 'Languages Spoken',
+        icon: <Globe className="w-5 h-5 text-slate-800" />,
+        items: []
+      }
+    };
+
+    hotel.amenities.forEach(({ amenity }) => {
+      const name = amenity.name;
+      const lower = name.toLowerCase();
+
+      if (lower.includes('wifi') || lower.includes('internet')) {
+        grouped.internet.items.push(name);
+      } else if (lower.includes('đỗ xe') || lower.includes('đậu xe') || lower.includes('bãi xe') || lower.includes('parking')) {
+        grouped.parking.items.push(name);
+      } else if (lower.includes('tắm') || lower.includes('sen') || lower.includes('toilet') || lower.includes('bồn') || lower.includes('khăn tắm') || lower.includes('vệ sinh')) {
+        grouped.bathroom.items.push(name);
+      } else if (lower.includes('giường') || lower.includes('mền') || lower.includes('gối') || lower.includes('chăn') || lower.includes('tủ quần áo') || lower.includes('bed')) {
+        grouped.bedroom.items.push(name);
+      } else if (lower.includes('ngoài trời') || lower.includes('sân') || lower.includes('vườn') || lower.includes('ban công') || lower.includes('hiên') || lower.includes('thượng')) {
+        grouped.outdoor.items.push(name);
+      } else if (lower.includes('bếp') || lower.includes('lò') || lower.includes('ấm đun') || lower.includes('nấu') || lower.includes('tủ lạnh')) {
+        grouped.kitchen.items.push(name);
+      } else if (lower.includes('tv') || lower.includes('tivi') || lower.includes('màn hình') || lower.includes('truyền hình')) {
+        grouped.media.items.push(name);
+      } else if (lower.includes('an ninh') || lower.includes('bảo vệ') || lower.includes('cctv') || lower.includes('báo cháy') || lower.includes('báo động') || lower.includes('chữa cháy')) {
+        grouped.security.items.push(name);
+      } else if (lower.includes('tiếng') || lower.includes('ngôn ngữ') || lower.includes('dịch thuật')) {
+        grouped.languages.items.push(name);
+      } else if (lower.includes('dọn phòng') || lower.includes('giặt') || lower.includes('đón tiễn') || lower.includes('lễ tân') || lower.includes('trông trẻ')) {
+        grouped.services.items.push(name);
+      } else if (lower.includes('điều hòa') || lower.includes('máy lạnh') || lower.includes('thang máy') || lower.includes('hút thuốc') || lower.includes('cách âm') || lower.includes('quạt')) {
+        grouped.general.items.push(name);
+      } else if (lower.includes('giá treo') || lower.includes('két sắt') || lower.includes('tiện ích phòng') || lower.includes('bàn làm việc')) {
+        grouped.room.items.push(name);
+      } else {
+        if (lower.includes('dịch vụ') || lower.includes('spa') || lower.includes('massage') || lower.includes('bar') || lower.includes('hồ bơi') || lower.includes('bể bơi') || lower.includes('gym')) {
+          grouped.services.items.push(name);
+        } else {
+          grouped.general.items.push(name);
+        }
+      }
+    });
+
+    return Object.values(grouped).filter(cat => cat.items.length > 0);
+  };
+
+  const groupedAmenities = groupAmenities();
 
   return (
     <div>
@@ -1991,6 +2120,63 @@ export const HotelDetail: React.FC = () => {
                 </div>
               </div>
             )}
+          </section>
+
+          <hr className="border-slate-100" />
+
+          {/* Detailed Grouped Amenities Section */}
+          <section className="space-y-6 pt-2">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+              <span className="w-1.5 h-6 bg-[#006ce4] rounded-full inline-block"></span>
+              {language === 'vi' ? 'Các tiện nghi tại khách sạn' : 'Hotel Facilities & Amenities'}
+            </h2>
+
+            {/* Popular amenities bar (Horizontal) */}
+            {(() => {
+              const popularKeywords = ['wifi', 'hồ bơi', 'đỗ xe', 'đậu xe', 'phòng gym', 'thể hình', 'spa', 'massage', 'nhà hàng', 'quầy bar', 'dịch vụ phòng'];
+              const popularItems = hotel.amenities.filter(({ amenity }) =>
+                popularKeywords.some(kw => amenity.name.toLowerCase().includes(kw))
+              );
+
+              if (popularItems.length === 0) return null;
+              return (
+                <div className="bg-slate-50 border border-slate-200/60 p-5 rounded-2xl space-y-3.5">
+                  <h3 className="font-extrabold text-slate-800 text-sm">
+                    {language === 'vi' ? 'Các tiện nghi được ưa chuộng nhất' : 'Most popular facilities'}
+                  </h3>
+                  <div className="flex flex-wrap gap-x-6 gap-y-3 text-emerald-600 font-extrabold text-xs sm:text-sm">
+                    {popularItems.map(({ amenity }) => (
+                      <div key={amenity.name} className="flex items-center gap-2">
+                        <span className="shrink-0 text-emerald-650">
+                          {getAmenityIcon(amenity.name, "w-4 h-4 sm:w-4.5 sm:h-4.5")}
+                        </span>
+                        <span>{translateAmenityName(amenity.name)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Columns of Grouped Categories */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-2">
+              {groupedAmenities.map((cat) => (
+                <div key={cat.titleVi} className="space-y-3.5">
+                  <h3 className="font-extrabold text-slate-800 text-sm sm:text-base flex items-center gap-2 border-b border-slate-100 pb-2.5">
+                    <span className="text-[#006ce4] shrink-0">{cat.icon}</span>
+                    <span>{language === 'vi' ? cat.titleVi : cat.titleEn}</span>
+                  </h3>
+                  <ul className="space-y-2.5 text-xs text-slate-655 font-bold pl-0.5">
+                    {cat.items.map((item) => (
+                      <li key={item} className="flex items-start gap-2.5">
+                        <span className="text-emerald-500 font-black text-xs shrink-0 mt-0.5">✓</span>
+                        <span className="text-slate-700 font-semibold leading-tight">{translateAmenityName(item)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </section>
 
           <hr className="border-slate-100" />
