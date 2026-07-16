@@ -27,14 +27,79 @@ async function main() {
 
   // 2. Seed Amenities
   const amenities = [
+    // Internet & Parking
     { name: 'Wifi miễn phí', icon: 'Wifi' },
-    { name: 'Hồ bơi', icon: 'Waves' },
     { name: 'Bãi đỗ xe', icon: 'ParkingCircle' },
+    { name: 'Chỗ đỗ xe miễn phí', icon: 'ParkingCircle' },
+
+    // Leisure & Facilities
+    { name: 'Hồ bơi', icon: 'Waves' },
     { name: 'Phòng Gym / Thể hình', icon: 'Dumbbell' },
-    { name: 'Điều hòa nhiệt độ', icon: 'AirVent' },
-    { name: 'Nhà hàng ăn uống', icon: 'Utensils' },
     { name: 'Dịch vụ Spa / Massage', icon: 'Sparkles' },
-    { name: 'Quầy bar / Lounge', icon: 'GlassWater' }
+    { name: 'Nhà hàng ăn uống', icon: 'Utensils' },
+    { name: 'Quầy bar / Lounge', icon: 'GlassWater' },
+    { name: 'Dịch vụ phòng', icon: 'Sparkles' },
+
+    // Bathroom (Phòng tắm)
+    { name: 'Giấy vệ sinh', icon: 'Bath' },
+    { name: 'Khăn tắm', icon: 'Bath' },
+    { name: 'Chậu rửa vệ sinh (bidet)', icon: 'Bath' },
+    { name: 'Dép lê', icon: 'Bath' },
+    { name: 'Phòng tắm riêng', icon: 'Bath' },
+    { name: 'Nhà vệ sinh', icon: 'Bath' },
+    { name: 'Đồ vệ sinh cá nhân miễn phí', icon: 'Bath' },
+    { name: 'Máy sấy tóc', icon: 'Bath' },
+    { name: 'Vòi sen', icon: 'Bath' },
+    { name: 'Bồn tắm', icon: 'Bath' },
+
+    // Bedroom (Phòng ngủ)
+    { name: 'Bộ khăn trải giường', icon: 'Bed' },
+    { name: 'Tủ hoặc phòng để quần áo', icon: 'Bed' },
+
+    // Outdoors (Ngoài trời)
+    { name: 'Bàn ghế ngoài trời', icon: 'Trees' },
+    { name: 'Sân thượng / hiên', icon: 'Trees' },
+    { name: 'Sân vườn', icon: 'Trees' },
+
+    // Kitchen (Nhà bếp)
+    { name: 'Bếp chung', icon: 'Utensils' },
+    { name: 'Ấm đun nước điện', icon: 'Utensils' },
+    { name: 'Lò vi sóng', icon: 'Utensils' },
+    { name: 'Tủ lạnh', icon: 'Utensils' },
+
+    // Room Amenities (Tiện ích trong phòng)
+    { name: 'Giá treo quần áo', icon: 'Sparkles' },
+    { name: 'Két sắt an toàn', icon: 'Sparkles' },
+
+    // Media & Technology (Truyền thông & Công nghệ)
+    { name: 'TV màn hình phẳng', icon: 'Tv' },
+    { name: 'Truyền hình cáp', icon: 'Tv' },
+
+    // Services (Dịch vụ)
+    { name: 'Dọn phòng hàng ngày', icon: 'User' },
+    { name: 'Khu vực xem TV / sảnh chung', icon: 'User' },
+    { name: 'Lễ tân 24 giờ', icon: 'User' },
+    { name: 'Dịch vụ trông trẻ', icon: 'User' },
+    { name: 'Nhận/trả phòng riêng', icon: 'User' },
+
+    // Security (An ninh)
+    { name: 'Bình chữa cháy', icon: 'ShieldCheck' },
+    { name: 'Hệ thống CCTV bên ngoài chỗ nghỉ', icon: 'ShieldCheck' },
+    { name: 'Hệ thống CCTV trong khu vực chung', icon: 'ShieldCheck' },
+    { name: 'Thiết bị báo cháy', icon: 'ShieldCheck' },
+    { name: 'Bảo vệ 24/7', icon: 'ShieldCheck' },
+
+    // General (Tổng quát)
+    { name: 'Điều hòa nhiệt độ', icon: 'Building2' },
+    { name: 'Thang máy', icon: 'Building2' },
+    { name: 'Quạt máy', icon: 'Building2' },
+    { name: 'Phòng gia đình', icon: 'Building2' },
+    { name: 'Phòng không hút thuốc', icon: 'Building2' },
+    { name: 'Cấm hút thuốc trong toàn bộ khuôn viên', icon: 'Building2' },
+
+    // Languages Spoken (Ngôn ngữ sử dụng)
+    { name: 'Tiếng Anh', icon: 'Globe' },
+    { name: 'Tiếng Việt', icon: 'Globe' }
   ];
 
   const seededAmenities = [];
@@ -328,45 +393,56 @@ async function main() {
   });
 
   if (familyRoomType) {
-    await prisma.roomPriceCalendar.createMany({
-      data: [
-        {
-          roomTypeId: familyRoomType.id,
-          date: new Date(nextSaturday.toDateString()),
-          price: 2640000.00, // 2,200,000 + 20%
-          isBlocked: false
-        },
-        {
-          roomTypeId: familyRoomType.id,
-          date: new Date(nextSunday.toDateString()),
-          price: 2640000.00,
-          isBlocked: false
-        }
-      ]
+    const existingPrice = await prisma.roomPriceCalendar.findFirst({
+      where: {
+        roomTypeId: familyRoomType.id,
+        date: new Date(nextSaturday.toDateString())
+      }
     });
-    console.log('Đã seed lịch giá phòng động cuối tuần.');
+    if (!existingPrice) {
+      await prisma.roomPriceCalendar.createMany({
+        data: [
+          {
+            roomTypeId: familyRoomType.id,
+            date: new Date(nextSaturday.toDateString()),
+            price: 2640000.00, // 2,200,000 + 20%
+            isBlocked: false
+          },
+          {
+            roomTypeId: familyRoomType.id,
+            date: new Date(nextSunday.toDateString()),
+            price: 2640000.00,
+            isBlocked: false
+          }
+        ]
+      });
+      console.log('Đã seed lịch giá phòng động cuối tuần.');
+    }
   }
 
   // 7. Seed Banners
-  await prisma.banner.createMany({
-    data: [
-      {
-        title: 'Mừng Hè Rực Rỡ - Giảm Ngay 20%',
-        imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
-        linkUrl: '/search?discount=true',
-        position: 'HOME_HERO',
-        isActive: true
-      },
-      {
-        title: 'Trải Nghiệm Đà Lạt Lãng Mạn',
-        imageUrl: 'https://images.unsplash.com/photo-1542296332-2e4473fac563?auto=format&fit=crop&w=1200&q=80',
-        linkUrl: '/search?city=Đà Lạt',
-        position: 'HOME_SIDEBAR',
-        isActive: true
-      }
-    ]
-  });
-  console.log('Đã seed Banners quảng cáo.');
+  const existingBanners = await prisma.banner.findMany();
+  if (existingBanners.length === 0) {
+    await prisma.banner.createMany({
+      data: [
+        {
+          title: 'Mừng Hè Rực Rỡ - Giảm Ngay 20%',
+          imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+          linkUrl: '/search?discount=true',
+          position: 'HOME_HERO',
+          isActive: true
+        },
+        {
+          title: 'Trải Nghiệm Đà Lạt Lãng Mạn',
+          imageUrl: 'https://images.unsplash.com/photo-1542296332-2e4473fac563?auto=format&fit=crop&w=1200&q=80',
+          linkUrl: '/search?city=Đà Lạt',
+          position: 'HOME_SIDEBAR',
+          isActive: true
+        }
+      ]
+    });
+    console.log('Đã seed Banners quảng cáo.');
+  }
 
   console.log('--- Hoàn tất Seeding Dữ liệu ---');
 }
