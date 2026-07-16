@@ -22,6 +22,21 @@ export const Wishlist: React.FC = () => {
   const [hotels, setHotels] = useState<FavoriteHotel[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const normalizeRating = (rating: number) => {
+    if (!rating) return 0;
+    return rating <= 5 ? rating * 2 : rating;
+  };
+
+  const getRatingText = (rating: number) => {
+    const score = normalizeRating(rating);
+    if (score >= 9.5) return 'Xuất sắc';
+    if (score >= 9.0) return 'Tuyệt hảo';
+    if (score >= 8.5) return 'Rất tốt';
+    if (score >= 8.0) return 'Tốt';
+    if (score >= 5.0) return 'Chấp nhận được';
+    return 'Khá tốt';
+  };
+
   const fetchWishlist = async () => {
     setLoading(true);
     try {
@@ -122,11 +137,16 @@ export const Wishlist: React.FC = () => {
                 <div className="space-y-2 pt-2 border-t border-slate-50">
                   <div className="flex justify-between items-center text-xs">
                     {hotel.averageRating > 0 ? (
-                      <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded font-bold flex items-center gap-0.5">
-                        ★ {hotel.averageRating}
-                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="bg-[#003b95] text-white text-[11px] px-1.5 py-0.5 rounded-t rounded-br rounded-bl-none font-black min-w-[24px] text-center">
+                          {normalizeRating(hotel.averageRating).toFixed(1).replace('.', ',')}
+                        </span>
+                        <span className="text-slate-700 font-extrabold text-[11px]">
+                          {getRatingText(hotel.averageRating)}
+                        </span>
+                      </div>
                     ) : (
-                      <span className="text-slate-400 font-medium">Chưa có đánh giá</span>
+                      <span className="text-slate-400 font-semibold text-[11px]">Chưa có đánh giá</span>
                     )}
                     <span className="text-[10px] text-slate-400 font-bold">{hotel.category}</span>
                   </div>

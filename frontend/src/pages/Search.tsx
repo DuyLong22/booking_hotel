@@ -908,11 +908,18 @@ export const Search: React.FC = () => {
   const displayedRoom = showAllStates.room ? roomItems : roomItems.slice(0, 5);
 
 
+  const normalizeRating = (rating: number) => {
+    if (!rating) return 0;
+    return rating <= 5 ? rating * 2 : rating;
+  };
+
   const getRatingText = (rating: number, lang: string) => {
-    if (rating >= 9.5) return lang === 'vi' ? 'Tuyệt diệu' : 'Exceptional';
-    if (rating >= 9.0) return lang === 'vi' ? 'Tuyệt hảo' : 'Superb';
-    if (rating >= 8.5) return lang === 'vi' ? 'Rất tốt' : 'Very Good';
-    if (rating >= 8.0) return lang === 'vi' ? 'Tốt' : 'Good';
+    const score = normalizeRating(rating);
+    if (score >= 9.5) return lang === 'vi' ? 'Xuất sắc' : 'Exceptional';
+    if (score >= 9.0) return lang === 'vi' ? 'Tuyệt hảo' : 'Superb';
+    if (score >= 8.5) return lang === 'vi' ? 'Rất tốt' : 'Very Good';
+    if (score >= 8.0) return lang === 'vi' ? 'Tốt' : 'Good';
+    if (score >= 5.0) return lang === 'vi' ? 'Chấp nhận được' : 'Pleasant';
     return lang === 'vi' ? 'Khá tốt' : 'Pleasant';
   };
 
@@ -2085,26 +2092,26 @@ export const Search: React.FC = () => {
                       {/* Right Column: Ratings & Price Section */}
                       <div className="w-full md:w-52 p-4 flex flex-col justify-between border-t md:border-t-0 md:border-l border-slate-100 shrink-0 text-right">
                         {/* Rating details */}
-                        <div className="flex items-start justify-between md:justify-end gap-2 text-right">
-                          <div>
-                            {hotel.reviewCount > 0 ? (
-                              <>
-                                <p className="text-sm font-extrabold text-[#006ce4]">
-                                  {`${hotel.averageRating.toFixed(1)}/10`}{' '}
-                                  <span className="font-bold text-[#006ce4]">
-                                    {getRatingText(hotel.averageRating, language)}
-                                  </span>
+                        <div className="flex items-center justify-end gap-2 text-right">
+                          {hotel.reviewCount > 0 ? (
+                            <>
+                              <div className="text-right">
+                                <p className="font-extrabold text-slate-900 text-[13px] leading-tight">
+                                  {getRatingText(hotel.averageRating, language)}
                                 </p>
-                                <p className="text-xs text-slate-400 font-bold mt-0.5">
-                                  ({hotel.reviewCount} {t.reviewsCount})
+                                <p className="text-[11px] text-slate-500 font-bold mt-0.5">
+                                  {hotel.reviewCount} {language === 'vi' ? 'đánh giá' : 'reviews'}
                                 </p>
-                              </>
-                            ) : (
-                              <p className="text-sm font-bold text-slate-400">
-                                {t.noReviews}
-                              </p>
-                            )}
-                          </div>
+                              </div>
+                              <div className="bg-[#003b95] text-white font-black text-sm sm:text-base px-2.5 py-1.5 rounded-t-lg rounded-br-lg rounded-bl-none shadow-sm shrink-0 flex items-center justify-center min-w-[38px] h-[38px]">
+                                {normalizeRating(hotel.averageRating).toFixed(1).replace('.', language === 'vi' ? ',' : '.')}
+                              </div>
+                            </>
+                          ) : (
+                            <p className="text-xs font-bold text-slate-400">
+                              {t.noReviews}
+                            </p>
+                          )}
                         </div>
 
                         {/* View & Price tag */}

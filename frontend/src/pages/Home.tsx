@@ -274,6 +274,21 @@ export const Home: React.FC = () => {
   const [children, setChildren] = useState(0);
   const [rooms, setRooms] = useState(1);
 
+  const normalizeRating = (rating: number) => {
+    if (!rating) return 0;
+    return rating <= 5 ? rating * 2 : rating;
+  };
+
+  const getRatingText = (rating: number, lang: string) => {
+    const score = normalizeRating(rating);
+    if (score >= 9.5) return lang === 'vi' ? 'Xuất sắc' : 'Exceptional';
+    if (score >= 9.0) return lang === 'vi' ? 'Tuyệt hảo' : 'Superb';
+    if (score >= 8.5) return lang === 'vi' ? 'Rất tốt' : 'Very Good';
+    if (score >= 8.0) return lang === 'vi' ? 'Tốt' : 'Good';
+    if (score >= 5.0) return lang === 'vi' ? 'Chấp nhận được' : 'Pleasant';
+    return lang === 'vi' ? 'Khá tốt' : 'Pleasant';
+  };
+
   const [showDestPopover, setShowDestPopover] = useState(false);
   const [showDatePopover, setShowDatePopover] = useState(false);
   const [showGuestPopover, setShowGuestPopover] = useState(false);
@@ -1624,11 +1639,16 @@ export const Home: React.FC = () => {
                     <div className="space-y-2 pt-2 border-t border-slate-50">
                       <div className="flex justify-between items-center text-xs">
                         {hotel.averageRating > 0 ? (
-                          <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded font-bold flex items-center gap-0.5">
-                            ★ {hotel.averageRating}
-                          </span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="bg-[#003b95] text-white text-[11px] px-1.5 py-0.5 rounded-t rounded-br rounded-bl-none font-black min-w-[24px] text-center">
+                              {normalizeRating(hotel.averageRating).toFixed(1).replace('.', language === 'vi' ? ',' : '.')}
+                            </span>
+                            <span className="text-slate-700 font-extrabold text-[11px]">
+                              {getRatingText(hotel.averageRating, language)}
+                            </span>
+                          </div>
                         ) : (
-                          <span className="text-slate-400 font-medium">{t.noReviews}</span>
+                          <span className="text-slate-400 font-semibold text-[11px]">{t.noReviews}</span>
                         )}
                         <span className="text-[10px] text-slate-400 font-bold">{translateCategoryName(hotel.category, language)}</span>
                       </div>
@@ -1709,14 +1729,16 @@ export const Home: React.FC = () => {
                     <div className="space-y-2 pt-2 border-t border-slate-50">
                       <div className="flex justify-between items-center text-xs">
                         {hotel.averageRating > 0 ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className="bg-[#003580] text-white text-[11px] px-1.5 py-0.5 rounded font-black">
-                              {hotel.averageRating}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="bg-[#003b95] text-white text-[11px] px-1.5 py-0.5 rounded-t rounded-br rounded-bl-none font-black min-w-[24px] text-center">
+                              {normalizeRating(hotel.averageRating).toFixed(1).replace('.', language === 'vi' ? ',' : '.')}
                             </span>
-                            <span className="text-slate-750 font-bold text-[11px]">{t.excellent}</span>
+                            <span className="text-slate-700 font-extrabold text-[11px]">
+                              {getRatingText(hotel.averageRating, language)}
+                            </span>
                           </div>
                         ) : (
-                          <span className="text-slate-400 font-medium">{t.noReviews}</span>
+                          <span className="text-slate-400 font-semibold text-[11px]">{t.noReviews}</span>
                         )}
                         <span className="text-[10px] text-slate-400 font-bold">{translateCategoryName(hotel.category, language)}</span>
                       </div>

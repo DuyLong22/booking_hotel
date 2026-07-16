@@ -3,10 +3,10 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../store';
 import apiClient from '../core/api/client';
-import { 
-  Lock, 
-  ShieldCheck, 
-  Clock, 
+import {
+  Lock,
+  ShieldCheck,
+  Clock,
   ChevronDown,
   User,
   Users,
@@ -55,7 +55,7 @@ export const Payment: React.FC = () => {
   const [booking, setBooking] = useState<BookingDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   // Payment option selected (Accordion style)
   const [activeOption, setActiveOption] = useState<'card' | 'vietqr' | 'vietinbank' | 'wallet' | 'mobile' | 'store' | 'installment'>('card');
   const [subWallet, setSubWallet] = useState<'momo' | 'zalopay' | 'shopeepay' | 'vnpay'>('momo');
@@ -150,7 +150,7 @@ export const Payment: React.FC = () => {
   const validateCardForm = () => {
     const errs: { [key: string]: string } = {};
     const rawCard = cardNumber.replace(/\s/g, '');
-    
+
     if (rawCard.length !== 16) {
       errs.cardNumber = language === 'vi' ? 'Số thẻ phải gồm 16 chữ số' : 'Card number must be 16 digits';
     }
@@ -204,8 +204,8 @@ export const Payment: React.FC = () => {
     // Các phương thức khác ngoài card → thông báo demo
     if (activeOption !== 'card') {
       alert(language === 'vi'
-        ? 'Phương thức này chỉ đang demo. Vui lòng chọn Thẻ thanh toán hoặc VNPay Gateway.'
-        : 'This method is demo only. Please use Credit Card or VNPay Gateway.');
+        ? 'Phương thức này chỉ đang demo. Vui lòng chọn Thẻ thanh toán hoặc VNPay.'
+        : 'This method is demo only. Please use Credit Card or VNPay.');
       return;
     }
 
@@ -216,10 +216,10 @@ export const Payment: React.FC = () => {
 
     setTimeout(() => {
       setSubmitMessage(language === 'vi' ? 'Đang xác thực thông tin thẻ tín dụng...' : 'Verifying credit card credentials...');
-      
+
       setTimeout(async () => {
         setSubmitMessage(language === 'vi' ? 'Đang tiến hành khấu trừ tài khoản...' : 'Processing account deduction...');
-        
+
         try {
           const res = await apiClient.post('/payment/stripe/confirm', { bookingId });
           if (res.data.success) {
@@ -310,10 +310,10 @@ export const Payment: React.FC = () => {
       </header>
 
       <div className="max-w-[1350px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        
+
         {/* Layout content grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          
+
           {/* Left Column - Payment methods */}
           <div className="lg:col-span-2 space-y-4">
             {(secondsLeft === 0 || booking.status === 'CANCELLED') ? (
@@ -325,7 +325,7 @@ export const Payment: React.FC = () => {
                   {language === 'vi' ? 'Đơn đặt phòng đã hết hạn thanh toán' : 'Payment Time Limit Expired'}
                 </h3>
                 <p className="text-xs text-slate-500 font-semibold max-w-md mx-auto leading-relaxed">
-                  {language === 'vi' 
+                  {language === 'vi'
                     ? 'Thời gian giữ phòng nghỉ tối đa 10 phút đã trôi qua. Để đảm bảo phòng trống cho các khách hàng khác, đơn đặt phòng này đã tự động được hủy bỏ. Vui lòng quay lại tìm kiếm và đặt đơn mới.'
                     : 'The 10-minute payment window has expired. To release rooms for other guests, this reservation was automatically cancelled. Please create a new booking.'}
                 </p>
@@ -339,14 +339,14 @@ export const Payment: React.FC = () => {
             ) : (
               <>
                 <div className="border border-slate-150 rounded-2xl shadow-sm overflow-hidden flex flex-col bg-white">
-                  
+
                   {/* Integrated Countdown Alert Banner - touching payment body directly */}
                   <div className="bg-[#0052cc] text-white py-3.5 px-5 flex justify-between items-center shadow-inner">
                     <p className="text-xs sm:text-sm font-bold flex items-center gap-2">
                       <span>🔔</span>
                       <span>
-                        {language === 'vi' 
-                          ? 'Đừng lo lắng, giá vẫn giữ nguyên. Hoàn tất thanh toán của bạn bằng' 
+                        {language === 'vi'
+                          ? 'Đừng lo lắng, giá vẫn giữ nguyên. Hoàn tất thanh toán của bạn bằng'
                           : 'Do not worry, price is locked. Complete your payment in'}
                       </span>
                     </p>
@@ -365,7 +365,7 @@ export const Payment: React.FC = () => {
 
                   {/* Accordion List */}
                   <div className="divide-y divide-slate-100">
-                    
+
                     {/* 1. Credit Card Option */}
                     <div className="bg-white">
                       <button
@@ -393,7 +393,7 @@ export const Payment: React.FC = () => {
                       </button>
                       {activeOption === 'card' && (
                         <div className="px-6 pb-6 pt-4 space-y-4 bg-slate-55/10 border-t border-slate-50">
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
                               <label className="text-xs font-bold text-slate-500 block">{language === 'vi' ? 'Số thẻ *' : 'Card number *'}</label>
@@ -402,9 +402,8 @@ export const Payment: React.FC = () => {
                                 value={cardNumber}
                                 onChange={handleCardNumberChange}
                                 placeholder="0000 0000 0000 0000"
-                                className={`w-full bg-white border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-bold ${
-                                  cardErrors.cardNumber ? 'border-red-400' : 'border-slate-200'
-                                }`}
+                                className={`w-full bg-white border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-bold ${cardErrors.cardNumber ? 'border-red-400' : 'border-slate-200'
+                                  }`}
                               />
                               {cardErrors.cardNumber && <p className="text-[10px] text-red-500 font-bold">{cardErrors.cardNumber}</p>}
                             </div>
@@ -417,9 +416,8 @@ export const Payment: React.FC = () => {
                                   value={expiryDate}
                                   onChange={handleExpiryChange}
                                   placeholder="MM/YY"
-                                  className={`w-full bg-white border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-bold text-center ${
-                                    cardErrors.expiryDate ? 'border-red-400' : 'border-slate-200'
-                                  }`}
+                                  className={`w-full bg-white border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-bold text-center ${cardErrors.expiryDate ? 'border-red-400' : 'border-slate-200'
+                                    }`}
                                 />
                                 {cardErrors.expiryDate && <p className="text-[10px] text-red-500 font-bold">{cardErrors.expiryDate}</p>}
                               </div>
@@ -431,9 +429,8 @@ export const Payment: React.FC = () => {
                                   value={cvv}
                                   onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').substring(0, 4))}
                                   placeholder="123"
-                                  className={`w-full bg-white border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-bold text-center ${
-                                    cardErrors.cvv ? 'border-red-400' : 'border-slate-200'
-                                  }`}
+                                  className={`w-full bg-white border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-bold text-center ${cardErrors.cvv ? 'border-red-400' : 'border-slate-200'
+                                    }`}
                                 />
                                 {cardErrors.cvv && <p className="text-[10px] text-red-500 font-bold">{cardErrors.cvv}</p>}
                               </div>
@@ -447,9 +444,8 @@ export const Payment: React.FC = () => {
                               value={cardName}
                               onChange={(e) => setCardName(e.target.value.toUpperCase())}
                               placeholder="NGUYEN VAN A"
-                              className={`w-full bg-white border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-bold uppercase ${
-                                cardErrors.cardName ? 'border-red-400' : 'border-slate-200'
-                              }`}
+                              className={`w-full bg-white border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-bold uppercase ${cardErrors.cardName ? 'border-red-400' : 'border-slate-200'
+                                }`}
                             />
                             {cardErrors.cardName && <p className="text-[10px] text-red-500 font-bold">{cardErrors.cardName}</p>}
                           </div>
@@ -482,7 +478,7 @@ export const Payment: React.FC = () => {
                       {activeOption === 'vietqr' && (
                         <div className="px-6 pb-6 pt-4 text-center space-y-3 bg-slate-50/30 border-t border-slate-50">
                           <p className="text-xs text-slate-500 font-semibold">
-                            {language === 'vi' 
+                            {language === 'vi'
                               ? 'Mã QR thanh toán chuyển khoản nhanh Napas247 sẽ được tự động hiển thị sau khi khởi tạo.'
                               : 'VietQR payment transfer code will be dynamically generated.'}
                           </p>
@@ -551,14 +547,13 @@ export const Payment: React.FC = () => {
                       </button>
                       {activeOption === 'wallet' && (
                         <div className="px-6 pb-6 pt-4 bg-slate-50/30 border-t border-slate-50 space-y-4">
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {/* MoMo */}
-                            <label 
+                            <label
                               onClick={() => setSubWallet('momo')}
-                              className={`flex justify-between items-center bg-white border rounded-xl p-3.5 cursor-pointer transition-all hover:shadow-sm ${
-                                subWallet === 'momo' ? 'border-[#0194f3] ring-1 ring-[#0194f3]' : 'border-slate-200'
-                              }`}
+                              className={`flex justify-between items-center bg-white border rounded-xl p-3.5 cursor-pointer transition-all hover:shadow-sm ${subWallet === 'momo' ? 'border-[#0194f3] ring-1 ring-[#0194f3]' : 'border-slate-200'
+                                }`}
                             >
                               <div className="flex items-center gap-3">
                                 <input
@@ -575,11 +570,10 @@ export const Payment: React.FC = () => {
                             </label>
 
                             {/* ZaloPay */}
-                            <label 
+                            <label
                               onClick={() => setSubWallet('zalopay')}
-                              className={`flex justify-between items-center bg-white border rounded-xl p-3.5 cursor-pointer transition-all hover:shadow-sm ${
-                                subWallet === 'zalopay' ? 'border-[#0194f3] ring-1 ring-[#0194f3]' : 'border-slate-200'
-                              }`}
+                              className={`flex justify-between items-center bg-white border rounded-xl p-3.5 cursor-pointer transition-all hover:shadow-sm ${subWallet === 'zalopay' ? 'border-[#0194f3] ring-1 ring-[#0194f3]' : 'border-slate-200'
+                                }`}
                             >
                               <div className="flex items-center gap-3">
                                 <input
@@ -596,11 +590,10 @@ export const Payment: React.FC = () => {
                             </label>
 
                             {/* ShopeePay */}
-                            <label 
+                            <label
                               onClick={() => setSubWallet('shopeepay')}
-                              className={`flex justify-between items-center bg-white border rounded-xl p-3.5 cursor-pointer transition-all hover:shadow-sm ${
-                                subWallet === 'shopeepay' ? 'border-[#0194f3] ring-1 ring-[#0194f3]' : 'border-slate-200'
-                              }`}
+                              className={`flex justify-between items-center bg-white border rounded-xl p-3.5 cursor-pointer transition-all hover:shadow-sm ${subWallet === 'shopeepay' ? 'border-[#0194f3] ring-1 ring-[#0194f3]' : 'border-slate-200'
+                                }`}
                             >
                               <div className="flex items-center gap-3">
                                 <input
@@ -617,11 +610,10 @@ export const Payment: React.FC = () => {
                             </label>
 
                             {/* VNPay */}
-                            <label 
+                            <label
                               onClick={() => setSubWallet('vnpay')}
-                              className={`flex justify-between items-center bg-white border rounded-xl p-3.5 cursor-pointer transition-all hover:shadow-sm ${
-                                subWallet === 'vnpay' ? 'border-[#0194f3] ring-1 ring-[#0194f3]' : 'border-slate-200'
-                              }`}
+                              className={`flex justify-between items-center bg-white border rounded-xl p-3.5 cursor-pointer transition-all hover:shadow-sm ${subWallet === 'vnpay' ? 'border-[#0194f3] ring-1 ring-[#0194f3]' : 'border-slate-200'
+                                }`}
                             >
                               <div className="flex items-center gap-3">
                                 <input
@@ -632,7 +624,7 @@ export const Payment: React.FC = () => {
                                   readOnly
                                   className="w-4 h-4 text-[#0194f3]"
                                 />
-                                <span className="text-xs font-black text-slate-800">VNPay Gateway</span>
+                                <span className="text-xs font-black text-slate-800">VNPay</span>
                               </div>
                               <img src="/vnpay.jpg" alt="VNPAY" className="w-10 h-10 rounded-xl object-contain border border-blue-100" />
                             </label>
@@ -704,11 +696,10 @@ export const Payment: React.FC = () => {
                       type="button"
                       disabled={submitLoading || vnpayRedirecting}
                       onClick={handlePaymentSubmit}
-                      className={`text-white font-extrabold text-sm px-8 py-3.5 rounded-xl shadow-lg transition-all hover:scale-[1.01] active:scale-95 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed ${
-                        activeOption === 'wallet' && subWallet === 'vnpay'
+                      className={`text-white font-extrabold text-sm px-8 py-3.5 rounded-xl shadow-lg transition-all hover:scale-[1.01] active:scale-95 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed ${activeOption === 'wallet' && subWallet === 'vnpay'
                           ? 'bg-[#005BAA] hover:bg-[#004a8c] shadow-blue-500/10'
                           : 'bg-[#ff5e1f] hover:bg-[#e04f16] shadow-orange-500/10'
-                      }`}
+                        }`}
                     >
                       {vnpayRedirecting ? (
                         <>
@@ -746,10 +737,10 @@ export const Payment: React.FC = () => {
 
           {/* Right Column - Hotel Summary - Sticky on scroll */}
           <div className="space-y-6 sticky top-6 self-start">
-            
+
             {/* Summary card */}
             <div className="bg-white border border-slate-150 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-              
+
               {/* Premium Traveloka-style Header with background SVG and Icon */}
               <div className="relative overflow-hidden px-4 py-2 flex items-center shrink-0 border-b border-slate-100 h-[62px]">
                 {/* Background image covering header */}
@@ -759,7 +750,7 @@ export const Payment: React.FC = () => {
                   alt="header-bg"
                   className="absolute inset-0 w-full h-full object-cover z-0"
                 />
-                
+
                 {/* Content container */}
                 <div className="relative z-10 flex items-center gap-6 w-full">
                   <img
@@ -774,7 +765,7 @@ export const Payment: React.FC = () => {
                       {language === 'vi' ? 'Tóm tắt khách sạn' : 'Hotel Summary'}
                     </h2>
                     <div className="font-medium text-sm leading-tight mt-0.5" style={{ color: 'rgb(104, 113, 118)' }}>
-                      {language === 'vi' 
+                      {language === 'vi'
                         ? `Mã đặt chỗ  ${booking ? booking.id.substring(0, 8).toUpperCase() : ''}`
                         : `Booking ID  ${booking ? booking.id.substring(0, 8).toUpperCase() : ''}`}
                     </div>
@@ -784,7 +775,7 @@ export const Payment: React.FC = () => {
 
               {/* Body */}
               <div className="p-6 space-y-5 text-sm font-semibold text-slate-650 flex-1">
-                
+
                 {/* Hotel Name */}
                 <div className="space-y-1">
                   <h4 className="font-black text-base text-slate-800 leading-tight">{hotel?.name}</h4>
@@ -824,7 +815,7 @@ export const Payment: React.FC = () => {
                 {/* Room type title */}
                 <div className="space-y-2 pt-1">
                   <p className="font-extrabold text-slate-800 text-sm">({firstItem?.quantity}x) {roomTypeName}</p>
-                  
+
                   {/* Premium Lucide icons specifications */}
                   <div className="space-y-2.5 text-xs text-slate-500 font-bold pt-0.5 pl-0.5">
                     <p className="flex items-center gap-2.5">
@@ -873,7 +864,7 @@ export const Payment: React.FC = () => {
                 {/* Contact person details with circular badge outline */}
                 <div className="space-y-3">
                   <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wide block">{language === 'vi' ? 'Chi tiết người liên lạc' : 'Contact Person Details'}</span>
-                  
+
                   <div className="flex items-center gap-3 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100/50">
                     <div className="w-9 h-9 rounded-full bg-slate-200/60 flex items-center justify-center text-slate-500 shrink-0">
                       <User className="w-5 h-5 text-slate-450" />
