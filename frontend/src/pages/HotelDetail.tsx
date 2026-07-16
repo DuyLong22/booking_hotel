@@ -1206,6 +1206,12 @@ export const HotelDetail: React.FC = () => {
 
     hotel.amenities.forEach(({ amenity }) => {
       const name = amenity.name;
+      const iconKey = (amenity.icon || '').toLowerCase();
+      if (grouped[iconKey]) {
+        grouped[iconKey].items.push(name);
+        return;
+      }
+
       const lower = name.toLowerCase();
 
       if (lower.includes('wifi') || lower.includes('internet')) {

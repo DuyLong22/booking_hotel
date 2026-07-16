@@ -120,10 +120,12 @@ export const OwnerDashboard: React.FC = () => {
   const [hotelLng, setHotelLng] = useState<number | ''>('');
   const [categoryId, setCategoryId] = useState('');
 
-  const [systemAmenities, setSystemAmenities] = useState<{ id: string; name: string }[]>([]);
+  const [systemAmenities, setSystemAmenities] = useState<{ id: string; name: string; icon?: string | null }[]>([]);
   const [systemCategories, setSystemCategories] = useState<{ id: string; name: string }[]>([]);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [customAmenityName, setCustomAmenityName] = useState('');
+  const [customAmenityCategory, setCustomAmenityCategory] = useState('general');
+  const [isAmenitiesExpanded, setIsAmenitiesExpanded] = useState(false);
   const [hotelImages, setHotelImages] = useState<{ url: string; isPrimary: boolean }[]>([]);
   const [newImageUrl, setNewImageUrl] = useState('');
 
@@ -606,7 +608,8 @@ export const OwnerDashboard: React.FC = () => {
     if (!customAmenityName.trim()) return;
     try {
       const res = await apiClient.post('/hotels/meta/amenities', {
-        name: customAmenityName.trim()
+        name: customAmenityName.trim(),
+        icon: customAmenityCategory
       });
       if (res.data.success) {
         const newAmenity = res.data.data;
@@ -628,7 +631,7 @@ export const OwnerDashboard: React.FC = () => {
   };
 
   const getGroupedSystemAmenities = () => {
-    const grouped: Record<string, { title: string; items: { id: string; name: string }[] }> = {
+    const grouped: Record<string, { title: string; items: { id: string; name: string; icon?: string | null }[] }> = {
       internet: { title: 'Internet & Truyền thông', items: [] },
       parking: { title: 'Chỗ đậu xe', items: [] },
       bathroom: { title: 'Phòng tắm', items: [] },
@@ -645,6 +648,12 @@ export const OwnerDashboard: React.FC = () => {
     };
 
     systemAmenities.forEach((amenity) => {
+      const iconKey = (amenity.icon || '').toLowerCase();
+      if (grouped[iconKey]) {
+        grouped[iconKey].items.push(amenity);
+        return;
+      }
+
       const lower = amenity.name.toLowerCase();
       if (lower.includes('wifi') || lower.includes('internet')) {
         grouped.internet.items.push(amenity);
@@ -1322,10 +1331,10 @@ export const OwnerDashboard: React.FC = () => {
                   </div>
 
                   {/* Tự thêm tiện ích mới */}
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="text"
-                      placeholder="Tự thêm tiện ích... (VD: Sân golf, Lò nướng...)"
+                      placeholder="Tên tiện ích... (VD: Sân golf, Lò nướng...)"
                       value={customAmenityName}
                       onChange={(e) => setCustomAmenityName(e.target.value)}
                       onKeyDown={(e) => {
@@ -1336,17 +1345,35 @@ export const OwnerDashboard: React.FC = () => {
                       }}
                       className="flex-1 bg-white border border-[#CBD5E1] text-[#1E293B] px-3 py-2 rounded-xl outline-none focus:border-[#2563EB] text-[10px] font-semibold placeholder-[#94A3B8]"
                     />
+                    <select
+                      value={customAmenityCategory}
+                      onChange={(e) => setCustomAmenityCategory(e.target.value)}
+                      className="bg-white border border-[#CBD5E1] text-[#1E293B] px-3 py-2 rounded-xl outline-none focus:border-[#2563EB] text-[10px] font-semibold"
+                    >
+                      <option value="bathroom">Phòng tắm</option>
+                      <option value="bedroom">Phòng ngủ</option>
+                      <option value="outdoor">Ngoài trời</option>
+                      <option value="kitchen">Nhà bếp</option>
+                      <option value="room">Tiện ích trong phòng</option>
+                      <option value="media">Truyền thông & Công nghệ</option>
+                      <option value="internet">Internet</option>
+                      <option value="parking">Chỗ đậu xe</option>
+                      <option value="services">Dịch vụ & Giải trí</option>
+                      <option value="security">An ninh</option>
+                      <option value="general">Tổng quát</option>
+                      <option value="languages">Ngôn ngữ sử dụng</option>
+                    </select>
                     <button
                       type="button"
                       onClick={handleAddCustomAmenity}
-                      className="bg-[#2563EB] text-white px-3 py-2 rounded-xl font-bold text-[10px] hover:bg-[#1d4ed8] active:scale-95 transition-all whitespace-nowrap"
+                      className="bg-[#2563EB] text-white px-3.5 py-2 rounded-xl font-bold text-[10px] hover:bg-[#1d4ed8] active:scale-95 transition-all whitespace-nowrap"
                     >
                       Thêm
                     </button>
                   </div>
 
                   {/* Danh sách tiện ích phân loại */}
-                  <div className="space-y-4 bg-slate-50 border border-slate-200/60 p-4 rounded-2xl max-h-[260px] overflow-y-auto">
+                  <div className={`space-y-4 bg-slate-50 border border-slate-200/60 p-4 rounded-2xl overflow-y-auto transition-all duration-300 ${isAmenitiesExpanded ? 'max-h-[600px]' : 'max-h-[260px]'}`}>
                     {getGroupedSystemAmenities().map((group) => (
                       <div key={group.title} className="space-y-2">
                         <h5 className="font-bold text-slate-800 text-[10px] border-b border-slate-200 pb-1 flex items-center justify-between">
@@ -1378,6 +1405,15 @@ export const OwnerDashboard: React.FC = () => {
                       </div>
                     ))}
                   </div>
+
+                  {/* Nút mở rộng/thu gọn */}
+                  <button
+                    type="button"
+                    onClick={() => setIsAmenitiesExpanded(!isAmenitiesExpanded)}
+                    className="text-[#2563EB] hover:text-[#1d4ed8] text-[10px] font-black underline flex items-center gap-1 self-start"
+                  >
+                    {isAmenitiesExpanded ? 'Thu gọn danh sách tiện nghi' : 'Mở rộng danh sách tiện nghi'}
+                  </button>
                 </div>
 
                 {/* 4. Album Hình ảnh */}
