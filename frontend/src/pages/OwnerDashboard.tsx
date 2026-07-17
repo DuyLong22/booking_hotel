@@ -184,30 +184,33 @@ export const OwnerDashboard: React.FC = () => {
         if (myHotels && myHotels.length > 0) {
           const hId = myHotels[0].id;
           setHotelId(hId);
-          setHotelName(myHotels[0].name);
-          setHotelDesc(myHotels[0].description || 'Chưa cập nhật mô tả.');
-          setCheckInTime(myHotels[0].checkInTime || '14:00');
-          setCheckOutTime(myHotels[0].checkOutTime || '12:00');
-          setHotelAddress(myHotels[0].address || '');
-          setProvinceId(myHotels[0].provinceId || '');
-          setDistrictId(myHotels[0].districtId || '');
-          setWardId(myHotels[0].wardId || '');
-          setHotelLat(myHotels[0].latitude || '');
-          setHotelLng(myHotels[0].longitude || '');
-          setCategoryId(myHotels[0].categoryId || '');
           
           const hotelDetailRes = await apiClient.get(`/hotels/${hId}`);
-          setRoomTypes(hotelDetailRes.data.data.roomTypes);
-          if (hotelDetailRes.data.data.roomTypes.length > 0) {
-            setSelectedRoomTypeId(hotelDetailRes.data.data.roomTypes[0].id);
+          const detail = hotelDetailRes.data.data;
+          
+          setHotelName(detail.name);
+          setHotelDesc(detail.description || 'Chưa cập nhật mô tả.');
+          setCheckInTime(detail.checkInTime || '14:00');
+          setCheckOutTime(detail.checkOutTime || '12:00');
+          setHotelAddress(detail.address || '');
+          setProvinceId(detail.provinceId || '');
+          setDistrictId(detail.districtId || '');
+          setWardId(detail.wardId || '');
+          setHotelLat(detail.latitude !== null && detail.latitude !== undefined ? detail.latitude : '');
+          setHotelLng(detail.longitude !== null && detail.longitude !== undefined ? detail.longitude : '');
+          setCategoryId(detail.categoryId || '');
+          
+          setRoomTypes(detail.roomTypes || []);
+          if (detail.roomTypes && detail.roomTypes.length > 0) {
+            setSelectedRoomTypeId(detail.roomTypes[0].id);
           }
 
           // Populate amenities
-          const activeAmens = hotelDetailRes.data.data.amenities?.map((a: any) => a.amenity.id) || [];
+          const activeAmens = detail.amenities?.map((a: any) => a.amenity.id) || [];
           setSelectedAmenities(activeAmens);
           
           // Populate images
-          const activeImgs = hotelDetailRes.data.data.images?.map((img: any) => ({
+          const activeImgs = detail.images?.map((img: any) => ({
             url: img.url,
             isPrimary: img.isPrimary
           })) || [];
