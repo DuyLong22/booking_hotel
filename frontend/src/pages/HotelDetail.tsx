@@ -4,15 +4,15 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setSearchCriteria } from '../store/slices/searchSlice';
 import type { RootState } from '../store';
 import apiClient from '../core/api/client';
-import { 
-  MapPin, 
-  Waves, 
-  Wifi, 
-  ParkingCircle, 
-  Dumbbell, 
-  Sparkles, 
-  Utensils, 
-  GlassWater, 
+import {
+  MapPin,
+  Waves,
+  Wifi,
+  ParkingCircle,
+  Dumbbell,
+  Sparkles,
+  Utensils,
+  GlassWater,
   User,
   Building2,
   ChevronDown,
@@ -115,7 +115,7 @@ const RoomDetailsModal = ({
                 alt={`${room.name} view ${activeImgIdx + 1}`}
                 className="w-full h-full object-cover transition-all duration-300 max-h-[400px] md:max-h-[500px]"
               />
-              
+
               {/* Slider Prev/Next (Visible on Hover) */}
               {images.length > 1 && (
                 <>
@@ -151,9 +151,8 @@ const RoomDetailsModal = ({
                     key={i}
                     type="button"
                     onClick={() => setActiveImgIdx(i)}
-                    className={`h-[48px] w-[72px] rounded-md overflow-hidden shrink-0 transition-all border-2 ${
-                      i === activeImgIdx ? 'border-blue-500 scale-102 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'
-                    }`}
+                    className={`h-[48px] w-[72px] rounded-md overflow-hidden shrink-0 transition-all border-2 ${i === activeImgIdx ? 'border-blue-500 scale-102 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'
+                      }`}
                   >
                     <img src={img.url} alt={`thumb ${i}`} className="w-full h-full object-cover" />
                   </button>
@@ -423,12 +422,12 @@ const translateAddress = (address: string, district: string, province: string, l
 
     res = res.replace(/^Quận\s+(\d+)/i, 'District $1');
     res = res.replace(/^Phường\s+(\d+)/i, 'Ward $1');
-    
+
     res = res.replace(/^Quận\s+(.+)/i, (_, p1) => {
       if (/^\d+/.test(p1.trim())) return `District ${p1.trim()}`;
       return `${removeVietnameseTones(p1.trim())} District`;
     });
-    
+
     res = res.replace(/^Phường\s+(.+)/i, (_, p1) => {
       if (/^\d+/.test(p1.trim())) return `Ward ${p1.trim()}`;
       return `${removeVietnameseTones(p1.trim())} Ward`;
@@ -441,7 +440,7 @@ const translateAddress = (address: string, district: string, province: string, l
     res = res.replace(/^Thị xã\s+(.+)/i, (_, p1) => `${removeVietnameseTones(p1.trim())} Town`);
     res = res.replace(/^Huyện\s+(.+)/i, (_, p1) => `${removeVietnameseTones(p1.trim())} District`);
     res = res.replace(/^Xã\s+(.+)/i, (_, p1) => `${removeVietnameseTones(p1.trim())} Commune`);
-    
+
     const cleanProvince = res.replace(/^Thành phố\s+/i, '').replace(/^Tỉnh\s+/i, '').trim();
     if (cleanProvince.includes('Hồ Chí Minh') || cleanProvince.toLowerCase().includes('hcm') || cleanProvince.toLowerCase().includes('ho chi minh')) {
       return 'Ho Chi Minh City';
@@ -476,7 +475,7 @@ const translateAddress = (address: string, district: string, province: string, l
   const cleanProv = translateValue(province);
 
   const parts = [cleanAddr, cleanDist, cleanProv].filter(Boolean);
-  
+
   const uniqueParts: string[] = [];
   parts.forEach(p => {
     if (!uniqueParts.some(up => up.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(up.toLowerCase()))) {
@@ -834,10 +833,10 @@ export const HotelDetail: React.FC = () => {
     if (checkIn && checkOut) {
       const inDate = new Date(checkIn);
       const outDate = new Date(checkOut);
-      const daysOfWeek = language === 'vi' 
+      const daysOfWeek = language === 'vi'
         ? ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7']
         : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      
+
       const inStr = language === 'vi'
         ? `${daysOfWeek[inDate.getDay()]}, ${inDate.getDate()} thg ${inDate.getMonth() + 1}`
         : `${daysOfWeek[inDate.getDay()]}, ${inDate.toLocaleString('en-US', { month: 'short' })} ${inDate.getDate()}`;
@@ -898,20 +897,20 @@ export const HotelDetail: React.FC = () => {
       checkOutDate: checkOut,
       guests: adults + children
     }));
-    
+
     navigate('/search');
   };
 
   const matchedProvinces = destInputText
     ? PROVINCES.filter((p) => {
-        const normInput = removeVietnameseTones(destInputText.toLowerCase()).trim();
-        const normName = removeVietnameseTones(p.name.toLowerCase());
-        const matchesName = normName.includes(normInput);
-        const matchesKeywords = p.keywords?.some(
-          (k) => k.includes(normInput) || normInput.includes(k)
-        ) || false;
-        return matchesName || matchesKeywords;
-      })
+      const normInput = removeVietnameseTones(destInputText.toLowerCase()).trim();
+      const normName = removeVietnameseTones(p.name.toLowerCase());
+      const matchesName = normName.includes(normInput);
+      const matchesKeywords = p.keywords?.some(
+        (k) => k.includes(normInput) || normInput.includes(k)
+      ) || false;
+      return matchesName || matchesKeywords;
+    })
     : [];
 
   const getNightsCount = () => {
@@ -995,19 +994,19 @@ export const HotelDetail: React.FC = () => {
 
   const groupRoomTypes = () => {
     if (!hotel || !hotel.roomTypes) return [];
-    
+
     const groups: { baseName: string; roomTypes: RoomTypeDetail[] }[] = [];
-    
+
     // Lọc theo tag được chọn
     const filteredRoomTypes = hotel.roomTypes.filter((rt) => {
       return selectedTags.every((tag) => matchTag(rt, tag));
     });
-    
+
     filteredRoomTypes.forEach((rt) => {
       // Tách tên loại phòng dựa trên ký tự -, ( hoặc [ để lấy tên cơ sở (ví dụ: "Phòng Deluxe Double")
       const parts = rt.name.split(/[-([|]/);
       const baseName = parts[0].trim();
-      
+
       const existing = groups.find(g => g.baseName.toLowerCase() === baseName.toLowerCase());
       if (existing) {
         existing.roomTypes.push(rt);
@@ -1018,7 +1017,7 @@ export const HotelDetail: React.FC = () => {
         });
       }
     });
-    
+
     return groups;
   };
 
@@ -1252,10 +1251,10 @@ export const HotelDetail: React.FC = () => {
 
   const getFeaturedAmenities = () => {
     const featuredKeywords = ['wifi', 'đỗ xe', 'đậu xe', 'bể bơi', 'hồ bơi', 'điều hòa', 'máy lạnh', 'lễ tân', 'nhà hàng', 'bữa sáng', 'gym', 'spa', 'thang máy'];
-    const matches = hotel.amenities.filter(({ amenity }) => 
+    const matches = hotel.amenities.filter(({ amenity }) =>
       featuredKeywords.some(kw => amenity.name.toLowerCase().includes(kw))
     );
-    const nonMatches = hotel.amenities.filter(({ amenity }) => 
+    const nonMatches = hotel.amenities.filter(({ amenity }) =>
       !featuredKeywords.some(kw => amenity.name.toLowerCase().includes(kw))
     );
     const combined = [...matches, ...nonMatches];
@@ -1428,7 +1427,7 @@ export const HotelDetail: React.FC = () => {
                             </span>
                             <span className="w-6"></span>
                           </div>
-                          
+
                           <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-400 mb-2">
                             {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(d => <span key={d}>{d}</span>)}
                           </div>
@@ -1473,7 +1472,7 @@ export const HotelDetail: React.FC = () => {
                               &gt;
                             </button>
                           </div>
-                          
+
                           <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-400 mb-2">
                             {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(d => <span key={d}>{d}</span>)}
                           </div>
@@ -1640,7 +1639,7 @@ export const HotelDetail: React.FC = () => {
       {/* Main Details Body Container - A single unified white box sheet */}
       <div className="max-w-[1350px] mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <div className="bg-white border border-slate-150 rounded-3xl p-6 sm:p-8 space-y-10 shadow-sm">
-          
+
           {/* Title Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
             <div className="space-y-2">
@@ -1656,7 +1655,7 @@ export const HotelDetail: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 shrink-0">
               <MapPin className="w-5 h-5 text-[#006ce4] shrink-0" />
               <span className="text-sm font-bold text-slate-700">
@@ -1727,7 +1726,7 @@ export const HotelDetail: React.FC = () => {
                   }}
                   className="text-xs font-black text-[#006ce4] hover:text-[#0053b4] flex items-center gap-1 mt-3"
                 >
-                  {language === 'vi' ? `Xem thêm tất cả ${hotel.amenities.length} tiện nghi` : `See all ${hotel.amenities.length} amenities`}
+                  {language === 'vi' ? `Xem thêm tất cả` : `See all amenities`}
                   <span className="text-[10px]">↓</span>
                 </button>
               )}
@@ -1758,11 +1757,10 @@ export const HotelDetail: React.FC = () => {
                         key={tag}
                         type="button"
                         onClick={() => toggleTag(lookupTag)}
-                        className={`font-semibold text-xs px-4 py-2 rounded-full transition-colors active:scale-95 shadow-sm ${
-                          isActive
+                        className={`font-semibold text-xs px-4 py-2 rounded-full transition-colors active:scale-95 shadow-sm ${isActive
                             ? 'bg-[#006ce4] text-white hover:bg-[#0056b3]'
                             : 'bg-[#f0f4fa] text-[#006ce4] hover:bg-[#e2edf8]'
-                        }`}
+                          }`}
                       >
                         {tag}
                       </button>
@@ -1770,7 +1768,7 @@ export const HotelDetail: React.FC = () => {
                   })}
                 </div>
               </div>
-              
+
               <div className="border-l border-slate-200 pl-6 flex flex-col justify-center min-w-[260px] self-stretch md:self-auto">
                 <span className="text-[10px] font-bold text-slate-500 mb-1">
                   {language === 'vi' ? 'Hiển thị giá' : 'Show price'}
@@ -1800,7 +1798,7 @@ export const HotelDetail: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* List of Room Types Blocks */}
             <div className="space-y-6">
               {groupRoomTypes().map((group) => {
@@ -1855,9 +1853,8 @@ export const HotelDetail: React.FC = () => {
                                   {roomImages.map((_, i) => (
                                     <span
                                       key={i}
-                                      className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                                        i === imgIdx ? 'bg-[#006ce4]' : 'bg-white/70'
-                                      }`}
+                                      className={`w-1.5 h-1.5 rounded-full transition-colors ${i === imgIdx ? 'bg-[#006ce4]' : 'bg-white/70'
+                                        }`}
                                     ></span>
                                   ))}
                                 </div>
@@ -1865,14 +1862,14 @@ export const HotelDetail: React.FC = () => {
                             );
                           })()}
                         </div>
-                        
+
                         {/* Specs: NO background, NO borders, larger text */}
                         <div className="space-y-3 text-sm text-slate-700 font-bold">
                           <div className="flex items-center gap-2">
                             <span className="text-slate-400 text-base">📐</span>
                             <span>{language === 'vi' ? 'Diện tích:' : 'Size:'} {representative.size || 25} m²</span>
                           </div>
-                          
+
                           <div className="flex items-center gap-2">
                             <span className="text-slate-400 text-base">🛏️</span>
                             <span>{representative.bedCount} {language === 'vi' ? 'Giường lớn' : 'Large beds'}</span>
@@ -1929,12 +1926,12 @@ export const HotelDetail: React.FC = () => {
                                     <td className="px-5 py-5 w-[32%] space-y-2 border-r border-slate-100 break-words">
                                       <p className="font-extrabold text-slate-900 text-sm sm:text-base break-words">{rt.name}</p>
                                       <p className="text-xs text-slate-500 font-normal leading-relaxed break-words">{rt.description}</p>
-                                      
+
                                       {/* Policy based on DB amenities */}
                                       <p className="text-xs text-emerald-600 font-bold flex items-center gap-1.5">
                                         <span>✓</span> {language === 'vi' ? 'Chính sách tiêu chuẩn' : 'Standard policy'}
                                       </p>
-                                      
+
                                       {/* Render DB amenities as mini badges */}
                                       <div className="flex flex-wrap gap-1.5 pt-1">
                                         {rt.amenities.map((a) => (
@@ -2192,14 +2189,14 @@ export const HotelDetail: React.FC = () => {
             })()}
 
             {/* Columns of Grouped Categories */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-2">
+            <div className="columns-1 md:columns-2 lg:columns-3 gap-8 [column-fill:balance] pt-2">
               {groupedAmenities.map((cat) => (
-                <div key={cat.titleVi} className="space-y-3.5">
-                  <h3 className="font-extrabold text-slate-800 text-sm sm:text-base flex items-center gap-2 border-b border-slate-100 pb-2.5">
+                <div key={cat.titleVi} className="break-inside-avoid-column mb-6 space-y-3">
+                  <h3 className="font-extrabold text-slate-800 text-sm sm:text-base flex items-center gap-2 pb-1.5">
                     <span className="text-[#006ce4] shrink-0">{cat.icon}</span>
                     <span>{language === 'vi' ? cat.titleVi : cat.titleEn}</span>
                   </h3>
-                  <ul className="space-y-2.5 text-xs text-slate-655 font-bold pl-0.5">
+                  <ul className="space-y-2 text-xs text-slate-655 font-bold pl-0.5">
                     {cat.items.map((item) => (
                       <li key={item} className="flex items-start gap-2.5">
                         <span className="text-emerald-500 font-black text-xs shrink-0 mt-0.5">✓</span>
@@ -2249,7 +2246,7 @@ export const HotelDetail: React.FC = () => {
                       className="mt-5 w-full bg-[#006ce4] hover:bg-[#0056b3] text-white font-extrabold text-sm py-2.5 px-4 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
                     >
                       <Sparkles className="w-4 h-4" />
-                      {showReviewForm 
+                      {showReviewForm
                         ? (language === 'vi' ? 'Đóng khung đánh giá' : 'Close review form')
                         : (language === 'vi' ? 'Viết đánh giá của bạn' : 'Write a review')
                       }
@@ -2297,7 +2294,7 @@ export const HotelDetail: React.FC = () => {
                       className="bg-[#006ce4] hover:bg-[#0056b3] text-white font-extrabold text-sm py-2.5 px-5 rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-2 mx-auto"
                     >
                       <Sparkles className="w-4 h-4" />
-                      {showReviewForm 
+                      {showReviewForm
                         ? (language === 'vi' ? 'Đóng khung đánh giá' : 'Close review form')
                         : (language === 'vi' ? 'Viết đánh giá đầu tiên' : 'Write the first review')
                       }
@@ -2344,9 +2341,8 @@ export const HotelDetail: React.FC = () => {
                                 type="button"
                                 key={star}
                                 onClick={() => crit.setter(star)}
-                                className={`text-lg leading-none focus:outline-none transition-all ${
-                                  star <= crit.value ? 'text-amber-400 scale-110' : 'text-slate-200 hover:text-amber-200'
-                                }`}
+                                className={`text-lg leading-none focus:outline-none transition-all ${star <= crit.value ? 'text-amber-400 scale-110' : 'text-slate-200 hover:text-amber-200'
+                                  }`}
                               >
                                 ★
                               </button>
@@ -2495,11 +2491,10 @@ export const HotelDetail: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => setSelectedMapCategory(tab.id as any)}
-                    className={`text-[10px] font-black px-3 py-1.5 rounded-full transition-all shrink-0 uppercase tracking-wider ${
-                      selectedMapCategory === tab.id
+                    className={`text-[10px] font-black px-3 py-1.5 rounded-full transition-all shrink-0 uppercase tracking-wider ${selectedMapCategory === tab.id
                         ? 'bg-[#006ce4] text-white shadow-sm shadow-blue-500/20'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-605'
-                    }`}
+                      }`}
                   >
                     {tab.label}
                   </button>
@@ -2511,11 +2506,10 @@ export const HotelDetail: React.FC = () => {
                 {/* Hotel default location card */}
                 <div
                   onClick={() => setActiveMapQuery(hotel.name + ' ' + (hotel.address || ''))}
-                  className={`p-3 rounded-xl border transition-all cursor-pointer flex flex-col gap-1 ${
-                    activeMapQuery === hotel.name + ' ' + (hotel.address || '')
+                  className={`p-3 rounded-xl border transition-all cursor-pointer flex flex-col gap-1 ${activeMapQuery === hotel.name + ' ' + (hotel.address || '')
                       ? 'bg-blue-50/50 border-blue-500 shadow-sm'
                       : 'bg-white border-slate-200 hover:border-slate-300'
-                  }`}
+                    }`}
                 >
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
@@ -2541,11 +2535,10 @@ export const HotelDetail: React.FC = () => {
                       <div
                         key={idx}
                         onClick={() => setActiveMapQuery(loc.name + ' ' + (hotel.address?.split(',').pop() || ''))}
-                        className={`p-3 rounded-xl border transition-all cursor-pointer flex justify-between items-center gap-3 ${
-                          activeMapQuery === loc.name + ' ' + (hotel.address?.split(',').pop() || '')
+                        className={`p-3 rounded-xl border transition-all cursor-pointer flex justify-between items-center gap-3 ${activeMapQuery === loc.name + ' ' + (hotel.address?.split(',').pop() || '')
                             ? 'bg-blue-50/50 border-blue-500 shadow-sm'
                             : 'bg-white border-slate-200 hover:border-slate-300'
-                        }`}
+                          }`}
                       >
                         <span className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5 line-clamp-1">
                           {getIcon()}
