@@ -34,7 +34,8 @@ export const Register: React.FC = () => {
       });
 
       if (res.data.success) {
-        setShowOtpModal(true);
+        alert('Đăng ký tài khoản thành công! Bạn có thể tiến hành đăng nhập.');
+        navigate('/login');
       } else {
         setError(res.data.message || 'Đăng ký thất bại');
       }

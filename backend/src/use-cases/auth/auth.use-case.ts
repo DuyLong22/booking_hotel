@@ -27,12 +27,7 @@ export class AuthUseCase {
     // Băm mật khẩu
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Tạo mã OTP xác thực
-    const otpCode = this.generateOTP();
-    const otpExpiresAt = new Date();
-    otpExpiresAt.setMinutes(otpExpiresAt.getMinutes() + 10); // Hạn 10 phút
-
-    // Tạo user mới ở trạng thái chưa xác thực (isVerified = false)
+    // Tạo user mới ở trạng thái đã xác thực trực tiếp (isVerified = true) để tiện thử nghiệm
     const user = await prisma.user.create({
       data: {
         email,
@@ -40,19 +35,11 @@ export class AuthUseCase {
         fullName,
         phoneNumber,
         role: role as Role,
-        isVerified: false,
-        otpCode,
-        otpExpiresAt,
+        isVerified: true,
+        otpCode: null,
+        otpExpiresAt: null,
       },
     });
-
-    // Gửi email OTP
-    try {
-      await mailService.sendOTP(email, otpCode, fullName);
-    } catch (mailError) {
-      console.error('[Register AuthUseCase] Lỗi gửi email OTP:', mailError);
-      // Vẫn cho đăng ký thành công, user có thể yêu cầu gửi lại OTP sau
-    }
 
     return {
       userId: user.id,

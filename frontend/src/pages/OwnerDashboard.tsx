@@ -4,15 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import type { RootState } from '../store';
 import apiClient from '../core/api/client';
 import { io, Socket } from 'socket.io-client';
-import { 
-  Percent, Plus, Search, Bell, MessageSquare, 
-  Sun, Moon, Globe, LogOut, Settings, User, Menu, 
-  Hotel, Bed, CalendarRange, CreditCard, Star, FileText, BarChart3, 
+import {
+  Percent, Plus, Search, Bell, MessageSquare,
+  Sun, Moon, Globe, LogOut, Settings, User, Menu,
+  Hotel, Bed, CalendarRange, CreditCard, Star, FileText, BarChart3,
   CheckCircle, Trash2, ChevronDown, Sliders, RefreshCw, X,
   Download, Send, ShieldAlert
 } from 'lucide-react';
-import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, 
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, BarChart, Bar, Cell
 } from 'recharts';
 
@@ -52,7 +52,7 @@ interface Message {
 export const OwnerDashboard: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const navigate = useNavigate();
-  
+
   // Layout States
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeMenu, setActiveMenu] = useState<
@@ -180,14 +180,14 @@ export const OwnerDashboard: React.FC = () => {
         if (!user?.id) return;
         const res = await apiClient.get(`/hotels?ownerId=${user.id}`);
         const myHotels = res.data.data.hotels;
-        
+
         if (myHotels && myHotels.length > 0) {
           const hId = myHotels[0].id;
           setHotelId(hId);
-          
+
           const hotelDetailRes = await apiClient.get(`/hotels/${hId}`);
           const detail = hotelDetailRes.data.data;
-          
+
           setHotelName(detail.name);
           setHotelDesc(detail.description || 'Chưa cập nhật mô tả.');
           setCheckInTime(detail.checkInTime || '14:00');
@@ -199,7 +199,7 @@ export const OwnerDashboard: React.FC = () => {
           setHotelLat(detail.latitude !== null && detail.latitude !== undefined ? detail.latitude : '');
           setHotelLng(detail.longitude !== null && detail.longitude !== undefined ? detail.longitude : '');
           setCategoryId(detail.categoryId || '');
-          
+
           setRoomTypes(detail.roomTypes || []);
           if (detail.roomTypes && detail.roomTypes.length > 0) {
             setSelectedRoomTypeId(detail.roomTypes[0].id);
@@ -208,7 +208,7 @@ export const OwnerDashboard: React.FC = () => {
           // Populate amenities
           const activeAmens = detail.amenities?.map((a: any) => a.amenity.id) || [];
           setSelectedAmenities(activeAmens);
-          
+
           // Populate images
           const activeImgs = detail.images?.map((img: any) => ({
             url: img.url,
@@ -333,7 +333,7 @@ export const OwnerDashboard: React.FC = () => {
           const d = new Date();
           d.setDate(d.getDate() + i);
           const dateStr = d.toISOString().split('T')[0];
-          
+
           const override = overrides.find((o: any) => {
             const oDate = new Date(o.date).toISOString().split('T')[0];
             return oDate === dateStr;
@@ -455,7 +455,7 @@ export const OwnerDashboard: React.FC = () => {
       };
 
       await apiClient.post(`/hotels/room-types/${selectedRoomTypeId}/price-calendar`, updateData);
-      
+
       setCalendarDays((prev) =>
         prev.map((d) =>
           d.date === editDay.date
@@ -620,7 +620,7 @@ export const OwnerDashboard: React.FC = () => {
         amenityIds: selectedAmenities,
         images: hotelImages
       });
-      triggerToast('Cập nhật hồ sơ khách sạn thành công! Vui lòng chờ kiểm duyệt từ Admin.');
+      triggerToast('Cập nhật hồ sơ khách sạn thành công.');
     } catch (err) {
       console.error(err);
       alert('Không thể cập nhật thông tin hồ sơ.');
@@ -656,21 +656,21 @@ export const OwnerDashboard: React.FC = () => {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    
+
     setIsUploadingImage(true);
     try {
       const uploadedUrls: { url: string; isPrimary: boolean }[] = [];
-      
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        
+
         const base64 = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.readAsDataURL(file);
           reader.onload = () => resolve(reader.result as string);
           reader.onerror = (error) => reject(error);
         });
-        
+
         const res = await apiClient.post('/hotels/upload-image', { image: base64 });
         if (res.data.success) {
           uploadedUrls.push({
@@ -679,7 +679,7 @@ export const OwnerDashboard: React.FC = () => {
           });
         }
       }
-      
+
       if (uploadedUrls.length > 0) {
         setHotelImages(prev => {
           const hasPrimary = prev.some(img => img.isPrimary);
@@ -787,7 +787,7 @@ export const OwnerDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen font-sans flex flex-col bg-[#F8FAFC] text-[#1E293B]">
-      
+
       {/* TOAST NOTIFICATION */}
       {successToast && (
         <div className="fixed bottom-6 right-6 bg-emerald-500 text-white font-extrabold px-6 py-4 rounded-xl shadow-2xl z-55 flex items-center gap-3 animate-bounce">
@@ -798,16 +798,16 @@ export const OwnerDashboard: React.FC = () => {
 
       {/* HEADER (70px height) */}
       <header className="h-[70px] border-b border-[#E2E8F0] px-6 flex justify-between items-center z-40 sticky top-0 bg-white shadow-[0_4px_12px_rgba(15,23,42,0.02)]">
-        
+
         {/* Left header */}
         <div className="flex items-center gap-4">
-          <button 
+          <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className="p-2.5 rounded-xl hover:bg-slate-100 transition-colors text-[#64748B]"
           >
             <Menu className="w-5 h-5" />
           </button>
-          
+
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center text-white font-black text-sm">
               CB
@@ -821,8 +821,8 @@ export const OwnerDashboard: React.FC = () => {
         {/* Middle search */}
         <div className="hidden md:flex items-center w-80 bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl px-3 py-1.5 focus-within:ring-2 focus-within:ring-[#2563EB]/25 focus-within:border-[#2563EB] focus-within:bg-white transition-all">
           <Search className="w-4 h-4 text-[#94A3B8] mr-2" />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder={language === 'vi' ? 'Tìm đơn đặt phòng...' : 'Search booking...'}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -832,9 +832,9 @@ export const OwnerDashboard: React.FC = () => {
 
         {/* Right tools */}
         <div className="flex items-center gap-3.5">
-          
+
           {/* Language selection */}
-          <button 
+          <button
             onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
             className="flex items-center gap-1 text-xs font-black px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-[#64748B] hover:text-[#2563EB] transition-colors"
           >
@@ -843,7 +843,7 @@ export const OwnerDashboard: React.FC = () => {
           </button>
 
           {/* Theme switch */}
-          <button 
+          <button
             onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
             className="p-2.5 rounded-xl hover:bg-slate-100 transition-colors text-[#64748B] hover:text-[#2563EB]"
           >
@@ -852,14 +852,14 @@ export const OwnerDashboard: React.FC = () => {
 
           {/* Notification bell */}
           <div ref={notificationsDropdownRef} className="relative">
-            <button 
+            <button
               onClick={() => setNotificationsOpen(!notificationsOpen)}
               className="p-2.5 rounded-xl hover:bg-slate-100 relative transition-colors text-[#64748B] hover:text-[#2563EB]"
             >
               <Bell className="w-4.5 h-4.5" />
               <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-white"></span>
             </button>
-            
+
             {notificationsOpen && (
               <div className="absolute right-0 mt-3 w-80 rounded-2xl border border-[#E2E8F0] p-4 bg-white shadow-[0_4px_12px_rgba(15,23,42,0.08)] z-55 animate-in fade-in slide-in-from-top-3 duration-200">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
@@ -878,7 +878,7 @@ export const OwnerDashboard: React.FC = () => {
 
           {/* User Profile dropdown */}
           <div ref={profileDropdownRef} className="relative">
-            <button 
+            <button
               onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
               className="flex items-center gap-2 focus:outline-none"
             >
@@ -915,34 +915,32 @@ export const OwnerDashboard: React.FC = () => {
 
       {/* DASHBOARD WORKSPACE */}
       <div className="flex-1 flex flex-col lg:flex-row relative">
-        
+
         {/* COLLAPSIBLE SIDEBAR */}
         <aside className={`shrink-0 z-35 transition-all duration-300 lg:sticky lg:top-[70px] lg:h-[calc(100vh-70px)] ${sidebarCollapsed ? 'w-0 lg:w-20' : 'w-full lg:w-72'} bg-[#0F172A] border-r border-[#1E293B]`}>
           <div className="p-5 flex flex-col gap-1.5 h-full overflow-y-auto">
-            
+
             <div className="space-y-6">
-              
+
               {/* OPERATE */}
               <div>
                 <span className={`text-[9px] font-black uppercase tracking-wider block mb-2 text-slate-400 ${sidebarCollapsed ? 'lg:text-center' : ''}`}>
                   {!sidebarCollapsed ? (language === 'vi' ? 'Vận hành' : 'Operate') : '••'}
                 </span>
-                
-                <button 
+
+                <button
                   onClick={() => setActiveMenu('dashboard')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    activeMenu === 'dashboard' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${activeMenu === 'dashboard' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                    }`}
                 >
                   <BarChart3 className="w-4 h-4 shrink-0" />
                   {!sidebarCollapsed && <span>Dashboard</span>}
                 </button>
 
-                <button 
+                <button
                   onClick={() => setActiveMenu('hotel')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all mt-1 ${
-                    activeMenu === 'hotel' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all mt-1 ${activeMenu === 'hotel' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                    }`}
                 >
                   <Hotel className="w-4 h-4 shrink-0" />
                   {!sidebarCollapsed && <span>{language === 'vi' ? 'Khách sạn của tôi' : 'My Hotel'}</span>}
@@ -955,31 +953,28 @@ export const OwnerDashboard: React.FC = () => {
                   {!sidebarCollapsed ? (language === 'vi' ? 'Khách hàng & Đặt phòng' : 'Rooms & Bookings') : '••'}
                 </span>
 
-                <button 
+                <button
                   onClick={() => setActiveMenu('rooms')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    activeMenu === 'rooms' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${activeMenu === 'rooms' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                    }`}
                 >
                   <Bed className="w-4 h-4 shrink-0" />
                   {!sidebarCollapsed && <span>{language === 'vi' ? 'Danh sách phòng' : 'Rooms List'}</span>}
                 </button>
 
-                <button 
+                <button
                   onClick={() => setActiveMenu('bookings')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all mt-1 ${
-                    activeMenu === 'bookings' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all mt-1 ${activeMenu === 'bookings' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                    }`}
                 >
                   <CalendarRange className="w-4 h-4 shrink-0" />
                   {!sidebarCollapsed && <span>{language === 'vi' ? 'Đơn đặt phòng' : 'Bookings'}</span>}
                 </button>
 
-                <button 
+                <button
                   onClick={() => setActiveMenu('calendar')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all mt-1 ${
-                    activeMenu === 'calendar' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all mt-1 ${activeMenu === 'calendar' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                    }`}
                 >
                   <Sliders className="w-4 h-4 shrink-0" />
                   {!sidebarCollapsed && <span>{language === 'vi' ? 'Lịch giá & Availability' : 'Avail Calendar'}</span>}
@@ -992,21 +987,19 @@ export const OwnerDashboard: React.FC = () => {
                   {!sidebarCollapsed ? (language === 'vi' ? 'Khuyến mãi & Tài chính' : 'Finance') : '••'}
                 </span>
 
-                <button 
+                <button
                   onClick={() => setActiveMenu('promotions')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    activeMenu === 'promotions' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${activeMenu === 'promotions' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                    }`}
                 >
                   <Percent className="w-4 h-4 shrink-0" />
                   {!sidebarCollapsed && <span>{language === 'vi' ? 'Voucher & Flash Sale' : 'Promotions'}</span>}
                 </button>
 
-                <button 
+                <button
                   onClick={() => setActiveMenu('finance')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all mt-1 ${
-                    activeMenu === 'finance' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all mt-1 ${activeMenu === 'finance' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                    }`}
                 >
                   <CreditCard className="w-4 h-4 shrink-0" />
                   {!sidebarCollapsed && <span>{language === 'vi' ? 'Giao dịch & Số dư' : 'Finance Info'}</span>}
@@ -1019,21 +1012,19 @@ export const OwnerDashboard: React.FC = () => {
                   {!sidebarCollapsed ? (language === 'vi' ? 'Chăm sóc & Phản hồi' : 'CRM & Support') : '••'}
                 </span>
 
-                <button 
+                <button
                   onClick={() => setActiveMenu('reviews')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    activeMenu === 'reviews' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${activeMenu === 'reviews' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                    }`}
                 >
                   <Star className="w-4 h-4 shrink-0" />
                   {!sidebarCollapsed && <span>{language === 'vi' ? 'Đánh giá & Trả lời' : 'Reviews'}</span>}
                 </button>
 
-                <button 
+                <button
                   onClick={() => setActiveMenu('support')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all mt-1 ${
-                    activeMenu === 'support' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all mt-1 ${activeMenu === 'support' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                    }`}
                 >
                   <MessageSquare className="w-4 h-4 shrink-0" />
                   {!sidebarCollapsed && <span>{language === 'vi' ? 'Tư vấn trực tuyến' : 'Live Chat'}</span>}
@@ -1046,21 +1037,19 @@ export const OwnerDashboard: React.FC = () => {
                   {!sidebarCollapsed ? (language === 'vi' ? 'Cấu hình chung' : 'Reports & Settings') : '••'}
                 </span>
 
-                <button 
+                <button
                   onClick={() => setActiveMenu('reports')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    activeMenu === 'reports' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${activeMenu === 'reports' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                    }`}
                 >
                   <FileText className="w-4 h-4 shrink-0" />
                   {!sidebarCollapsed && <span>{language === 'vi' ? 'Thống kê vận hành' : 'Operational Reports'}</span>}
                 </button>
 
-                <button 
+                <button
                   onClick={() => setActiveMenu('settings')}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all mt-1 ${
-                    activeMenu === 'settings' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all mt-1 ${activeMenu === 'settings' ? 'bg-[#2563EB] text-white' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                    }`}
                 >
                   <Settings className="w-4 h-4 shrink-0" />
                   {!sidebarCollapsed && <span>{language === 'vi' ? 'Cấu hình tài khoản' : 'Settings'}</span>}
@@ -1074,7 +1063,7 @@ export const OwnerDashboard: React.FC = () => {
 
         {/* WORKSPACE AREA */}
         <main className="flex-1 p-6 sm:p-8 bg-[#F8FAFC]">
-          
+
           {/* Breadcrumbs */}
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -1094,7 +1083,7 @@ export const OwnerDashboard: React.FC = () => {
           {/* 1. DASHBOARD VIEW */}
           {activeMenu === 'dashboard' && (
             <div className="space-y-6">
-              
+
               {/* 10 STAT STATISTIC CARDS */}
               <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="p-4 bg-white border border-[#E2E8F0] rounded-2xl shadow-[0_4px_12px_rgba(15,23,42,0.04)]">
@@ -1163,8 +1152,8 @@ export const OwnerDashboard: React.FC = () => {
                       <AreaChart data={chartData}>
                         <defs>
                           <linearGradient id="colorRevenueOwner" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#2563EB" stopOpacity={0.2}/>
-                            <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="#2563EB" stopOpacity={0.2} />
+                            <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
@@ -1210,7 +1199,7 @@ export const OwnerDashboard: React.FC = () => {
                     </h3>
                     <button onClick={() => setActiveMenu('bookings')} className="text-[10px] font-black text-[#2563EB] hover:underline uppercase">View All</button>
                   </div>
-                  
+
                   <div className="overflow-x-auto border border-[#E2E8F0] rounded-xl">
                     <table className="min-w-full text-xs font-semibold text-slate-650 text-left">
                       <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[10px] uppercase text-[#475569] font-bold">
@@ -1289,18 +1278,18 @@ export const OwnerDashboard: React.FC = () => {
                   Cập nhật yêu cầu phê duyệt lại
                 </span>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs font-semibold">
-                
+
                 {/* Cột 1: Thông tin cơ bản & Thời gian */}
                 <div className="space-y-4">
                   <h4 className="font-black text-[#2563EB] uppercase tracking-wider text-[10px]">1. Thông tin cơ bản & Thời gian</h4>
-                  
+
                   <div className="space-y-1">
                     <label className="text-[10px] text-[#64748B] font-bold uppercase">Tên khách sạn</label>
                     <input type="text" value={hotelName} onChange={(e) => setHotelName(e.target.value)} className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] p-2.5 rounded-xl outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold" />
                   </div>
-                  
+
                   <div className="space-y-1">
                     <label className="text-[10px] text-[#64748B] font-bold uppercase">Danh mục loại hình</label>
                     <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] p-2.5 rounded-xl outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold cursor-pointer">
@@ -1336,7 +1325,7 @@ export const OwnerDashboard: React.FC = () => {
                 {/* Cột 2: Địa chỉ & Vị trí tọa độ */}
                 <div className="space-y-4">
                   <h4 className="font-black text-[#2563EB] uppercase tracking-wider text-[10px]">2. Địa điểm & Vị trí bản đồ</h4>
-                  
+
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
                       <label className="text-[9px] text-[#64748B] font-bold uppercase">Tỉnh / Thành phố</label>
@@ -1390,7 +1379,7 @@ export const OwnerDashboard: React.FC = () => {
 
               {/* Dưới: Tiện ích & Hình ảnh */}
               <div className="border-t border-[#E2E8F0] pt-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-xs font-semibold">
-                
+
                 {/* 3. Tiện ích khách sạn */}
                 <div className="space-y-3">
                   <div className="flex justify-between items-center border-b border-[#E2E8F0] pb-2">
@@ -1403,10 +1392,10 @@ export const OwnerDashboard: React.FC = () => {
                       Thiết lập tiện ích ({selectedAmenities.length})
                     </button>
                   </div>
-                  
+
                   {/* Tóm tắt các tiện ích đã chọn */}
                   {selectedAmenities.length > 0 ? (
-                    <div 
+                    <div
                       onClick={() => setIsAmenitiesModalOpen(true)}
                       className="bg-slate-50 border border-slate-200/60 p-4 rounded-2xl flex flex-wrap gap-1.5 max-h-[180px] overflow-y-auto cursor-pointer hover:bg-slate-100/50 transition-colors"
                     >
@@ -1419,7 +1408,7 @@ export const OwnerDashboard: React.FC = () => {
                         ))}
                     </div>
                   ) : (
-                    <div 
+                    <div
                       onClick={() => setIsAmenitiesModalOpen(true)}
                       className="border border-dashed border-slate-300 hover:border-[#2563EB] rounded-2xl p-6 text-center cursor-pointer text-slate-400 hover:text-[#2563EB] transition-colors"
                     >
@@ -1432,7 +1421,7 @@ export const OwnerDashboard: React.FC = () => {
                 {/* 4. Album Hình ảnh */}
                 <div className="space-y-3">
                   <h4 className="font-black text-[#2563EB] uppercase tracking-wider text-[10px]">4. Hình ảnh khách sạn</h4>
-                  
+
                   {/* Tải ảnh từ thiết bị cục bộ */}
                   <div className="flex flex-col sm:flex-row gap-3 items-stretch">
                     <label className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 hover:border-[#2563EB] hover:bg-blue-50/10 rounded-2xl p-4 cursor-pointer transition-all text-center relative group min-h-[90px] bg-slate-50/20">
@@ -1502,9 +1491,8 @@ export const OwnerDashboard: React.FC = () => {
                             onClick={() => {
                               setHotelImages(prev => prev.map((item, i) => ({ ...item, isPrimary: i === idx })));
                             }}
-                            className={`text-[9px] font-black px-1.5 py-0.5 rounded-full w-fit ${
-                              img.isPrimary ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-650 border border-slate-200 hover:bg-slate-200'
-                            }`}
+                            className={`text-[9px] font-black px-1.5 py-0.5 rounded-full w-fit ${img.isPrimary ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-650 border border-slate-200 hover:bg-slate-200'
+                              }`}
                           >
                             {img.isPrimary ? 'Ảnh chính' : 'Đặt chính'}
                           </button>
@@ -1578,14 +1566,14 @@ export const OwnerDashboard: React.FC = () => {
           {activeMenu === 'bookings' && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-3 border-b border-[#E2E8F0]">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder={language === 'vi' ? 'Nhập tên khách hàng cần tìm...' : 'Search guest name...'}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl px-4 py-2 text-xs outline-none font-semibold focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all"
                 />
-                <select 
+                <select
                   value={bookingStatusFilter}
                   onChange={(e) => setBookingStatusFilter(e.target.value)}
                   className="bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl px-4 py-2 text-xs outline-none font-semibold focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all"
@@ -1626,13 +1614,12 @@ export const OwnerDashboard: React.FC = () => {
                           <td className="px-4 py-4 text-[#64748B]">{b.checkInDate} / {b.checkOutDate}</td>
                           <td className="px-4 py-4 font-black text-[#0F172A]">{b.finalPrice.toLocaleString()} đ</td>
                           <td className="px-4 py-4">
-                            <span className={`px-2 py-0.5 rounded font-black text-[9px] ${
-                              b.status === 'CONFIRMED' ? 'bg-[#DCFCE7] text-[#166534]' :
-                              b.status === 'CHECKED_IN' ? 'bg-[#DBEAFE] text-[#1D4ED8]' :
-                              b.status === 'PENDING' ? 'bg-[#FEF3C7] text-[#92400E]' :
-                              b.status === 'CANCELLED' ? 'bg-[#FEE2E2] text-[#DC2626]' :
-                              b.status === 'CHECKED_OUT' ? 'bg-[#EDE9FE] text-[#6D28D9]' : 'bg-[#F3F4F6] text-[#6B7280]'
-                            }`}>
+                            <span className={`px-2 py-0.5 rounded font-black text-[9px] ${b.status === 'CONFIRMED' ? 'bg-[#DCFCE7] text-[#166534]' :
+                                b.status === 'CHECKED_IN' ? 'bg-[#DBEAFE] text-[#1D4ED8]' :
+                                  b.status === 'PENDING' ? 'bg-[#FEF3C7] text-[#92400E]' :
+                                    b.status === 'CANCELLED' ? 'bg-[#FEE2E2] text-[#DC2626]' :
+                                      b.status === 'CHECKED_OUT' ? 'bg-[#EDE9FE] text-[#6D28D9]' : 'bg-[#F3F4F6] text-[#6B7280]'
+                              }`}>
                               {b.status}
                             </span>
                           </td>
@@ -1664,7 +1651,7 @@ export const OwnerDashboard: React.FC = () => {
             <div className="space-y-4">
               <div className="flex gap-4 items-center">
                 <label className="text-xs font-bold text-[#64748B]">Hạng phòng hiển thị:</label>
-                <select 
+                <select
                   value={selectedRoomTypeId}
                   onChange={(e) => setSelectedRoomTypeId(e.target.value)}
                   className="bg-white border border-[#CBD5E1] text-[#2563EB] rounded-xl px-4 py-2 text-xs outline-none font-bold focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all"
@@ -1680,26 +1667,24 @@ export const OwnerDashboard: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-7 gap-4">
                   {calendarDays.map((day) => (
-                    <div 
+                    <div
                       key={day.date}
                       onClick={() => {
                         setEditDay(day);
                         setNewPrice(day.price.toString());
                         setNewBlocked(day.isBlocked);
                       }}
-                      className={`p-4 border rounded-2xl cursor-pointer text-center space-y-1.5 transition-all shadow-sm ${
-                        day.isBlocked 
-                          ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/60 hover:border-red-400 text-red-700 dark:text-red-300' 
+                      className={`p-4 border rounded-2xl cursor-pointer text-center space-y-1.5 transition-all shadow-sm ${day.isBlocked
+                          ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/60 hover:border-red-400 text-red-700 dark:text-red-300'
                           : 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/60 hover:border-emerald-400 text-emerald-700 dark:text-emerald-300'
-                      }`}
+                        }`}
                     >
                       <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase">{day.date}</p>
                       <p className="text-xs font-black text-slate-800 dark:text-slate-100">{day.price.toLocaleString()} đ</p>
-                      <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${
-                        day.isBlocked 
-                          ? 'bg-red-200/60 text-red-800 dark:bg-red-900/40 dark:text-red-300' 
+                      <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${day.isBlocked
+                          ? 'bg-red-200/60 text-red-800 dark:bg-red-900/40 dark:text-red-300'
                           : 'bg-emerald-200/60 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
-                      }`}>
+                        }`}>
                         {day.isBlocked ? (language === 'vi' ? 'Đã khóa' : 'BLOCKED') : (language === 'vi' ? 'Trống' : 'AVAILABLE')}
                       </span>
                     </div>
@@ -1712,7 +1697,7 @@ export const OwnerDashboard: React.FC = () => {
           {/* 6. SUPPORT LIVE CHAT */}
           {activeMenu === 'support' && (
             <div className="h-[550px] border border-[#E2E8F0] rounded-2xl flex overflow-hidden bg-white shadow-[0_4px_12px_rgba(15,23,42,0.04)] text-[#1E293B]">
-              
+
               {/* Left sidebar chats list */}
               <div className="w-80 border-r border-[#E2E8F0] h-full flex flex-col">
                 <div className="p-4 border-b border-[#E2E8F0]">
@@ -1720,12 +1705,11 @@ export const OwnerDashboard: React.FC = () => {
                 </div>
                 <div className="flex-1 overflow-y-auto divide-y divide-[#E2E8F0]">
                   {conversations.map((conv) => (
-                    <div 
+                    <div
                       key={conv.id}
                       onClick={() => setActiveConv(conv)}
-                      className={`p-3.5 cursor-pointer transition-colors ${
-                        activeConv?.id === conv.id ? 'bg-[#2563EB]/10 border-l-2 border-[#2563EB]' : 'hover:bg-[#F8FAFC]'
-                      }`}
+                      className={`p-3.5 cursor-pointer transition-colors ${activeConv?.id === conv.id ? 'bg-[#2563EB]/10 border-l-2 border-[#2563EB]' : 'hover:bg-[#F8FAFC]'
+                        }`}
                     >
                       <p className="text-xs font-bold text-[#1E293B]">{conv.customer.fullName}</p>
                       <p className="text-[9px] text-[#64748B] mt-0.5">{conv.hotel.name}</p>
@@ -1746,11 +1730,10 @@ export const OwnerDashboard: React.FC = () => {
                     <div className="flex-grow p-4 overflow-y-auto space-y-3 bg-[#F8FAFC]">
                       {chatMessages.map((msg) => (
                         <div key={msg.id} className={`flex ${msg.senderId === user?.id ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`p-3.5 rounded-2xl max-w-sm text-xs font-semibold leading-relaxed shadow-sm ${
-                            msg.senderId === user?.id 
-                              ? 'bg-[#2563EB] text-white rounded-br-none' 
+                          <div className={`p-3.5 rounded-2xl max-w-sm text-xs font-semibold leading-relaxed shadow-sm ${msg.senderId === user?.id
+                              ? 'bg-[#2563EB] text-white rounded-br-none'
                               : 'bg-white text-[#1E293B] rounded-bl-none border border-[#E2E8F0]'
-                          }`}>
+                            }`}>
                             <p className="font-bold text-[9px] opacity-75 mb-0.5">{msg.sender.fullName}</p>
                             <p>{msg.content}</p>
                           </div>
@@ -1760,8 +1743,8 @@ export const OwnerDashboard: React.FC = () => {
                     </div>
 
                     <div className="p-4 border-t border-[#E2E8F0] flex gap-2 bg-white">
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         placeholder="Nhập nội dung tư vấn..."
                         value={inputMsg}
                         onChange={(e) => setInputMsg(e.target.value)}
@@ -1787,8 +1770,8 @@ export const OwnerDashboard: React.FC = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center border-b border-[#E2E8F0] pb-3.5">
                 <h3 className="font-bold text-sm text-[#1E293B] uppercase">Quản lý mã giảm giá khách sạn</h3>
-                <button 
-                  onClick={() => setShowAddCoupon(true)} 
+                <button
+                  onClick={() => setShowAddCoupon(true)}
                   className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-all shadow-sm"
                 >
                   <Plus className="w-4 h-4" /> Thêm mã giảm giá
@@ -1827,8 +1810,8 @@ export const OwnerDashboard: React.FC = () => {
                             {new Date(c.endDate).toLocaleDateString('vi-VN')}
                           </td>
                           <td className="px-4 py-4">
-                            <button 
-                              onClick={() => setDeleteConfirmId(c.id)} 
+                            <button
+                              onClick={() => setDeleteConfirmId(c.id)}
                               className="text-[#DC2626] bg-[#FEE2E2] hover:bg-[#FECACA] p-2 rounded-xl transition-all shadow-sm"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -1956,11 +1939,11 @@ export const OwnerDashboard: React.FC = () => {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-55 flex items-center justify-center p-4">
           <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm space-y-4 text-[#1E293B] border border-[#E2E8F0]">
             <h3 className="font-bold text-[#0F172A] text-sm">Điều chỉnh lịch ngày {editDay.date}</h3>
-            
+
             <div className="space-y-3 font-semibold text-xs">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-[#64748B] uppercase">Giá phòng tùy chỉnh</label>
-                <input 
+                <input
                   type="number"
                   value={newPrice}
                   onChange={(e) => setNewPrice(e.target.value)}
@@ -1970,7 +1953,7 @@ export const OwnerDashboard: React.FC = () => {
 
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-[#1E293B]">Đóng phòng / Khóa phòng</label>
-                <input 
+                <input
                   type="checkbox"
                   checked={newBlocked}
                   onChange={(e) => setNewBlocked(e.target.checked)}
@@ -1992,11 +1975,11 @@ export const OwnerDashboard: React.FC = () => {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-55 flex items-center justify-center p-4">
           <form onSubmit={handleCreateOwnerCoupon} className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm space-y-4 text-[#1E293B] border border-[#E2E8F0]">
             <h3 className="font-bold text-[#0F172A] text-sm border-b border-[#E2E8F0] pb-2">Tạo khuyến mãi mới</h3>
-            
+
             <div className="space-y-3 text-xs font-semibold">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-[#64748B] uppercase">Mã giảm giá</label>
-                <input 
+                <input
                   type="text"
                   required
                   value={newCouponCode}
@@ -2008,7 +1991,7 @@ export const OwnerDashboard: React.FC = () => {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-[#64748B] uppercase">Mô tả chương trình</label>
-                <input 
+                <input
                   type="text"
                   required
                   value={newCouponDesc}
@@ -2032,7 +2015,7 @@ export const OwnerDashboard: React.FC = () => {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-[#64748B] uppercase">Giá trị giảm</label>
-                  <input 
+                  <input
                     type="number"
                     required
                     value={newCouponValue}
@@ -2046,7 +2029,7 @@ export const OwnerDashboard: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-[#64748B] uppercase">Lượt dùng tối đa</label>
-                  <input 
+                  <input
                     type="number"
                     required
                     value={newCouponLimit}
@@ -2057,7 +2040,7 @@ export const OwnerDashboard: React.FC = () => {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-[#64748B] uppercase">Ngày hết hạn</label>
-                  <input 
+                  <input
                     type="date"
                     required
                     value={newCouponEnd}
@@ -2090,17 +2073,17 @@ export const OwnerDashboard: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {/* ADD ROOM TYPE MODAL */}
       {showAddRoom && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-55 flex items-center justify-center p-4">
           <form onSubmit={handleCreateRoomType} className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm space-y-4 text-[#1E293B] border border-[#E2E8F0]">
             <h3 className="font-bold text-[#0F172A] text-sm border-b border-[#E2E8F0] pb-2">Tạo hạng phòng mới</h3>
-            
+
             <div className="space-y-3 text-xs font-semibold">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-[#64748B] uppercase">Tên hạng phòng</label>
-                <input 
+                <input
                   type="text"
                   required
                   value={newRoomName}
@@ -2112,7 +2095,7 @@ export const OwnerDashboard: React.FC = () => {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-[#64748B] uppercase">Giá cơ bản (đ)</label>
-                <input 
+                <input
                   type="number"
                   required
                   value={newRoomPrice}
@@ -2125,7 +2108,7 @@ export const OwnerDashboard: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-[#64748B] uppercase">Sức chứa tối đa</label>
-                  <input 
+                  <input
                     type="number"
                     value={newRoomCapacity}
                     onChange={(e) => setNewRoomCapacity(e.target.value)}
@@ -2134,7 +2117,7 @@ export const OwnerDashboard: React.FC = () => {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-[#64748B] uppercase">Loại giường</label>
-                  <input 
+                  <input
                     type="text"
                     value={newRoomBed}
                     onChange={(e) => setNewRoomBed(e.target.value)}
@@ -2177,7 +2160,7 @@ export const OwnerDashboard: React.FC = () => {
 
             {/* Modal Body */}
             <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
-              
+
               {/* Section 1: Thêm tiện ích mới */}
               <div className="bg-blue-50/40 border border-blue-100 p-5 rounded-2xl space-y-3">
                 <h4 className="font-black text-[#2563EB] text-[10px] uppercase tracking-wider">
