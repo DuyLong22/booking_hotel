@@ -1250,6 +1250,18 @@ export const HotelDetail: React.FC = () => {
     return Object.values(grouped).filter(cat => cat.items.length > 0);
   };
 
+  const getFeaturedAmenities = () => {
+    const featuredKeywords = ['wifi', 'đỗ xe', 'đậu xe', 'bể bơi', 'hồ bơi', 'điều hòa', 'máy lạnh', 'lễ tân', 'nhà hàng', 'bữa sáng', 'gym', 'spa', 'thang máy'];
+    const matches = hotel.amenities.filter(({ amenity }) => 
+      featuredKeywords.some(kw => amenity.name.toLowerCase().includes(kw))
+    );
+    const nonMatches = hotel.amenities.filter(({ amenity }) => 
+      !featuredKeywords.some(kw => amenity.name.toLowerCase().includes(kw))
+    );
+    const combined = [...matches, ...nonMatches];
+    return combined.slice(0, 8);
+  };
+
   const groupedAmenities = groupAmenities();
 
   return (
@@ -1697,13 +1709,28 @@ export const HotelDetail: React.FC = () => {
                 {t.amenities}
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {hotel.amenities.map(({ amenity }) => (
+                {getFeaturedAmenities().map(({ amenity }) => (
                   <div key={amenity.name} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-slate-50 border border-slate-100 hover:bg-slate-100/50 transition-colors">
                     <div className="text-[#006ce4] shrink-0">{getAmenityIcon(amenity.name)}</div>
                     <span className="text-xs font-bold text-slate-700 leading-tight">{translateAmenityName(amenity.name)}</span>
                   </div>
                 ))}
               </div>
+              {hotel.amenities.length > 8 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById('facilities-section');
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }}
+                  className="text-xs font-black text-[#006ce4] hover:text-[#0053b4] flex items-center gap-1 mt-3"
+                >
+                  {language === 'vi' ? `Xem thêm tất cả ${hotel.amenities.length} tiện nghi` : `See all ${hotel.amenities.length} amenities`}
+                  <span className="text-[10px]">↓</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -2131,7 +2158,7 @@ export const HotelDetail: React.FC = () => {
           <hr className="border-slate-100" />
 
           {/* Detailed Grouped Amenities Section */}
-          <section className="space-y-6 pt-2">
+          <section id="facilities-section" className="space-y-6 pt-2">
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
               <span className="w-1.5 h-6 bg-[#006ce4] rounded-full inline-block"></span>
               {language === 'vi' ? 'Các tiện nghi tại khách sạn' : 'Hotel Facilities & Amenities'}
