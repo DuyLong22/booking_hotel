@@ -182,19 +182,20 @@ async function main() {
 
   console.log('Seed all 63 provinces of Vietnam...');
   for (const prov of provincesData) {
+    const uniqueProvinceCode = `${prov.code}_${prov.id}`;
     await prisma.province.upsert({
       where: { id: prov.id },
-      update: { name: prov.name, code: prov.code },
-      create: { id: prov.id, name: prov.name, code: prov.code }
+      update: { name: prov.name, code: uniqueProvinceCode },
+      create: { id: prov.id, name: prov.name, code: uniqueProvinceCode }
     });
 
     // Seed standard districts for this province
     const prefix = prov.name.includes('Thành phố') ? 'Quận' : 'Huyện';
     const cleanName = prov.name.replace('Thành phố ', '').replace('Tỉnh ', '');
     const districtsData = [
-      { id: prov.id + '1', name: `${prefix} 1`, code: prov.code + '1' },
-      { id: prov.id + '2', name: `${prefix} 2`, code: prov.code + '2' },
-      { id: prov.id + '3', name: `Thành phố ${cleanName}`, code: prov.code + '3' }
+      { id: prov.id + '1', name: `${prefix} 1`, code: `${prov.code}1_${prov.id}1` },
+      { id: prov.id + '2', name: `${prefix} 2`, code: `${prov.code}2_${prov.id}2` },
+      { id: prov.id + '3', name: `Thành phố ${cleanName}`, code: `${prov.code}3_${prov.id}3` }
     ];
 
     for (const dist of districtsData) {
@@ -206,9 +207,9 @@ async function main() {
 
       // Seed standard wards for this district
       const wardsData = [
-        { id: dist.id + '1', name: `Phường 1`, code: dist.code + 'P1' },
-        { id: dist.id + '2', name: `Phường 2`, code: dist.code + 'P2' },
-        { id: dist.id + '3', name: `Phường 3`, code: dist.code + 'P3' }
+        { id: dist.id + '1', name: `Phường 1`, code: `${dist.code}P1_${dist.id}1` },
+        { id: dist.id + '2', name: `Phường 2`, code: `${dist.code}P2_${dist.id}2` },
+        { id: dist.id + '3', name: `Phường 3`, code: `${dist.code}P3_${dist.id}3` }
       ];
 
       for (const ward of wardsData) {
