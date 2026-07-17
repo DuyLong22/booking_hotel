@@ -334,6 +334,20 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleDeleteUser = async (userId: string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa người dùng này khỏi hệ thống? Tất cả khách sạn và dữ liệu liên quan sẽ bị xóa vĩnh viễn.')) return;
+    try {
+      const res = await apiClient.delete(`/auth/admin/users/${userId}`);
+      if (res.data.success) {
+        setUsers(prev => prev.filter(u => u.id !== userId));
+        triggerToast('Xóa người dùng thành công!');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Không thể xóa người dùng.');
+    }
+  };
+
   const handleCreateCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -1319,6 +1333,12 @@ export const AdminDashboard: React.FC = () => {
                                 }`}>
                                   {item.isApproved ? 'Đã phê duyệt' : 'Chờ phê duyệt'}
                                 </span>
+                              ) : item.role === 'CUSTOMER' ? (
+                                <span className={`px-2 py-0.5 rounded font-black text-[9px] uppercase ${
+                                  item.isApproved ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-850'
+                                }`}>
+                                  {item.isApproved ? 'Hoạt động' : 'Tạm dừng'}
+                                </span>
                               ) : (
                                 <span className="text-slate-400 text-[10px]">-</span>
                               )}
@@ -1334,18 +1354,27 @@ export const AdminDashboard: React.FC = () => {
                               {new Date(item.createdAt).toLocaleDateString('vi-VN')}
                             </td>
                             <td className="px-4 py-4 text-center">
-                              {item.role === 'HOTEL_OWNER' ? (
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggleApproveUser(item.id)}
-                                  className={`text-[9px] font-black px-2.5 py-1.5 rounded-xl transition-all shadow-sm active:scale-95 ${
-                                    item.isApproved 
-                                      ? 'bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100'
-                                      : 'bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100'
-                                  }`}
-                                >
-                                  {item.isApproved ? 'Hủy duyệt' : 'Duyệt chủ'}
-                                </button>
+                              {item.role !== 'ADMIN' ? (
+                                <div className="flex justify-center items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleApproveUser(item.id)}
+                                    className={`text-[9px] font-black px-2 py-1 rounded-lg transition-all shadow-sm active:scale-95 border min-w-[70px] ${
+                                      item.isApproved 
+                                        ? 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100'
+                                        : 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'
+                                    }`}
+                                  >
+                                    {item.isApproved ? 'Tạm dừng' : 'Kích hoạt'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteUser(item.id)}
+                                    className="text-[9px] font-black px-2 py-1 rounded-lg transition-all shadow-sm active:scale-95 bg-rose-50 text-[#DC2626] border border-rose-200 hover:bg-rose-100"
+                                  >
+                                    Xóa
+                                  </button>
+                                </div>
                               ) : (
                                 <span className="text-slate-400 text-[10px]">-</span>
                               )}

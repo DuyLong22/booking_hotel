@@ -36,6 +36,7 @@ router.put('/profile', requireAuth, validateRequest(updateProfileSchema), authCo
 // --- Admin routes ---
 router.get('/admin/users', requireAuth, requireRole([Role.ADMIN]), authController.getAllUsers);
 router.put('/admin/users/:id/toggle-approve', requireAuth, requireRole([Role.ADMIN]), authController.toggleApproveUser);
+router.delete('/admin/users/:id', requireAuth, requireRole([Role.ADMIN]), authController.deleteUser);
 router.get('/admin/bookings', requireAuth, requireRole([Role.ADMIN]), authController.getAllBookings);
 router.get('/admin/payments', requireAuth, requireRole([Role.ADMIN]), authController.getAllPayments);
 router.get('/admin/reviews', requireAuth, requireRole([Role.ADMIN]), authController.getAllReviews);

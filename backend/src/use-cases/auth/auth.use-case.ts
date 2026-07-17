@@ -127,9 +127,9 @@ export class AuthUseCase {
       throw new AppError('Tài khoản chưa được xác thực email. Vui lòng xác thực trước.', 403);
     }
 
-    // Kiểm tra trạng thái phê duyệt đối với Chủ chỗ nghỉ
-    if (user.role === Role.HOTEL_OWNER && !user.isApproved) {
-      throw new AppError('Tài khoản chủ chỗ nghỉ của bạn đang chờ Admin phê duyệt để hoạt động.', 403);
+    // Kiểm tra trạng thái hoạt động của tài khoản (Trừ ADMIN)
+    if (user.role !== Role.ADMIN && !user.isApproved) {
+      throw new AppError('Tài khoản của bạn đã bị khóa hoặc đang chờ phê duyệt. Vui lòng liên hệ Admin.', 403);
     }
 
     // Sinh tokens

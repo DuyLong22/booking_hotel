@@ -527,6 +527,39 @@ export class AuthController {
       next(error);
     }
   }
+
+  public async deleteUser(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const user = await prisma.user.findUnique({ where: { id } });
+      if (!user) {
+        res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+        return;
+      }
+      if (user.role === 'ADMIN') {
+        res.status(400).json({ success: false, message: 'Không thể xóa tài khoản Quản trị viên' });
+        return;
+      }
+
+      // Xóa tất cả các liên kết liên quan để tránh lỗi khóa ngoại
+      await prisma.hotel.deleteMany({ where: { ownerId: id } });
+      await prisma.favorite.deleteMany({ where: { userId: id } });
+      await prisma.review.deleteMany({ where: { userId: id } });
+      await prisma.recentlyViewed.deleteMany({ where: { userId: id } });
+      await prisma.notification.deleteMany({ where: { userId: id } });
+      await prisma.message.deleteMany({ where: { senderId: id } });
+      await prisma.conversation.deleteMany({ where: { OR: [ { customerId: id }, { hotelOwnerId: id } ] } });
+      await prisma.refreshToken.deleteMany({ where: { userId: id } });
+      await prisma.session.deleteMany({ where: { userId: id } });
+      
+      // Xóa người dùng khỏi hệ thống
+      await prisma.user.delete({ where: { id } });
+
+      res.status(200).json({ success: true, message: 'Xóa người dùng thành công' });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new AuthController();
