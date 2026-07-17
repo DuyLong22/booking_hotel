@@ -2207,6 +2207,7 @@ export const HotelDetail: React.FC = () => {
                   </ul>
                 </div>
               ))}
+            </div>
           </section>
 
           <hr className="border-slate-100" />
