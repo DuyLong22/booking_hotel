@@ -44,6 +44,7 @@ app.use(
 // Phân tích dữ liệu JSON và Cookie
 app.use(
   express.json({
+    limit: '50mb',
     verify: (req: any, _res, buf) => {
       if (req.originalUrl && req.originalUrl.includes('stripe-webhook')) {
         req.rawBody = buf;
@@ -51,7 +52,7 @@ app.use(
     },
   })
 );
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
 
 // Serve static files for uploaded hotel images
