@@ -130,6 +130,7 @@ export const OwnerDashboard: React.FC = () => {
   const [isAmenitiesModalOpen, setIsAmenitiesModalOpen] = useState(false);
   const [hotelImages, setHotelImages] = useState<{ url: string; isPrimary: boolean }[]>([]);
   const [newImageUrl, setNewImageUrl] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   // Owner promotions (coupons)
   const [coupons, setCoupons] = useState<any[]>([]);
@@ -646,6 +647,53 @@ export const OwnerDashboard: React.FC = () => {
     } catch (err) {
       console.error(err);
       alert('Không thể thêm tiện ích mới.');
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    setIsUploadingImage(true);
+    try {
+      const uploadedUrls: { url: string; isPrimary: boolean }[] = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = (error) => reject(error);
+        });
+        
+        const res = await apiClient.post('/hotels/upload-image', { image: base64 });
+        if (res.data.success) {
+          uploadedUrls.push({
+            url: res.data.data.url,
+            isPrimary: hotelImages.length === 0 && uploadedUrls.length === 0
+          });
+        }
+      }
+      
+      if (uploadedUrls.length > 0) {
+        setHotelImages(prev => {
+          const hasPrimary = prev.some(img => img.isPrimary);
+          const updated = [...prev, ...uploadedUrls];
+          if (!hasPrimary && updated.length > 0) {
+            updated[0].isPrimary = true;
+          }
+          return updated;
+        });
+        triggerToast(`Đã tải lên thành công ${uploadedUrls.length} hình ảnh!`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Đã xảy ra lỗi trong quá trình tải ảnh lên.');
+    } finally {
+      setIsUploadingImage(false);
+      e.target.value = '';
     }
   };
 
@@ -1382,26 +1430,62 @@ export const OwnerDashboard: React.FC = () => {
                 <div className="space-y-3">
                   <h4 className="font-black text-[#2563EB] uppercase tracking-wider text-[10px]">4. Hình ảnh khách sạn</h4>
                   
-                  {/* Nhập URL ảnh mới */}
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Nhập URL hình ảnh (Unsplash, Imgur...)"
-                      value={newImageUrl}
-                      onChange={(e) => setNewImageUrl(e.target.value)}
-                      className="flex-1 bg-white border border-[#CBD5E1] text-[#1E293B] px-3 py-2.5 rounded-xl outline-none text-xs focus:border-[#2563EB]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!newImageUrl.trim()) return;
-                        setHotelImages(prev => [...prev, { url: newImageUrl.trim(), isPrimary: prev.length === 0 }]);
-                        setNewImageUrl('');
-                      }}
-                      className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-3 py-2 rounded-xl font-bold transition-all shadow-sm"
-                    >
-                      Thêm
-                    </button>
+                  {/* Tải ảnh từ thiết bị cục bộ */}
+                  <div className="flex flex-col sm:flex-row gap-3 items-stretch">
+                    <label className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 hover:border-[#2563EB] hover:bg-blue-50/10 rounded-2xl p-4 cursor-pointer transition-all text-center relative group min-h-[90px] bg-slate-50/20">
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        disabled={isUploadingImage}
+                        className="hidden"
+                      />
+                      {isUploadingImage ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <RefreshCw className="w-5 h-5 text-[#2563EB] animate-spin" />
+                          <span className="text-[10px] font-black text-[#2563EB] uppercase">Đang tải ảnh lên...</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-xl">📁</span>
+                          <span className="text-[10px] font-black text-slate-700 uppercase group-hover:text-[#2563EB] transition-colors">
+                            Chọn ảnh từ máy tính
+                          </span>
+                          <span className="text-[8px] text-slate-400 font-bold">
+                            Hỗ trợ chọn nhiều ảnh cùng lúc
+                          </span>
+                        </div>
+                      )}
+                    </label>
+
+                    {/* Hoặc thêm từ URL */}
+                    <div className="flex flex-col justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200 sm:w-56 gap-2">
+                      <span className="text-[9px] font-black text-[#64748B] uppercase tracking-wider">
+                        Hoặc thêm URL ảnh:
+                      </span>
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          placeholder="https://example.com/img.jpg"
+                          value={newImageUrl}
+                          onChange={(e) => setNewImageUrl(e.target.value)}
+                          className="flex-1 bg-white border border-[#CBD5E1] text-[#1E293B] px-2.5 py-1.5 rounded-xl outline-none text-[10px] font-semibold focus:border-[#2563EB] placeholder-[#94A3B8]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!newImageUrl.trim()) return;
+                            setHotelImages(prev => [...prev, { url: newImageUrl.trim(), isPrimary: prev.length === 0 }]);
+                            setNewImageUrl('');
+                            triggerToast('Đã thêm liên kết ảnh!');
+                          }}
+                          className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-3 py-1.5 rounded-xl font-bold text-[10px] transition-all shadow-sm active:scale-95 whitespace-nowrap"
+                        >
+                          Thêm
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Danh sách ảnh hiện tại */}

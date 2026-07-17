@@ -24,6 +24,13 @@ router.get('/:id', hotelController.getDetail);
 
 // --- Các route yêu cầu đăng nhập & phân quyền ---
 router.post(
+  '/upload-image',
+  requireAuth,
+  requireRole([Role.HOTEL_OWNER, Role.ADMIN]),
+  hotelController.uploadImage
+);
+
+router.post(
   '/meta/amenities',
   requireAuth,
   requireRole([Role.HOTEL_OWNER]),

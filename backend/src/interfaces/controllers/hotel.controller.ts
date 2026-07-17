@@ -6,6 +6,9 @@ import { AuthenticatedRequest } from '../../infrastructure/middlewares/auth.midd
 import { Role, HotelStatus } from '@prisma/client';
 import { verifyAccessToken } from '../../infrastructure/security/jwt';
 import prisma from '../../config/database';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
 
 export class HotelController {
   // --- Khách Sạn (Hotels) ---
@@ -347,6 +350,45 @@ export class HotelController {
       }
       const provinces = await prisma.province.findMany({ orderBy: { name: 'asc' } });
       res.status(200).json({ success: true, data: provinces });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public async uploadImage(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { image } = req.body;
+      if (!image) {
+        res.status(400).json({ success: false, message: 'No image data provided' });
+        return;
+      }
+
+      const matches = image.match(/^data:image\/([A-Za-z-+\/]+);base64,(.+)$/);
+      if (!matches || matches.length !== 3) {
+        res.status(400).json({ success: false, message: 'Invalid base64 image format' });
+        return;
+      }
+
+      const ext = matches[1];
+      const base64Data = matches[2];
+      const buffer = Buffer.from(base64Data, 'base64');
+
+      const uploadsDir = path.join(process.cwd(), 'uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      const filename = `${crypto.randomUUID()}.${ext === 'jpeg' ? 'jpg' : ext}`;
+      const filepath = path.join(uploadsDir, filename);
+
+      fs.writeFileSync(filepath, buffer);
+
+      const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${filename}`;
+
+      res.status(200).json({
+        success: true,
+        data: { url: imageUrl }
+      });
     } catch (error) {
       next(error);
     }
