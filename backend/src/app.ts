@@ -14,7 +14,11 @@ import chatRoutes from './interfaces/routes/chat.routes';
 const app = express();
 
 // Middlewares bảo mật & cấu hình CORS
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 app.use(
   cors({
     origin: (origin, callback) => {

@@ -141,7 +141,7 @@ export class HotelUseCase {
         starRating,
         checkInTime,
         checkOutTime,
-        status: userRole === Role.ADMIN ? undefined : HotelStatus.PENDING, // Reset về PENDING để duyệt lại nếu owner sửa đổi thông tin
+        status: userRole === Role.ADMIN && data.status ? data.status : undefined, // Giữ nguyên trạng thái hiện tại (không cần duyệt lại khi owner sửa)
       },
       include: {
         images: true,
