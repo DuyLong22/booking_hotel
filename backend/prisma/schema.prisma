@@ -50,6 +50,7 @@ model User {
   avatarUrl     String?
   role          Role      @default(CUSTOMER)
   isVerified    Boolean   @default(false)
+  isApproved    Boolean   @default(true)
   otpCode       String?
   otpExpiresAt  DateTime?
   createdAt     DateTime  @default(now())

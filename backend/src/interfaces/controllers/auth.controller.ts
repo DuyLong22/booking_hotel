@@ -177,7 +177,7 @@ export class AuthController {
           where,
           select: {
             id: true, email: true, fullName: true, phoneNumber: true,
-            role: true, isVerified: true, createdAt: true, avatarUrl: true,
+            role: true, isVerified: true, isApproved: true, createdAt: true, avatarUrl: true,
             _count: { select: { bookings: true, hotels: true } }
           },
           orderBy: { createdAt: 'desc' },
@@ -507,6 +507,24 @@ export class AuthController {
       console.error('[Facebook OAuth Callback Error]:', error?.response?.data || error.message);
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
       return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent('Đăng nhập Facebook thất bại')}`);
+    }
+  }
+
+  public async toggleApproveUser(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const user = await prisma.user.findUnique({ where: { id } });
+      if (!user) {
+        res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+        return;
+      }
+      const updated = await prisma.user.update({
+        where: { id },
+        data: { isApproved: !user.isApproved }
+      });
+      res.status(200).json({ success: true, data: updated });
+    } catch (error) {
+      next(error);
     }
   }
 }

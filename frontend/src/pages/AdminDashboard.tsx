@@ -321,6 +321,19 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleToggleApproveUser = async (userId: string) => {
+    try {
+      const res = await apiClient.put(`/auth/admin/users/${userId}/toggle-approve`);
+      if (res.data.success) {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, isApproved: res.data.data.isApproved } : u));
+        triggerToast('Cập nhật phê duyệt thành công!');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Không thể cập nhật phê duyệt.');
+    }
+  };
+
   const handleCreateCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -1259,9 +1272,11 @@ export const AdminDashboard: React.FC = () => {
                         <tr>
                           <th className="px-4 py-3">Người dùng</th>
                           <th className="px-4 py-3">Vai trò</th>
-                          <th className="px-4 py-3">Trạng thái</th>
+                          <th className="px-4 py-3">Xác thực</th>
+                          <th className="px-4 py-3">Xét duyệt</th>
                           <th className="px-4 py-3">Số lượng sở hữu</th>
                           <th className="px-4 py-3">Ngày đăng ký</th>
+                          <th className="px-4 py-3 text-center">Hành động</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#E2E8F0] bg-white text-[#1E293B]">
@@ -1297,6 +1312,17 @@ export const AdminDashboard: React.FC = () => {
                                 {item.isVerified ? 'Đã xác thực' : 'Chưa xác thực'}
                               </span>
                             </td>
+                            <td className="px-4 py-4">
+                              {item.role === 'HOTEL_OWNER' ? (
+                                <span className={`px-2 py-0.5 rounded font-black text-[9px] uppercase ${
+                                  item.isApproved ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-850 animate-pulse'
+                                }`}>
+                                  {item.isApproved ? 'Đã phê duyệt' : 'Chờ phê duyệt'}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 text-[10px]">-</span>
+                              )}
+                            </td>
                             <td className="px-4 py-4 text-[#64748B]">
                               {item.role === 'HOTEL_OWNER' ? (
                                 <span>{item._count?.hotels || 0} Khách sạn</span>
@@ -1306,6 +1332,23 @@ export const AdminDashboard: React.FC = () => {
                             </td>
                             <td className="px-4 py-4 text-[#64748B]">
                               {new Date(item.createdAt).toLocaleDateString('vi-VN')}
+                            </td>
+                            <td className="px-4 py-4 text-center">
+                              {item.role === 'HOTEL_OWNER' ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleApproveUser(item.id)}
+                                  className={`text-[9px] font-black px-2.5 py-1.5 rounded-xl transition-all shadow-sm active:scale-95 ${
+                                    item.isApproved 
+                                      ? 'bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100'
+                                      : 'bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100'
+                                  }`}
+                                >
+                                  {item.isApproved ? 'Hủy duyệt' : 'Duyệt chủ'}
+                                </button>
+                              ) : (
+                                <span className="text-slate-400 text-[10px]">-</span>
+                              )}
                             </td>
                           </tr>
                         ))}

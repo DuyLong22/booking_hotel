@@ -36,6 +36,7 @@ export class AuthUseCase {
         phoneNumber,
         role: role as Role,
         isVerified: true,
+        isApproved: role !== Role.HOTEL_OWNER, // Chỉ cho đăng nhập trực tiếp nếu không phải HOTEL_OWNER
         otpCode: null,
         otpExpiresAt: null,
       },
@@ -124,6 +125,11 @@ export class AuthUseCase {
     // Kiểm tra trạng thái xác thực
     if (!user.isVerified) {
       throw new AppError('Tài khoản chưa được xác thực email. Vui lòng xác thực trước.', 403);
+    }
+
+    // Kiểm tra trạng thái phê duyệt đối với Chủ chỗ nghỉ
+    if (user.role === Role.HOTEL_OWNER && !user.isApproved) {
+      throw new AppError('Tài khoản chủ chỗ nghỉ của bạn đang chờ Admin phê duyệt để hoạt động.', 403);
     }
 
     // Sinh tokens
