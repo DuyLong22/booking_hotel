@@ -10,7 +10,7 @@ export class RoomUseCase {
     if (!hotel) throw new AppError('Không tìm thấy khách sạn', 404);
     if (hotel.ownerId !== ownerId) throw new AppError('Bạn không sở hữu khách sạn này', 403);
 
-    const { name, description, basePrice, capacity, bedCount, size, amenities, images, roomCount } = data;
+    const { name, description, basePrice, capacity, bedCount, size, amenities, images, roomCount, includeBreakfast, childSurcharge, cancellationPolicy, paymentPolicy } = data;
 
     const roomType = await prisma.roomType.create({
       data: {
@@ -22,6 +22,10 @@ export class RoomUseCase {
         bedCount,
         size,
         amenities,
+        includeBreakfast: !!includeBreakfast,
+        childSurcharge: Number(childSurcharge) || 0,
+        cancellationPolicy: cancellationPolicy || "FREE_24H",
+        paymentPolicy: paymentPolicy || "PAY_AT_HOTEL",
         images: {
           create: images.map((img: any) => ({
             url: img.url,
@@ -65,7 +69,7 @@ export class RoomUseCase {
     if (!roomType) throw new AppError('Không tìm thấy loại phòng', 404);
     if (roomType.hotel.ownerId !== ownerId) throw new AppError('Bạn không sở hữu khách sạn chứa loại phòng này', 403);
 
-    const { name, description, basePrice, capacity, bedCount, size, amenities, images, roomCount } = data;
+    const { name, description, basePrice, capacity, bedCount, size, amenities, images, roomCount, includeBreakfast, childSurcharge, cancellationPolicy, paymentPolicy } = data;
 
     if (images && Array.isArray(images)) {
       await prisma.roomImage.deleteMany({ where: { roomTypeId } });
@@ -111,6 +115,10 @@ export class RoomUseCase {
         bedCount,
         size,
         amenities,
+        includeBreakfast: includeBreakfast !== undefined ? !!includeBreakfast : undefined,
+        childSurcharge: childSurcharge !== undefined ? Number(childSurcharge) : undefined,
+        cancellationPolicy: cancellationPolicy !== undefined ? cancellationPolicy : undefined,
+        paymentPolicy: paymentPolicy !== undefined ? paymentPolicy : undefined,
       },
       include: {
         images: true,

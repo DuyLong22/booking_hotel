@@ -199,7 +199,11 @@ model RoomType {
   capacity      Int                 // Số lượng khách tối đa
   bedCount      Int                 @default(1)
   size          Int?                // Diện tích (m2)
-  amenities     String[]            // Các tiện ích riêng của phòng
+  amenities         String[]            // Các tiện ích riêng của phòng
+  includeBreakfast  Boolean             @default(false)
+  childSurcharge    Int                 @default(0)
+  cancellationPolicy String             @default("FREE_24H") // "FREE_24H", "NON_REFUNDABLE"
+  paymentPolicy     String              @default("PAY_AT_HOTEL") // "PAY_AT_HOTEL", "PAY_ONLINE"
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
 

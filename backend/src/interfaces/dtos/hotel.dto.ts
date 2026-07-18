@@ -57,7 +57,11 @@ export const createRoomTypeSchema = z.object({
       url: z.string().url('Đường dẫn ảnh không hợp lệ'),
       isPrimary: z.boolean().default(false)
     })).default([]),
-    roomCount: z.number().int().nonnegative().optional()
+    roomCount: z.number().int().nonnegative().optional(),
+    includeBreakfast: z.boolean().optional().default(false),
+    childSurcharge: z.number().int().nonnegative().optional().default(0),
+    cancellationPolicy: z.string().optional().default("FREE_24H"),
+    paymentPolicy: z.string().optional().default("PAY_AT_HOTEL")
   })
 });
 
@@ -74,7 +78,11 @@ export const updateRoomTypeSchema = z.object({
       url: z.string().url('Đường dẫn ảnh không hợp lệ'),
       isPrimary: z.boolean().default(false)
     })).optional(),
-    roomCount: z.number().int().nonnegative().optional()
+    roomCount: z.number().int().nonnegative().optional(),
+    includeBreakfast: z.boolean().optional(),
+    childSurcharge: z.number().int().nonnegative().optional(),
+    cancellationPolicy: z.string().optional(),
+    paymentPolicy: z.string().optional()
   })
 });
 

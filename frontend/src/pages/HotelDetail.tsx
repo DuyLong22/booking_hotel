@@ -1930,7 +1930,7 @@ export const HotelDetail: React.FC = () => {
 
                                       {/* Bữa sáng */}
                                       <p className="font-extrabold text-slate-900 text-xs sm:text-sm">
-                                        {rt.amenities && rt.amenities.some((a: string) => a.toLowerCase().includes('bữa sáng') || a.toLowerCase().includes('breakfast')) 
+                                        {rt.includeBreakfast 
                                           ? (language === 'vi' ? 'Bao gồm bữa sáng' : 'Breakfast included') 
                                           : (language === 'vi' ? 'Không gồm bữa sáng' : 'Breakfast not included')}
                                       </p>
@@ -1955,41 +1955,55 @@ export const HotelDetail: React.FC = () => {
                                             {language === 'vi' ? 'Chi tiết phí trẻ em tại đây' : 'Child fee details here'} ⓘ
                                           </span>
                                           <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block w-64 bg-slate-800 text-white text-[10px] p-2.5 rounded-lg shadow-xl z-20 font-normal leading-relaxed">
-                                            {language === 'vi' 
-                                              ? 'Trẻ em dưới 6 tuổi được miễn phí nếu dùng chung giường với bố mẹ. Trẻ từ 6-11 tuổi phụ thu 150.000 đ/đêm.' 
-                                              : 'Children under 6 stay free sharing bed. Children aged 6-11 are surcharged 150,000 VND/night.'}
+                                            {rt.childSurcharge > 0 ? (
+                                              language === 'vi'
+                                                ? `Trẻ em đi kèm phụ thu ${rt.childSurcharge.toLocaleString()} đ/đêm.`
+                                                : `Accompanying children are surcharged ${rt.childSurcharge.toLocaleString()} VND/night.`
+                                            ) : (
+                                              language === 'vi'
+                                                ? 'Trẻ em dưới 6 tuổi được miễn phí nếu dùng chung giường với bố mẹ.'
+                                                : 'Children under 6 stay free sharing bed.'
+                                            )}
                                           </div>
                                         </div>
                                       )}
 
-                                      {/* Thanh Toán Tại Khách Sạn */}
+                                      {/* Thanh Toán / Phương thức */}
                                       <div className="space-y-0.5">
                                         <div className="flex items-center gap-1.5 text-xs text-[#006ce4] font-extrabold group relative cursor-pointer">
                                           <span className="text-xs">✓</span>
                                           <span className="hover:underline">
-                                            {language === 'vi' ? 'Thanh Toán Tại Khách Sạn' : 'Pay at the Hotel'} ⓘ
+                                            {rt.paymentPolicy === 'PAY_ONLINE' 
+                                              ? (language === 'vi' ? 'Thanh Toán Trực Tuyến' : 'Pay Online') 
+                                              : (language === 'vi' ? 'Thanh Toán Tại Khách Sạn' : 'Pay at the Hotel')} ⓘ
                                           </span>
                                           <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block w-64 bg-slate-800 text-white text-[10px] p-2.5 rounded-lg shadow-xl z-20 font-normal leading-relaxed">
-                                            {language === 'vi'
-                                              ? 'Bạn có thể chọn đặt ngay và thanh toán trực tiếp khi nhận phòng tại khách sạn.'
-                                              : 'You can choose to book now and pay directly at check-in.'}
+                                            {rt.paymentPolicy === 'PAY_ONLINE'
+                                              ? (language === 'vi' ? 'Bạn cần thanh toán toàn bộ giá trị đặt phòng trực tuyến bằng thẻ hoặc chuyển khoản.' : 'You need to pay the total booking value online using card or bank transfer.')
+                                              : (language === 'vi' ? 'Bạn có thể chọn đặt ngay và thanh toán trực tiếp khi nhận phòng tại khách sạn.' : 'You can choose to book now and pay directly at check-in.')}
                                           </div>
                                         </div>
                                         <p className="text-[10px] text-slate-500 pl-4 font-normal">
-                                          {language === 'vi' ? 'Thanh toán khi bạn nhận phòng tại nơi ở' : 'Pay when you check-in at the property'}
+                                          {rt.paymentPolicy === 'PAY_ONLINE'
+                                            ? (language === 'vi' ? 'Yêu cầu thanh toán trước khi nhận phòng' : 'Prepayment required before check-in')
+                                            : (language === 'vi' ? 'Thanh toán khi bạn nhận phòng tại nơi ở' : 'Pay when you check-in at the property')}
                                         </p>
                                       </div>
 
-                                      {/* Áp dụng chính sách hủy phòng */}
+                                      {/* Chính sách hủy phòng */}
                                       <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold group relative cursor-pointer">
                                         <span className="text-xs">✓</span>
                                         <span className="hover:underline">
-                                          {language === 'vi' ? 'Áp dụng chính sách hủy phòng' : 'Cancellation policy applies'} ⓘ
+                                          {rt.cancellationPolicy === 'NON_REFUNDABLE'
+                                            ? (language === 'vi' ? 'Không hoàn tiền khi hủy' : 'Non-refundable')
+                                            : (language === 'vi' ? 'Áp dụng chính sách hủy phòng' : 'Cancellation policy applies')} ⓘ
                                         </span>
                                         <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block w-64 bg-slate-800 text-white text-[10px] p-2.5 rounded-lg shadow-xl z-20 font-normal leading-relaxed">
-                                          {language === 'vi'
-                                            ? 'Hủy miễn phí trước 24 giờ kể từ ngày nhận phòng. Sau thời gian đó sẽ áp dụng phí hủy đêm đầu tiên.'
-                                            : 'Free cancellation up to 24 hours before check-in. Otherwise first night fee applies.'}
+                                          {rt.cancellationPolicy === 'NON_REFUNDABLE'
+                                            ? (language === 'vi' ? 'Đơn đặt phòng này không được hoàn tiền nếu hủy hoặc thay đổi.' : 'This booking is non-refundable if cancelled or modified.')
+                                            : rt.cancellationPolicy === 'FREE_48H'
+                                              ? (language === 'vi' ? 'Hủy miễn phí trước 48 giờ kể từ ngày nhận phòng. Sau thời gian đó sẽ áp dụng phí đêm đầu tiên.' : 'Free cancellation up to 48 hours before check-in. Otherwise first night fee applies.')
+                                              : (language === 'vi' ? 'Hủy miễn phí trước 24 giờ kể từ ngày nhận phòng. Sau thời gian đó sẽ áp dụng phí đêm đầu tiên.' : 'Free cancellation up to 24 hours before check-in. Otherwise first night fee applies.')}
                                         </div>
                                       </div>
                                     </td>

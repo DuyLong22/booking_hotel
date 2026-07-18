@@ -275,6 +275,10 @@ export class HotelUseCase {
           availableRooms: availableCount,
           isBlocked,
           rooms: rt.rooms,
+          includeBreakfast: rt.includeBreakfast,
+          childSurcharge: rt.childSurcharge,
+          cancellationPolicy: rt.cancellationPolicy,
+          paymentPolicy: rt.paymentPolicy,
         };
       })
     );

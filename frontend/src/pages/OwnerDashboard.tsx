@@ -39,6 +39,10 @@ interface RoomType {
   amenities?: string[];
   images?: { url: string; isPrimary: boolean }[];
   rooms?: any[];
+  includeBreakfast?: boolean;
+  childSurcharge?: number;
+  cancellationPolicy?: string;
+  paymentPolicy?: string;
 }
 
 interface Conversation {
@@ -168,6 +172,10 @@ export const OwnerDashboard: React.FC = () => {
   const [newRoomDesc, setNewRoomDesc] = useState('');
   const [newRoomImageUrl, setNewRoomImageUrl] = useState('');
   const [newRoomAmenities, setNewRoomAmenities] = useState<string[]>(['Wifi', 'Điều hòa', 'Tivi']);
+  const [newRoomIncludeBreakfast, setNewRoomIncludeBreakfast] = useState(false);
+  const [newRoomChildSurcharge, setNewRoomChildSurcharge] = useState('0');
+  const [newRoomCancellationPolicy, setNewRoomCancellationPolicy] = useState('FREE_24H');
+  const [newRoomPaymentPolicy, setNewRoomPaymentPolicy] = useState('PAY_AT_HOTEL');
 
   // Toast Trigger
   const triggerToast = (msg: string) => {
@@ -599,6 +607,10 @@ export const OwnerDashboard: React.FC = () => {
     setNewRoomDesc('');
     setNewRoomImageUrl('');
     setNewRoomAmenities(['Wifi', 'Điều hòa', 'Tivi']);
+    setNewRoomIncludeBreakfast(false);
+    setNewRoomChildSurcharge('0');
+    setNewRoomCancellationPolicy('FREE_24H');
+    setNewRoomPaymentPolicy('PAY_AT_HOTEL');
     setShowAddRoom(true);
   };
 
@@ -613,6 +625,10 @@ export const OwnerDashboard: React.FC = () => {
     setNewRoomDesc(rt.description || '');
     setNewRoomImageUrl(rt.images?.[0]?.url || '');
     setNewRoomAmenities(rt.amenities || ['Wifi', 'Điều hòa', 'Tivi']);
+    setNewRoomIncludeBreakfast(rt.includeBreakfast ?? false);
+    setNewRoomChildSurcharge(rt.childSurcharge?.toString() || '0');
+    setNewRoomCancellationPolicy(rt.cancellationPolicy || 'FREE_24H');
+    setNewRoomPaymentPolicy(rt.paymentPolicy || 'PAY_AT_HOTEL');
     setShowAddRoom(true);
   };
 
@@ -632,7 +648,11 @@ export const OwnerDashboard: React.FC = () => {
         size: newRoomSize !== '' ? Number(newRoomSize) : 30,
         roomCount: newRoomCount !== '' ? Number(newRoomCount) : 0,
         amenities: newRoomAmenities.length > 0 ? newRoomAmenities : ['Wifi', 'Điều hòa', 'Tivi'],
-        images: [{ url: imageUrl, isPrimary: true }]
+        images: [{ url: imageUrl, isPrimary: true }],
+        includeBreakfast: newRoomIncludeBreakfast,
+        childSurcharge: Number(newRoomChildSurcharge) || 0,
+        cancellationPolicy: newRoomCancellationPolicy,
+        paymentPolicy: newRoomPaymentPolicy
       };
 
       if (editingRoomType) {
@@ -658,6 +678,10 @@ export const OwnerDashboard: React.FC = () => {
       setNewRoomDesc('');
       setNewRoomImageUrl('');
       setNewRoomAmenities(['Wifi', 'Điều hòa', 'Tivi']);
+      setNewRoomIncludeBreakfast(false);
+      setNewRoomChildSurcharge('0');
+      setNewRoomCancellationPolicy('FREE_24H');
+      setNewRoomPaymentPolicy('PAY_AT_HOTEL');
     } catch (err) {
       console.error(err);
       alert('Không thể lưu thông tin hạng phòng.');
@@ -2329,6 +2353,63 @@ export const OwnerDashboard: React.FC = () => {
                   placeholder="https://images.unsplash.com/photo-..."
                   className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
                 />
+              </div>
+
+              {/* Chính sách phòng & Phụ thu */}
+              <div className="bg-blue-50/50 p-4 border border-blue-100 rounded-2xl space-y-3.5">
+                <h4 className="font-extrabold text-[#2563EB] text-[10px] uppercase tracking-wider">Chính sách & Phụ thu</h4>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#64748B] uppercase">Chính sách hủy phòng</label>
+                    <select
+                      value={newRoomCancellationPolicy}
+                      onChange={(e) => setNewRoomCancellationPolicy(e.target.value)}
+                      className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2 text-xs focus:border-[#2563EB] transition-all font-semibold outline-none cursor-pointer"
+                    >
+                      <option value="FREE_24H">Hủy miễn phí trước 24h</option>
+                      <option value="FREE_48H">Hủy miễn phí trước 48h</option>
+                      <option value="NON_REFUNDABLE">Không hoàn tiền</option>
+                    </select>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#64748B] uppercase">Chính sách thanh toán</label>
+                    <select
+                      value={newRoomPaymentPolicy}
+                      onChange={(e) => setNewRoomPaymentPolicy(e.target.value)}
+                      className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2 text-xs focus:border-[#2563EB] transition-all font-semibold outline-none cursor-pointer"
+                    >
+                      <option value="PAY_AT_HOTEL">Thanh toán tại khách sạn</option>
+                      <option value="PAY_ONLINE">Thanh toán online</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 items-center">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#64748B] uppercase">Phụ thu trẻ em (đ/đêm)</label>
+                    <input
+                      type="number"
+                      required
+                      value={newRoomChildSurcharge}
+                      onChange={(e) => setNewRoomChildSurcharge(e.target.value)}
+                      placeholder="150000"
+                      min="0"
+                      className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
+                    />
+                  </div>
+
+                  <label className="flex items-center gap-2 pt-4 text-xs font-bold text-slate-700 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={newRoomIncludeBreakfast}
+                      onChange={(e) => setNewRoomIncludeBreakfast(e.target.checked)}
+                      className="rounded border-[#CBD5E1] text-[#2563EB] focus:ring-[#2563EB]/20 w-4 h-4 cursor-pointer"
+                    />
+                    Bao gồm bữa sáng miễn phí
+                  </label>
+                </div>
               </div>
 
               <div className="space-y-1.5">
