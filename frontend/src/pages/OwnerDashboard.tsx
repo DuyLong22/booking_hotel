@@ -177,6 +177,19 @@ export const OwnerDashboard: React.FC = () => {
   const [newRoomCancellationPolicy, setNewRoomCancellationPolicy] = useState('FREE_24H');
   const [newRoomPaymentPolicy, setNewRoomPaymentPolicy] = useState('PAY_AT_HOTEL');
 
+  const [refreshCalendarTrigger, setRefreshCalendarTrigger] = useState(0);
+  const [showBulkConfig, setShowBulkConfig] = useState(false);
+  const [bulkStartDate, setBulkStartDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [bulkEndDate, setBulkEndDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().split('T')[0];
+  });
+  const [bulkDaysOfWeek, setBulkDaysOfWeek] = useState<boolean[]>([true, true, true, true, true, true, true]); // Mon to Sun
+  const [bulkAction, setBulkAction] = useState('PRICE'); // 'PRICE', 'SURCHARGE_WEEKEND', 'DISCOUNT'
+  const [bulkValue, setBulkValue] = useState('');
+  const [bulkAdjustmentType, setBulkAdjustmentType] = useState('PERCENTAGE'); // 'PERCENTAGE', 'FIXED'
+
   // Toast Trigger
   const triggerToast = (msg: string) => {
     setSuccessToast(msg);
@@ -376,7 +389,7 @@ export const OwnerDashboard: React.FC = () => {
     };
 
     fetchPriceCalendar();
-  }, [selectedRoomTypeId, roomTypes]);
+  }, [selectedRoomTypeId, roomTypes, refreshCalendarTrigger]);
 
   // Socket.io connection for owner chat
   useEffect(() => {
@@ -490,6 +503,81 @@ export const OwnerDashboard: React.FC = () => {
     } catch (err) {
       console.error(err);
       alert('Không thể lưu cấu hình lịch.');
+    }
+  };
+
+  const handleSaveBulkPriceCalendar = async () => {
+    if (!selectedRoomTypeId) return;
+    if (!bulkStartDate || !bulkEndDate) {
+      alert('Vui lòng chọn đầy đủ ngày bắt đầu và ngày kết thúc.');
+      return;
+    }
+
+    const start = new Date(bulkStartDate);
+    const end = new Date(bulkEndDate);
+
+    if (start > end) {
+      alert('Ngày bắt đầu không được lớn hơn ngày kết thúc.');
+      return;
+    }
+
+    const basePrice = roomTypes.find((r) => r.id === selectedRoomTypeId)?.basePrice || 1200000;
+    const pricesPayload: { date: string; price: number; isBlocked?: boolean }[] = [];
+
+    // Lặp qua từng ngày trong khoảng
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const dayOfWeek = d.getDay(); // 0: Chủ Nhật, 1: Thứ Hai, ..., 6: Thứ Bảy
+      // Ánh xạ getDay (0=CN, 1=T2, ..., 6=T7) sang chỉ số bulkDaysOfWeek (0=T2, 1=T3, ..., 5=T7, 6=CN)
+      const index = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+      if (bulkDaysOfWeek[index]) {
+        const dateStr = d.toISOString().split('T')[0];
+        let calculatedPrice = Number(basePrice);
+
+        if (bulkAction === 'PRICE') {
+          calculatedPrice = Number(bulkValue) || Number(basePrice);
+        } else if (bulkAction === 'SURCHARGE_WEEKEND') {
+          const val = Number(bulkValue) || 0;
+          if (bulkAdjustmentType === 'PERCENTAGE') {
+            calculatedPrice = Number(basePrice) * (1 + val / 100);
+          } else {
+            calculatedPrice = Number(basePrice) + val;
+          }
+        } else if (bulkAction === 'DISCOUNT') {
+          const val = Number(bulkValue) || 0;
+          if (bulkAdjustmentType === 'PERCENTAGE') {
+            calculatedPrice = Number(basePrice) * (1 - val / 100);
+          } else {
+            calculatedPrice = Math.max(0, Number(basePrice) - val);
+          }
+        }
+
+        pricesPayload.push({
+          date: dateStr,
+          price: calculatedPrice,
+          isBlocked: false,
+        });
+      }
+    }
+
+    if (pricesPayload.length === 0) {
+      alert('Không có ngày nào khớp với tiêu chí lựa chọn của bạn.');
+      return;
+    }
+
+    try {
+      await apiClient.post(`/hotels/room-types/${selectedRoomTypeId}/price-calendar`, {
+        prices: pricesPayload,
+      });
+
+      // Kích hoạt load lại lịch giá
+      setRefreshCalendarTrigger((prev) => prev + 1);
+      setShowBulkConfig(false);
+      setBulkValue('');
+      triggerToast('Đã thiết lập giá hàng loạt thành công!');
+    } catch (err) {
+      console.error(err);
+      alert('Không thể lưu cấu hình giá hàng loạt.');
     }
   };
 
@@ -1818,18 +1906,142 @@ export const OwnerDashboard: React.FC = () => {
           {/* 5. PRICE CALENDAR */}
           {activeMenu === 'calendar' && (
             <div className="space-y-4">
-              <div className="flex gap-4 items-center">
-                <label className="text-xs font-bold text-[#64748B]">Hạng phòng hiển thị:</label>
-                <select
-                  value={selectedRoomTypeId}
-                  onChange={(e) => setSelectedRoomTypeId(e.target.value)}
-                  className="bg-white border border-[#CBD5E1] text-[#2563EB] rounded-xl px-4 py-2 text-xs outline-none font-bold focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all"
+              {/* Nút bấm cấu hình hàng loạt */}
+              <div className="flex flex-wrap justify-between items-center gap-3 border-b border-[#E2E8F0] pb-4">
+                <div className="flex gap-4 items-center">
+                  <label className="text-xs font-bold text-[#64748B]">Hạng phòng hiển thị:</label>
+                  <select
+                    value={selectedRoomTypeId}
+                    onChange={(e) => setSelectedRoomTypeId(e.target.value)}
+                    className="bg-white border border-[#CBD5E1] text-[#2563EB] rounded-xl px-4 py-2 text-xs outline-none font-bold focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all"
+                  >
+                    {roomTypes.map(rt => (
+                      <option key={rt.id} value={rt.id}>{rt.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <button
+                  onClick={() => setShowBulkConfig(!showBulkConfig)}
+                  className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-all shadow-sm"
                 >
-                  {roomTypes.map(rt => (
-                    <option key={rt.id} value={rt.id}>{rt.name}</option>
-                  ))}
-                </select>
+                  <Sliders className="w-4 h-4" /> Cấu hình giá hàng loạt / Cuối tuần
+                </button>
               </div>
+
+              {/* Form Cấu hình giá hàng loạt */}
+              {showBulkConfig && (
+                <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-3xl p-5 space-y-4 animate-in slide-in-from-top-3 duration-250">
+                  <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                    <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider">Cài đặt giá hàng loạt / Cuối tuần</h4>
+                    <button onClick={() => setShowBulkConfig(false)} className="text-slate-450 hover:text-slate-700"><X className="w-4 h-4" /></button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-semibold">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#64748B] uppercase">Ngày bắt đầu</label>
+                      <input
+                        type="date"
+                        value={bulkStartDate}
+                        onChange={(e) => setBulkStartDate(e.target.value)}
+                        className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 outline-none font-semibold focus:border-[#2563EB] transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#64748B] uppercase">Ngày kết thúc</label>
+                      <input
+                        type="date"
+                        value={bulkEndDate}
+                        onChange={(e) => setBulkEndDate(e.target.value)}
+                        className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 outline-none font-semibold focus:border-[#2563EB] transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#64748B] uppercase">Hình thức điều chỉnh</label>
+                      <select
+                        value={bulkAction}
+                        onChange={(e) => setBulkAction(e.target.value)}
+                        className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 outline-none font-semibold focus:border-[#2563EB] transition-all cursor-pointer"
+                      >
+                        <option value="PRICE">Giá cố định (mới)</option>
+                        <option value="SURCHARGE_WEEKEND">Tăng giá (Cuối tuần / Lễ)</option>
+                        <option value="DISCOUNT">Giảm giá phòng</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#64748B] uppercase">
+                        {bulkAction === 'PRICE' ? 'Mức giá (đ)' : 'Giá trị điều chỉnh'}
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          value={bulkValue}
+                          onChange={(e) => setBulkValue(e.target.value)}
+                          placeholder={bulkAction === 'PRICE' ? '1500000' : '10'}
+                          className="flex-1 bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 outline-none font-semibold focus:border-[#2563EB] transition-all"
+                        />
+                        {bulkAction !== 'PRICE' && (
+                          <select
+                            value={bulkAdjustmentType}
+                            onChange={(e) => setBulkAdjustmentType(e.target.value)}
+                            className="bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl px-2.5 outline-none font-semibold focus:border-[#2563EB] transition-all cursor-pointer"
+                          >
+                            <option value="PERCENTAGE">%</option>
+                            <option value="FIXED">đ</option>
+                          </select>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] font-bold text-[#64748B] uppercase block">Áp dụng cho các thứ trong tuần</label>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setBulkDaysOfWeek([true, true, true, true, true, true, true])}
+                          className="text-[9px] font-black text-[#2563EB] hover:underline"
+                        >
+                          Tất cả các ngày
+                        </button>
+                        <span className="text-slate-300">|</span>
+                        <button
+                          onClick={() => setBulkDaysOfWeek([false, false, false, false, true, true, true])}
+                          className="text-[9px] font-black text-[#2563EB] hover:underline"
+                        >
+                          Cuối tuần (T6, T7, CN)
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-3 p-3 bg-white border border-[#E2E8F0] rounded-2xl">
+                      {['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'].map((day, idx) => (
+                        <label key={day} className="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={bulkDaysOfWeek[idx]}
+                            onChange={(e) => {
+                              const newDays = [...bulkDaysOfWeek];
+                              newDays[idx] = e.target.checked;
+                              setBulkDaysOfWeek(newDays);
+                            }}
+                            className="rounded border-[#CBD5E1] text-[#2563EB] focus:ring-[#2563EB]/20 w-4 h-4 cursor-pointer"
+                          />
+                          {day}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-2 border-t border-slate-200">
+                    <button
+                      onClick={handleSaveBulkPriceCalendar}
+                      className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm"
+                    >
+                      Áp dụng cấu hình hàng loạt
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {calendarLoading ? (
                 <div className="h-48 bg-slate-500/5 rounded-2xl animate-pulse"></div>
