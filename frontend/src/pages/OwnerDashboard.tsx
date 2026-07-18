@@ -626,11 +626,11 @@ export const OwnerDashboard: React.FC = () => {
       const payload = {
         name: newRoomName,
         description: newRoomDesc.trim() || `Hạng phòng ${newRoomName} đầy đủ tiện nghi, sạch sẽ thoáng mát.`,
-        basePrice: Number(newRoomPrice) || 800000,
-        capacity: Number(newRoomCapacity) || 2,
-        bedCount: Number(newRoomBedCount) || 1,
-        size: Number(newRoomSize) || 30,
-        roomCount: Number(newRoomCount) || 1,
+        basePrice: newRoomPrice !== '' ? Number(newRoomPrice) : 800000,
+        capacity: newRoomCapacity !== '' ? Number(newRoomCapacity) : 2,
+        bedCount: newRoomBedCount !== '' ? Number(newRoomBedCount) : 1,
+        size: newRoomSize !== '' ? Number(newRoomSize) : 30,
+        roomCount: newRoomCount !== '' ? Number(newRoomCount) : 0,
         amenities: newRoomAmenities.length > 0 ? newRoomAmenities : ['Wifi', 'Điều hòa', 'Tivi'],
         images: [{ url: imageUrl, isPrimary: true }]
       };
