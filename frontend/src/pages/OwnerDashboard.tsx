@@ -150,10 +150,16 @@ export const OwnerDashboard: React.FC = () => {
 
   // Create Room State
   const [showAddRoom, setShowAddRoom] = useState(false);
+  const [editingRoomType, setEditingRoomType] = useState<any | null>(null);
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomPrice, setNewRoomPrice] = useState('');
   const [newRoomCapacity, setNewRoomCapacity] = useState('2');
   const [newRoomBed, setNewRoomBed] = useState('King Size');
+  const [newRoomBedCount, setNewRoomBedCount] = useState('1');
+  const [newRoomSize, setNewRoomSize] = useState('30');
+  const [newRoomDesc, setNewRoomDesc] = useState('');
+  const [newRoomImageUrl, setNewRoomImageUrl] = useState('');
+  const [newRoomAmenities, setNewRoomAmenities] = useState<string[]>(['Wifi', 'Điều hòa', 'Tivi']);
 
   // Toast Trigger
   const triggerToast = (msg: string) => {
@@ -574,31 +580,85 @@ export const OwnerDashboard: React.FC = () => {
     return result;
   };
 
-  const handleCreateRoomType = async (e: React.FormEvent) => {
+  const handleOpenAddRoomType = () => {
+    setEditingRoomType(null);
+    setNewRoomName('');
+    setNewRoomPrice('');
+    setNewRoomCapacity('2');
+    setNewRoomBedCount('1');
+    setNewRoomSize('30');
+    setNewRoomDesc('');
+    setNewRoomImageUrl('');
+    setNewRoomAmenities(['Wifi', 'Điều hòa', 'Tivi']);
+    setShowAddRoom(true);
+  };
+
+  const handleOpenEditRoomType = (rt: any) => {
+    setEditingRoomType(rt);
+    setNewRoomName(rt.name);
+    setNewRoomPrice(rt.basePrice.toString());
+    setNewRoomCapacity(rt.capacity.toString());
+    setNewRoomBedCount(rt.bedCount?.toString() || '1');
+    setNewRoomSize(rt.size?.toString() || '30');
+    setNewRoomDesc(rt.description || '');
+    setNewRoomImageUrl(rt.images?.[0]?.url || '');
+    setNewRoomAmenities(rt.amenities || ['Wifi', 'Điều hòa', 'Tivi']);
+    setShowAddRoom(true);
+  };
+
+  const handleSaveRoomType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!hotelId) return;
     try {
+      const defaultImg = 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80';
+      const imageUrl = newRoomImageUrl.trim() || defaultImg;
+
       const payload = {
         name: newRoomName,
-        description: `Loại phòng ${newRoomName} tiện nghi`,
+        description: newRoomDesc.trim() || `Hạng phòng ${newRoomName} đầy đủ tiện nghi, sạch sẽ thoáng mát.`,
         basePrice: Number(newRoomPrice) || 800000,
         capacity: Number(newRoomCapacity) || 2,
-        bedCount: 1,
-        size: 30,
-        amenities: ['Wifi', 'Điều hòa', 'Tivi'],
-        images: [{ url: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=600&q=80', isPrimary: true }]
+        bedCount: Number(newRoomBedCount) || 1,
+        size: Number(newRoomSize) || 30,
+        amenities: newRoomAmenities.length > 0 ? newRoomAmenities : ['Wifi', 'Điều hòa', 'Tivi'],
+        images: [{ url: imageUrl, isPrimary: true }]
       };
 
-      const res = await apiClient.post(`/hotels/${hotelId}/room-types`, payload);
-      const newRoom = res.data.data;
-      setRoomTypes(prev => [...prev, newRoom]);
+      if (editingRoomType) {
+        const res = await apiClient.put(`/hotels/room-types/${editingRoomType.id}`, payload);
+        const updatedRoom = res.data.data;
+        setRoomTypes(prev => prev.map(rt => rt.id === updatedRoom.id ? updatedRoom : rt));
+        triggerToast('Cập nhật hạng phòng thành công!');
+      } else {
+        const res = await apiClient.post(`/hotels/${hotelId}/room-types`, payload);
+        const newRoom = res.data.data;
+        setRoomTypes(prev => [...prev, newRoom]);
+        triggerToast('Thêm hạng phòng thành công!');
+      }
+
       setShowAddRoom(false);
+      setEditingRoomType(null);
       setNewRoomName('');
       setNewRoomPrice('');
-      triggerToast('Thêm hạng phòng thành công!');
+      setNewRoomCapacity('2');
+      setNewRoomBedCount('1');
+      setNewRoomSize('30');
+      setNewRoomDesc('');
+      setNewRoomImageUrl('');
+      setNewRoomAmenities(['Wifi', 'Điều hòa', 'Tivi']);
     } catch (err) {
       console.error(err);
-      alert('Không thể tạo hạng phòng mới.');
+      alert('Không thể lưu thông tin hạng phòng.');
+    }
+  };
+
+  const handleCreatePhysicalRoom = async (roomTypeId: string, roomNumber: string) => {
+    try {
+      await apiClient.post('/hotels/rooms', { roomTypeId, roomNumber });
+      triggerToast(`Đã thêm số phòng ${roomNumber} thành công!`);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Không thể tạo phòng vật lý mới.');
     }
   };
 
@@ -1530,35 +1590,113 @@ export const OwnerDashboard: React.FC = () => {
 
           {/* 3. ROOM TYPES & CRUD */}
           {activeMenu === 'rooms' && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div className="flex justify-between items-center border-b border-[#E2E8F0] pb-3.5">
-                <button onClick={() => setShowAddRoom(true)} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-all shadow-sm">
+                <h3 className="font-extrabold text-[#0F172A] text-sm uppercase tracking-wider">Danh sách hạng phòng</h3>
+                <button 
+                  onClick={handleOpenAddRoomType} 
+                  className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-all shadow-sm"
+                >
                   <Plus className="w-4 h-4" /> {language === 'vi' ? 'Thêm hạng phòng' : 'Add Room Type'}
                 </button>
               </div>
 
-              <div className="overflow-x-auto border border-[#E2E8F0] rounded-2xl bg-white shadow-[0_4px_12px_rgba(15,23,42,0.04)]">
-                <table className="min-w-full divide-y divide-[#E2E8F0] text-xs font-semibold text-slate-650 text-left">
-                  <thead className="bg-[#F8FAFC] text-[10px] uppercase text-[#475569] font-bold">
-                    <tr>
-                      <th className="px-4 py-3">Loại phòng</th>
-                      <th className="px-4 py-3">Giá cơ bản</th>
-                      <th className="px-4 py-3">Hành động</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#E2E8F0] bg-white text-[#1E293B]">
-                    {roomTypes.map((rt, idx) => (
-                      <tr key={rt.id} className={`${idx % 2 === 1 ? 'bg-[#FAFAFA]' : 'bg-white'} hover:bg-[#EFF6FF] transition-colors`}>
-                        <td className="px-4 py-4 font-black">{rt.name}</td>
-                        <td className="px-4 py-4 font-extrabold text-[#0F172A]">{rt.basePrice.toLocaleString()} đ</td>
-                        <td className="px-4 py-4">
-                          <button onClick={() => handleDeleteRoomType(rt.id)} className="text-[#DC2626] bg-[#FEE2E2] hover:bg-[#FECACA] p-2 rounded-xl transition-all shadow-sm"><Trash2 className="w-4 h-4" /></button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {roomTypes.length === 0 ? (
+                <div className="text-center py-12 bg-white border border-[#E2E8F0] rounded-3xl p-6 text-slate-450 font-bold text-xs space-y-2">
+                  <p>Chưa có hạng phòng nào được thiết lập cho khách sạn này.</p>
+                  <p className="text-[10px] text-slate-400">Hãy nhấn "Thêm hạng phòng" ở trên để bắt đầu thêm!</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {roomTypes.map((rt) => {
+                    const roomImg = rt.images?.[0]?.url || 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=600&q=80';
+                    return (
+                      <div key={rt.id} className="bg-white rounded-3xl border border-slate-100 shadow-md hover:shadow-xl transition-all overflow-hidden flex flex-col group">
+                        {/* Room Image with overlay badges */}
+                        <div className="relative h-44 w-full bg-slate-100 overflow-hidden">
+                          <img src={roomImg} alt={rt.name} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300" />
+                          <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                            {rt.size && (
+                              <span className="bg-slate-900/75 backdrop-blur-sm text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white/20">
+                                {rt.size} m²
+                              </span>
+                            )}
+                            <span className="bg-slate-900/75 backdrop-blur-sm text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white/20">
+                              {rt.capacity} Khách
+                            </span>
+                            <span className="bg-slate-900/75 backdrop-blur-sm text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white/20">
+                              {rt.bedCount || 1} Giường
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Room Details */}
+                        <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-start gap-2">
+                              <h4 className="font-black text-slate-800 text-sm sm:text-base">{rt.name}</h4>
+                              <span className="text-[#2563EB] font-black text-xs sm:text-sm whitespace-nowrap bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-full">
+                                {Number(rt.basePrice).toLocaleString()} đ
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-semibold line-clamp-2 leading-relaxed">
+                              {rt.description || 'Chưa có mô tả cho hạng phòng này.'}
+                            </p>
+
+                            {/* Amenities list */}
+                            {rt.amenities && rt.amenities.length > 0 && (
+                              <div className="flex flex-wrap gap-1 pt-1.5">
+                                {rt.amenities.slice(0, 5).map((am: string) => (
+                                  <span key={am} className="bg-slate-100 text-slate-650 text-[9px] font-bold px-2 py-0.5 rounded-full">
+                                    {am}
+                                  </span>
+                                ))}
+                                {rt.amenities.length > 5 && (
+                                  <span className="bg-slate-105 text-slate-500 text-[9px] font-bold px-2 py-0.5 rounded-full">
+                                    +{rt.amenities.length - 5}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Action buttons */}
+                          <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                            <button
+                              onClick={() => {
+                                const roomNum = prompt('Nhập số phòng mới (ví dụ: 101, 102, 201):');
+                                if (roomNum && roomNum.trim()) {
+                                  handleCreatePhysicalRoom(rt.id, roomNum.trim());
+                                }
+                              }}
+                              className="text-[#2563EB] hover:text-[#1D4ED8] bg-blue-50 hover:bg-blue-100 border border-blue-100 text-[10px] font-extrabold px-3 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-1"
+                            >
+                              <Plus className="w-3.5 h-3.5" /> + Số phòng
+                            </button>
+
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleOpenEditRoomType(rt)}
+                                className="text-slate-650 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 p-2 rounded-xl transition-all shadow-sm"
+                                title="Chỉnh sửa hạng phòng"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteRoomType(rt.id)}
+                                className="text-[#DC2626] hover:text-[#B91C1C] bg-red-50 hover:bg-red-100 p-2 rounded-xl transition-all shadow-sm"
+                                title="Xóa hạng phòng"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -2074,13 +2212,24 @@ export const OwnerDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* ADD ROOM TYPE MODAL */}
+      {/* ADD/EDIT ROOM TYPE MODAL */}
       {showAddRoom && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-55 flex items-center justify-center p-4">
-          <form onSubmit={handleCreateRoomType} className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm space-y-4 text-[#1E293B] border border-[#E2E8F0]">
-            <h3 className="font-bold text-[#0F172A] text-sm border-b border-[#E2E8F0] pb-2">Tạo hạng phòng mới</h3>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-55 flex items-center justify-center p-4 overflow-y-auto">
+          <form onSubmit={handleSaveRoomType} className="bg-white p-6 sm:p-7 rounded-3xl shadow-2xl w-full max-w-lg space-y-5 text-[#1E293B] border border-slate-100 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            <div className="border-b border-[#E2E8F0] pb-3 flex justify-between items-center">
+              <h3 className="font-extrabold text-[#0F172A] text-sm uppercase tracking-wider">
+                {editingRoomType ? 'Chỉnh sửa hạng phòng' : 'Tạo hạng phòng mới'}
+              </h3>
+              <button 
+                type="button" 
+                onClick={() => { setShowAddRoom(false); setEditingRoomType(null); }}
+                className="text-slate-450 hover:text-slate-700 hover:bg-slate-100 p-1.5 rounded-xl transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-            <div className="space-y-3 text-xs font-semibold">
+            <div className="space-y-4 text-xs font-semibold">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-[#64748B] uppercase">Tên hạng phòng</label>
                 <input
@@ -2088,48 +2237,122 @@ export const OwnerDashboard: React.FC = () => {
                   required
                   value={newRoomName}
                   onChange={(e) => setNewRoomName(e.target.value)}
-                  placeholder="Standard King Room"
-                  className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
+                  placeholder="Standard King Room / Deluxe Ocean View"
+                  className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-[#64748B] uppercase">Giá cơ bản (đ)</label>
+                  <input
+                    type="number"
+                    required
+                    value={newRoomPrice}
+                    onChange={(e) => setNewRoomPrice(e.target.value)}
+                    placeholder="1200000"
+                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-[#64748B] uppercase">Diện tích (m²)</label>
+                  <input
+                    type="number"
+                    required
+                    value={newRoomSize}
+                    onChange={(e) => setNewRoomSize(e.target.value)}
+                    placeholder="30"
+                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-[#64748B] uppercase">Sức chứa tối đa (người)</label>
+                  <input
+                    type="number"
+                    required
+                    value={newRoomCapacity}
+                    onChange={(e) => setNewRoomCapacity(e.target.value)}
+                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-[#64748B] uppercase">Số giường</label>
+                  <input
+                    type="number"
+                    required
+                    value={newRoomBedCount}
+                    onChange={(e) => setNewRoomBedCount(e.target.value)}
+                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-[#64748B] uppercase">Mô tả phòng</label>
+                <textarea
+                  rows={2}
+                  value={newRoomDesc}
+                  onChange={(e) => setNewRoomDesc(e.target.value)}
+                  placeholder="Mô tả các điểm đặc biệt, hướng phòng, tiện nghi nổi bật..."
+                  className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none resize-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-[#64748B] uppercase">Giá cơ bản (đ)</label>
+                <label className="text-[10px] font-bold text-[#64748B] uppercase">Ảnh hạng phòng (URL)</label>
                 <input
-                  type="number"
-                  required
-                  value={newRoomPrice}
-                  onChange={(e) => setNewRoomPrice(e.target.value)}
-                  placeholder="1200000"
-                  className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
+                  type="text"
+                  value={newRoomImageUrl}
+                  onChange={(e) => setNewRoomImageUrl(e.target.value)}
+                  placeholder="https://images.unsplash.com/photo-..."
+                  className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748B] uppercase">Sức chứa tối đa</label>
-                  <input
-                    type="number"
-                    value={newRoomCapacity}
-                    onChange={(e) => setNewRoomCapacity(e.target.value)}
-                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748B] uppercase">Loại giường</label>
-                  <input
-                    type="text"
-                    value={newRoomBed}
-                    onChange={(e) => setNewRoomBed(e.target.value)}
-                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
-                  />
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-[#64748B] uppercase block">Tiện ích phòng</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-slate-50 border border-slate-100 rounded-2xl max-h-[120px] overflow-y-auto">
+                  {['Wifi', 'Điều hòa', 'Tivi', 'Tủ lạnh', 'Bồn tắm', 'Ban công', 'Ấm đun nước', 'Dép đi trong nhà', 'Két an toàn', 'Máy sấy tóc'].map((am) => {
+                    const isChecked = newRoomAmenities.includes(am);
+                    return (
+                      <label key={am} className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setNewRoomAmenities(prev => [...prev, am]);
+                            } else {
+                              setNewRoomAmenities(prev => prev.filter(x => x !== am));
+                            }
+                          }}
+                          className="rounded border-[#CBD5E1] text-[#2563EB] focus:ring-[#2563EB]/20 w-3.5 h-3.5 cursor-pointer"
+                        />
+                        {am}
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
             <div className="flex gap-2 justify-end pt-2 border-t border-[#E2E8F0]">
-              <button type="button" onClick={() => setShowAddRoom(false)} className="px-4 py-2 bg-white border border-[#CBD5E1] text-[#334155] hover:bg-[#F8FAFC] rounded-xl text-xs font-bold transition-all shadow-sm">Quay lại</button>
-              <button type="submit" className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm">Tạo phòng</button>
+              <button 
+                type="button" 
+                onClick={() => { setShowAddRoom(false); setEditingRoomType(null); }} 
+                className="px-4 py-2.5 bg-white border border-[#CBD5E1] text-[#334155] hover:bg-[#F8FAFC] rounded-xl text-xs font-bold transition-all shadow-sm"
+              >
+                Hủy bỏ
+              </button>
+              <button 
+                type="submit" 
+                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm"
+              >
+                {editingRoomType ? 'Lưu thay đổi' : 'Tạo phòng'}
+              </button>
             </div>
           </form>
         </div>

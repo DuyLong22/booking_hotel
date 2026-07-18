@@ -45,7 +45,18 @@ export class RoomUseCase {
     if (!roomType) throw new AppError('Không tìm thấy loại phòng', 404);
     if (roomType.hotel.ownerId !== ownerId) throw new AppError('Bạn không sở hữu khách sạn chứa loại phòng này', 403);
 
-    const { name, description, basePrice, capacity, bedCount, size, amenities } = data;
+    const { name, description, basePrice, capacity, bedCount, size, amenities, images } = data;
+
+    if (images && Array.isArray(images)) {
+      await prisma.roomImage.deleteMany({ where: { roomTypeId } });
+      await prisma.roomImage.createMany({
+        data: images.map((img: any) => ({
+          roomTypeId,
+          url: img.url,
+          isPrimary: img.isPrimary ?? false,
+        })),
+      });
+    }
 
     const updated = await prisma.roomType.update({
       where: { id: roomTypeId },

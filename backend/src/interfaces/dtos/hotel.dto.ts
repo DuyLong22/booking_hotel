@@ -69,6 +69,10 @@ export const updateRoomTypeSchema = z.object({
     bedCount: z.number().int().positive().optional(),
     size: z.number().positive().optional(),
     amenities: z.array(z.string()).optional(),
+    images: z.array(z.object({
+      url: z.string().url('Đường dẫn ảnh không hợp lệ'),
+      isPrimary: z.boolean().default(false)
+    })).optional(),
   })
 });
 
