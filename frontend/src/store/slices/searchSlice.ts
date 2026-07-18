@@ -16,7 +16,7 @@ export interface SearchState {
   amenityIds: string[];
 }
 
-const getTomorrow = (offset = 1): string => {
+const getDateString = (offset = 0): string => {
   const d = new Date();
   d.setDate(d.getDate() + offset);
   return d.toISOString().split('T')[0];
@@ -28,8 +28,8 @@ const defaultState: SearchState = {
   districtId: '',
   wardId: '',
   categoryId: '',
-  checkInDate: getTomorrow(1),
-  checkOutDate: getTomorrow(2),
+  checkInDate: getDateString(0), // Ngày hiện tại
+  checkOutDate: getDateString(1), // Ngày mai
   guests: 2,
   priceMin: null,
   priceMax: null,
