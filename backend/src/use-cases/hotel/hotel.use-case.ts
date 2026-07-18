@@ -274,6 +274,7 @@ export class HotelUseCase {
           images: rt.images,
           availableRooms: availableCount,
           isBlocked,
+          rooms: rt.rooms,
         };
       })
     );
