@@ -38,6 +38,7 @@ interface RoomType {
   size?: number;
   amenities?: string[];
   images?: { url: string; isPrimary: boolean }[];
+  rooms?: any[];
 }
 
 interface Conversation {
@@ -163,6 +164,7 @@ export const OwnerDashboard: React.FC = () => {
   const [newRoomBed, setNewRoomBed] = useState('King Size');
   const [newRoomBedCount, setNewRoomBedCount] = useState('1');
   const [newRoomSize, setNewRoomSize] = useState('30');
+  const [newRoomCount, setNewRoomCount] = useState('1');
   const [newRoomDesc, setNewRoomDesc] = useState('');
   const [newRoomImageUrl, setNewRoomImageUrl] = useState('');
   const [newRoomAmenities, setNewRoomAmenities] = useState<string[]>(['Wifi', 'Điều hòa', 'Tivi']);
@@ -593,6 +595,7 @@ export const OwnerDashboard: React.FC = () => {
     setNewRoomCapacity('2');
     setNewRoomBedCount('1');
     setNewRoomSize('30');
+    setNewRoomCount('1');
     setNewRoomDesc('');
     setNewRoomImageUrl('');
     setNewRoomAmenities(['Wifi', 'Điều hòa', 'Tivi']);
@@ -606,6 +609,7 @@ export const OwnerDashboard: React.FC = () => {
     setNewRoomCapacity(rt.capacity.toString());
     setNewRoomBedCount(rt.bedCount?.toString() || '1');
     setNewRoomSize(rt.size?.toString() || '30');
+    setNewRoomCount(rt.rooms?.length?.toString() || '1');
     setNewRoomDesc(rt.description || '');
     setNewRoomImageUrl(rt.images?.[0]?.url || '');
     setNewRoomAmenities(rt.amenities || ['Wifi', 'Điều hòa', 'Tivi']);
@@ -626,6 +630,7 @@ export const OwnerDashboard: React.FC = () => {
         capacity: Number(newRoomCapacity) || 2,
         bedCount: Number(newRoomBedCount) || 1,
         size: Number(newRoomSize) || 30,
+        roomCount: Number(newRoomCount) || 1,
         amenities: newRoomAmenities.length > 0 ? newRoomAmenities : ['Wifi', 'Điều hòa', 'Tivi'],
         images: [{ url: imageUrl, isPrimary: true }]
       };
@@ -649,6 +654,7 @@ export const OwnerDashboard: React.FC = () => {
       setNewRoomCapacity('2');
       setNewRoomBedCount('1');
       setNewRoomSize('30');
+      setNewRoomCount('1');
       setNewRoomDesc('');
       setNewRoomImageUrl('');
       setNewRoomAmenities(['Wifi', 'Điều hòa', 'Tivi']);
@@ -1633,6 +1639,9 @@ export const OwnerDashboard: React.FC = () => {
                             <span className="bg-slate-900/75 backdrop-blur-sm text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white/20">
                               {rt.bedCount || 1} Giường
                             </span>
+                            <span className="bg-amber-600/90 text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-amber-500/20 shadow-sm animate-pulse">
+                              {rt.rooms?.length || 0} phòng
+                            </span>
                           </div>
                         </div>
 
@@ -1668,17 +1677,9 @@ export const OwnerDashboard: React.FC = () => {
 
                           {/* Action buttons */}
                           <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                            <button
-                              onClick={() => {
-                                const roomNum = prompt('Nhập số phòng mới (ví dụ: 101, 102, 201):');
-                                if (roomNum && roomNum.trim()) {
-                                  handleCreatePhysicalRoom(rt.id, roomNum.trim());
-                                }
-                              }}
-                              className="text-[#2563EB] hover:text-[#1D4ED8] bg-blue-50 hover:bg-blue-100 border border-blue-100 text-[10px] font-extrabold px-3 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-1"
-                            >
-                              <Plus className="w-3.5 h-3.5" /> + Số phòng
-                            </button>
+                            <span className="text-[#334155] bg-slate-50 border border-slate-200 text-[10px] font-black px-3.5 py-1.5 rounded-xl flex items-center gap-1 shadow-sm">
+                              Số lượng: {rt.rooms?.length || 0} phòng
+                            </span>
 
                             <div className="flex gap-2">
                               <button
@@ -2273,9 +2274,9 @@ export const OwnerDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748B] uppercase">Sức chứa tối đa (người)</label>
+                  <label className="text-[10px] font-bold text-[#64748B] uppercase">Sức chứa</label>
                   <input
                     type="number"
                     required
@@ -2291,6 +2292,18 @@ export const OwnerDashboard: React.FC = () => {
                     required
                     value={newRoomBedCount}
                     onChange={(e) => setNewRoomBedCount(e.target.value)}
+                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-[#64748B] uppercase">Số lượng phòng</label>
+                  <input
+                    type="number"
+                    required
+                    value={newRoomCount}
+                    onChange={(e) => setNewRoomCount(e.target.value)}
+                    placeholder="1"
+                    min="1"
                     className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
                   />
                 </div>

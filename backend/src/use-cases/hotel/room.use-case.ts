@@ -10,7 +10,7 @@ export class RoomUseCase {
     if (!hotel) throw new AppError('Không tìm thấy khách sạn', 404);
     if (hotel.ownerId !== ownerId) throw new AppError('Bạn không sở hữu khách sạn này', 403);
 
-    const { name, description, basePrice, capacity, bedCount, size, amenities, images } = data;
+    const { name, description, basePrice, capacity, bedCount, size, amenities, images, roomCount } = data;
 
     const roomType = await prisma.roomType.create({
       data: {
@@ -31,10 +31,30 @@ export class RoomUseCase {
       },
       include: {
         images: true,
+        rooms: true,
       },
     });
 
-    return roomType;
+    // Tự động tạo các số phòng vật lý mẫu
+    if (roomCount && Number(roomCount) > 0) {
+      const roomsData = Array.from({ length: Number(roomCount) }).map((_, i) => ({
+        roomTypeId: roomType.id,
+        roomNumber: `Phòng ${i + 1}`,
+        isAvailable: true
+      }));
+      await prisma.room.createMany({ data: roomsData });
+    }
+
+    // Load lại hạng phòng kèm danh sách phòng vừa tạo
+    const result = await prisma.roomType.findUnique({
+      where: { id: roomType.id },
+      include: {
+        images: true,
+        rooms: true,
+      }
+    });
+
+    return result || roomType;
   }
 
   public async updateRoomType(roomTypeId: string, ownerId: string, data: any) {
@@ -45,7 +65,7 @@ export class RoomUseCase {
     if (!roomType) throw new AppError('Không tìm thấy loại phòng', 404);
     if (roomType.hotel.ownerId !== ownerId) throw new AppError('Bạn không sở hữu khách sạn chứa loại phòng này', 403);
 
-    const { name, description, basePrice, capacity, bedCount, size, amenities, images } = data;
+    const { name, description, basePrice, capacity, bedCount, size, amenities, images, roomCount } = data;
 
     if (images && Array.isArray(images)) {
       await prisma.roomImage.deleteMany({ where: { roomTypeId } });
@@ -56,6 +76,29 @@ export class RoomUseCase {
           isPrimary: img.isPrimary ?? false,
         })),
       });
+    }
+
+    // Đồng bộ số lượng phòng vật lý
+    if (roomCount !== undefined) {
+      const existingRooms = await prisma.room.findMany({ where: { roomTypeId } });
+      const currentCount = existingRooms.length;
+      const targetCount = Number(roomCount) || 0;
+
+      if (targetCount > currentCount) {
+        const diff = targetCount - currentCount;
+        const roomsToCreate = Array.from({ length: diff }).map((_, i) => ({
+          roomTypeId,
+          roomNumber: `Phòng ${currentCount + i + 1}`,
+          isAvailable: true
+        }));
+        await prisma.room.createMany({ data: roomsToCreate });
+      } else if (targetCount < currentCount) {
+        const diff = currentCount - targetCount;
+        const roomsToDelete = existingRooms.slice(targetCount);
+        await prisma.room.deleteMany({
+          where: { id: { in: roomsToDelete.map(r => r.id) } }
+        });
+      }
     }
 
     const updated = await prisma.roomType.update({
@@ -71,6 +114,7 @@ export class RoomUseCase {
       },
       include: {
         images: true,
+        rooms: true,
       },
     });
 

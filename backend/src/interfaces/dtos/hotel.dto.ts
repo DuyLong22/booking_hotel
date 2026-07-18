@@ -56,7 +56,8 @@ export const createRoomTypeSchema = z.object({
     images: z.array(z.object({
       url: z.string().url('Đường dẫn ảnh không hợp lệ'),
       isPrimary: z.boolean().default(false)
-    })).default([])
+    })).default([]),
+    roomCount: z.number().int().nonnegative().optional()
   })
 });
 
@@ -73,6 +74,7 @@ export const updateRoomTypeSchema = z.object({
       url: z.string().url('Đường dẫn ảnh không hợp lệ'),
       isPrimary: z.boolean().default(false)
     })).optional(),
+    roomCount: z.number().int().nonnegative().optional()
   })
 });
 
