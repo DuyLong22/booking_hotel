@@ -144,6 +144,7 @@ async function main() {
   const wardsToCreate: any[] = [];
 
   for (const prov of locationsList) {
+    if (!prov.Id || !prov.Name) continue;
     provincesToCreate.push({
       id: prov.Id,
       name: prov.Name,
@@ -152,6 +153,7 @@ async function main() {
 
     if (prov.Districts) {
       for (const dist of prov.Districts) {
+        if (!dist.Id || !dist.Name) continue;
         districtsToCreate.push({
           id: dist.Id,
           provinceId: prov.Id,
@@ -161,6 +163,7 @@ async function main() {
 
         if (dist.Wards) {
           for (const ward of dist.Wards) {
+            if (!ward.Id || !ward.Name) continue;
             wardsToCreate.push({
               id: ward.Id,
               districtId: dist.Id,
