@@ -1,10 +1,31 @@
 import { PrismaClient, Role, HotelStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('--- Bắt đầu Seeding Dữ liệu mẫu ---');
+
+  console.log('--- Cleaning Database ---');
+  // Clear order to avoid foreign key violations:
+  await prisma.roomPriceCalendar.deleteMany();
+  await prisma.bookingItem.deleteMany();
+  await prisma.booking.deleteMany();
+  await prisma.review.deleteMany();
+  await prisma.favorite.deleteMany();
+  await prisma.recentlyViewed.deleteMany();
+  await prisma.hotelImage.deleteMany();
+  await prisma.hotelAmenity.deleteMany();
+  await prisma.roomImage.deleteMany();
+  await prisma.room.deleteMany();
+  await prisma.roomType.deleteMany();
+  await prisma.hotel.deleteMany();
+  
+  await prisma.ward.deleteMany();
+  await prisma.district.deleteMany();
+  await prisma.province.deleteMany();
 
   // 1. Seed Categories
   const categories = [
@@ -113,161 +134,59 @@ async function main() {
   }
   console.log(`Đã seed ${seededAmenities.length} tiện nghi.`);
 
-  // 3. Seed Địa giới Hành chính Việt Nam (Tất cả 63 Tỉnh -> Huyện -> Xã)
-  const provincesData = [
-    { id: '01', name: 'Thành phố Hà Nội', code: 'HN' },
-    { id: '79', name: 'Thành phố Hồ Chí Minh', code: 'HCM' },
-    { id: '48', name: 'Thành phố Đà Nẵng', code: 'DN' },
-    { id: '31', name: 'Thành phố Hải Phòng', code: 'HP' },
-    { id: '92', name: 'Thành phố Cần Thơ', code: 'CT' },
-    { id: '68', name: 'Tỉnh Lâm Đồng', code: 'LD' },
-    { id: '56', name: 'Tỉnh Khánh Hòa', code: 'KH' },
-    { id: '89', name: 'Tỉnh An Giang', code: 'AG' },
-    { id: '77', name: 'Tỉnh Bà Rịa - Vũng Tàu', code: 'VT' },
-    { id: '95', name: 'Tỉnh Bạc Liêu', code: 'BL' },
-    { id: '24', name: 'Tỉnh Bắc Giang', code: 'BG' },
-    { id: '06', name: 'Tỉnh Bắc Kạn', code: 'BK' },
-    { id: '27', name: 'Tỉnh Bắc Ninh', code: 'BN' },
-    { id: '83', name: 'Tỉnh Bến Tre', code: 'BT' },
-    { id: '74', name: 'Tỉnh Bình Dương', code: 'BD' },
-    { id: '52', name: 'Tỉnh Bình Định', code: 'BDI' },
-    { id: '70', name: 'Tỉnh Bình Phước', code: 'BP' },
-    { id: '60', name: 'Tỉnh Bình Thuận', code: 'BTH' },
-    { id: '96', name: 'Tỉnh Cà Mau', code: 'CM' },
-    { id: '04', name: 'Tỉnh Cao Bằng', code: 'CB' },
-    { id: '66', name: 'Tỉnh Đắk Lắk', code: 'DLK' },
-    { id: '67', name: 'Tỉnh Đắk Nông', code: 'DKN' },
-    { id: '11', name: 'Tỉnh Điện Biên', code: 'DB' },
-    { id: '75', name: 'Tỉnh Đồng Nai', code: 'DN' },
-    { id: '87', name: 'Tỉnh Đồng Tháp', code: 'DT' },
-    { id: '64', name: 'Tỉnh Gia Lai', code: 'GL' },
-    { id: '02', name: 'Tỉnh Hà Giang', code: 'HG' },
-    { id: '35', name: 'Tỉnh Hà Nam', code: 'HN' },
-    { id: '42', name: 'Tỉnh Hà Tĩnh', code: 'HT' },
-    { id: '30', name: 'Tỉnh Hải Dương', code: 'HD' },
-    { id: '93', name: 'Tỉnh Hậu Giang', code: 'HG' },
-    { id: '17', name: 'Tỉnh Hòa Bình', code: 'HB' },
-    { id: '33', name: 'Tỉnh Hưng Yên', code: 'HY' },
-    { id: '91', name: 'Tỉnh Kiên Giang', code: 'KG' },
-    { id: '62', name: 'Tỉnh Kon Tum', code: 'KT' },
-    { id: '12', name: 'Tỉnh Lai Châu', code: 'LC' },
-    { id: '20', name: 'Tỉnh Lạng Sơn', code: 'LS' },
-    { id: '10', name: 'Tỉnh Lào Cai', code: 'LC' },
-    { id: '80', name: 'Tỉnh Long An', code: 'LA' },
-    { id: '36', name: 'Tỉnh Nam Định', code: 'ND' },
-    { id: '40', name: 'Tỉnh Nghệ An', code: 'NA' },
-    { id: '37', name: 'Tỉnh Ninh Bình', code: 'NB' },
-    { id: '58', name: 'Tỉnh Ninh Thuận', code: 'NT' },
-    { id: '25', name: 'Tỉnh Phú Thọ', code: 'PT' },
-    { id: '54', name: 'Tỉnh Phú Yên', code: 'PY' },
-    { id: '44', name: 'Tỉnh Quảng Bình', code: 'QB' },
-    { id: '49', name: 'Tỉnh Quảng Nam', code: 'QN' },
-    { id: '51', name: 'Tỉnh Quảng Ngãi', code: 'QN' },
-    { id: '22', name: 'Tỉnh Quảng Ninh', code: 'QN' },
-    { id: '45', name: 'Tỉnh Quảng Trị', code: 'QT' },
-    { id: '94', name: 'Tỉnh Sóc Trăng', code: 'ST' },
-    { id: '14', name: 'Tỉnh Sơn La', code: 'SL' },
-    { id: '72', name: 'Tỉnh Tây Ninh', code: 'TN' },
-    { id: '34', name: 'Tỉnh Thái Bình', code: 'TB' },
-    { id: '19', name: 'Tỉnh Thái Nguyên', code: 'TN' },
-    { id: '38', name: 'Tỉnh Thanh Hóa', code: 'TH' },
-    { id: '46', name: 'Tỉnh Thừa Thiên Huế', code: 'TTH' },
-    { id: '82', name: 'Tỉnh Tiền Giang', code: 'TG' },
-    { id: '84', name: 'Tỉnh Trà Vinh', code: 'TV' },
-    { id: '08', name: 'Tỉnh Tuyên Quang', code: 'TQ' },
-    { id: '86', name: 'Tỉnh Vĩnh Long', code: 'VL' },
-    { id: '26', name: 'Tỉnh Vĩnh Phúc', code: 'VP' },
-    { id: '15', name: 'Tỉnh Yên Bái', code: 'YB' }
-  ];
+  // 3. Seed Địa giới Hành chính Việt Nam (Tất cả 63 Tỉnh -> Huyện -> Xã từ data.json)
+  console.log('--- Đang đọc dữ liệu địa giới hành chính từ data.json ---');
+  const rawLocationData = fs.readFileSync(path.join(__dirname, 'data.json'), 'utf8');
+  const locationsList = JSON.parse(rawLocationData);
 
-  console.log('Seed all 63 provinces of Vietnam...');
-  for (const prov of provincesData) {
-    const uniqueProvinceCode = `${prov.code}_${prov.id}`;
-    await prisma.province.upsert({
-      where: { id: prov.id },
-      update: { name: prov.name, code: uniqueProvinceCode },
-      create: { id: prov.id, name: prov.name, code: uniqueProvinceCode }
+  const provincesToCreate: any[] = [];
+  const districtsToCreate: any[] = [];
+  const wardsToCreate: any[] = [];
+
+  for (const prov of locationsList) {
+    provincesToCreate.push({
+      id: prov.Id,
+      name: prov.Name,
+      code: prov.Id
     });
 
-    // Seed standard districts for this province
-    const prefix = prov.name.includes('Thành phố') ? 'Quận' : 'Huyện';
-    const cleanName = prov.name.replace('Thành phố ', '').replace('Tỉnh ', '');
-    const districtsData = [
-      { id: prov.id + '1', name: `${prefix} 1`, code: `${prov.code}1_${prov.id}1` },
-      { id: prov.id + '2', name: `${prefix} 2`, code: `${prov.code}2_${prov.id}2` },
-      { id: prov.id + '3', name: `Thành phố ${cleanName}`, code: `${prov.code}3_${prov.id}3` }
-    ];
-
-    for (const dist of districtsData) {
-      await prisma.district.upsert({
-        where: { id: dist.id },
-        update: { name: dist.name, code: dist.code },
-        create: { id: dist.id, provinceId: prov.id, name: dist.name, code: dist.code }
-      });
-
-      // Seed standard wards for this district
-      const wardsData = [
-        { id: dist.id + '1', name: `Phường 1`, code: `${dist.code}P1_${dist.id}1` },
-        { id: dist.id + '2', name: `Phường 2`, code: `${dist.code}P2_${dist.id}2` },
-        { id: dist.id + '3', name: `Phường 3`, code: `${dist.code}P3_${dist.id}3` }
-      ];
-
-      for (const ward of wardsData) {
-        await prisma.ward.upsert({
-          where: { id: ward.id },
-          update: { name: ward.name, code: ward.code },
-          create: { id: ward.id, districtId: dist.id, name: ward.name, code: ward.code }
+    if (prov.Districts) {
+      for (const dist of prov.Districts) {
+        districtsToCreate.push({
+          id: dist.Id,
+          provinceId: prov.Id,
+          name: dist.Name,
+          code: dist.Id
         });
+
+        if (dist.Wards) {
+          for (const ward of dist.Wards) {
+            wardsToCreate.push({
+              id: ward.Id,
+              districtId: dist.Id,
+              name: ward.Name,
+              code: ward.Id
+            });
+          }
+        }
       }
     }
   }
 
-  // Seed existing specific ones so details and references don't break
-  // Tỉnh Lâm Đồng (Đà Lạt)
-  const daLat = await prisma.district.upsert({
-    where: { id: '672' },
-    update: { name: 'Thành phố Đà Lạt', code: 'DL' },
-    create: { id: '672', provinceId: '68', name: 'Thành phố Đà Lạt', code: 'DL' }
-  });
+  console.log(`Đang nạp ${provincesToCreate.length} Tỉnh/Thành phố...`);
+  await prisma.province.createMany({ data: provincesToCreate });
 
-  const wardsDL = [
-    { id: '24823', name: 'Phường 1', code: 'P1' },
-    { id: '24826', name: 'Phường 2', code: 'P2' },
-    { id: '24844', name: 'Phường 10', code: 'P10' }
-  ];
-  for (const w of wardsDL) {
-    await prisma.ward.upsert({
-      where: { id: w.id },
-      update: { name: w.name, code: w.code },
-      create: { id: w.id, districtId: '672', name: w.name, code: w.code }
-    });
+  console.log(`Đang nạp ${districtsToCreate.length} Quận/Huyện...`);
+  await prisma.district.createMany({ data: districtsToCreate });
+
+  console.log(`Đang nạp ${wardsToCreate.length} Phường/Xã...`);
+  const chunkSize = 2000;
+  for (let i = 0; i < wardsToCreate.length; i += chunkSize) {
+    const chunk = wardsToCreate.slice(i, i + chunkSize);
+    await prisma.ward.createMany({ data: chunk });
   }
 
-  // Tỉnh Khánh Hòa (Nha Trang)
-  const nhaTrang = await prisma.district.upsert({
-    where: { id: '568' },
-    update: { name: 'Thành phố Nha Trang', code: 'NT' },
-    create: { id: '568', provinceId: '56', name: 'Thành phố Nha Trang', code: 'NT' }
-  });
-  await prisma.ward.upsert({
-    where: { id: '22423' },
-    update: { name: 'Phường Lộc Thọ', code: 'LT' },
-    create: { id: '22423', districtId: '568', name: 'Phường Lộc Thọ', code: 'LT' }
-  });
-
-  // Thành phố Đà Nẵng
-  const sonTra = await prisma.district.upsert({
-    where: { id: '492' },
-    update: { name: 'Quận Sơn Trà', code: 'ST' },
-    create: { id: '492', provinceId: '48', name: 'Quận Sơn Trà', code: 'ST' }
-  });
-  await prisma.ward.upsert({
-    where: { id: '20203' },
-    update: { name: 'Phường Phước Mỹ', code: 'PM' },
-    create: { id: '20203', districtId: '492', name: 'Phường Phước Mỹ', code: 'PM' }
-  });
-
-  console.log('Đã seed đầy đủ địa giới hành chính Việt Nam.');
+  console.log('Đã seed thành công đầy đủ địa giới hành chính Việt Nam.');
 
   // 4. Seed Users (Admin, Owner, Customer)
   const hashedPassword = await bcrypt.hash('Password123!', 10);
