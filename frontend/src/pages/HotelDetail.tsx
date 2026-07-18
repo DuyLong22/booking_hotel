@@ -1924,22 +1924,73 @@ export const HotelDetail: React.FC = () => {
                                 return (
                                   <tr key={rt.id} className="hover:bg-slate-50/50 transition-colors">
                                     {/* Option Name & Description from DB */}
-                                    <td className="px-5 py-5 w-[32%] space-y-2 border-r border-slate-100 break-words">
+                                    <td className="px-5 py-5 w-[32%] space-y-3.5 border-r border-slate-100 break-words">
+                                      {/* Tên loại phòng */}
                                       <p className="font-extrabold text-slate-900 text-sm sm:text-base break-words">{rt.name}</p>
-                                      <p className="text-xs text-slate-500 font-normal leading-relaxed break-words">{rt.description}</p>
 
-                                      {/* Policy based on DB amenities */}
-                                      <p className="text-xs text-emerald-600 font-bold flex items-center gap-1.5">
-                                        <span>✓</span> {language === 'vi' ? 'Chính sách tiêu chuẩn' : 'Standard policy'}
+                                      {/* Bữa sáng */}
+                                      <p className="font-extrabold text-slate-900 text-xs sm:text-sm">
+                                        {rt.amenities && rt.amenities.some((a: string) => a.toLowerCase().includes('bữa sáng') || a.toLowerCase().includes('breakfast')) 
+                                          ? (language === 'vi' ? 'Bao gồm bữa sáng' : 'Breakfast included') 
+                                          : (language === 'vi' ? 'Không gồm bữa sáng' : 'Breakfast not included')}
                                       </p>
 
-                                      {/* Render DB amenities as mini badges */}
-                                      <div className="flex flex-wrap gap-1.5 pt-1">
-                                        {rt.amenities.map((a) => (
-                                          <span key={a} className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded">
-                                            {translateAmenityName(a)}
+                                      {/* Giường của phòng */}
+                                      <div className="flex items-center gap-1.5 text-xs text-slate-700 font-semibold">
+                                        <Bed className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                                        <span>
+                                          {rt.bedCount === 1 
+                                            ? (language === 'vi' ? '1 giường đôi lớn' : '1 large double bed') 
+                                            : rt.bedCount === 2 
+                                              ? (language === 'vi' ? '1 giường cỡ queen và 1 giường đôi' : '1 queen bed and 1 double bed')
+                                              : (language === 'vi' ? `${rt.bedCount} giường` : `${rt.bedCount} beds`)}
+                                        </span>
+                                      </div>
+
+                                      {/* Chi phí trẻ em (nếu tìm kiếm có trẻ em) */}
+                                      {children > 0 && (
+                                        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold group relative cursor-pointer">
+                                          <span className="text-slate-400">👶</span>
+                                          <span className="underline decoration-dotted">
+                                            {language === 'vi' ? 'Chi tiết phí trẻ em tại đây' : 'Child fee details here'} ⓘ
                                           </span>
-                                        ))}
+                                          <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block w-64 bg-slate-800 text-white text-[10px] p-2.5 rounded-lg shadow-xl z-20 font-normal leading-relaxed">
+                                            {language === 'vi' 
+                                              ? 'Trẻ em dưới 6 tuổi được miễn phí nếu dùng chung giường với bố mẹ. Trẻ từ 6-11 tuổi phụ thu 150.000 đ/đêm.' 
+                                              : 'Children under 6 stay free sharing bed. Children aged 6-11 are surcharged 150,000 VND/night.'}
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Thanh Toán Tại Khách Sạn */}
+                                      <div className="space-y-0.5">
+                                        <div className="flex items-center gap-1.5 text-xs text-[#006ce4] font-extrabold group relative cursor-pointer">
+                                          <span className="text-xs">✓</span>
+                                          <span className="hover:underline">
+                                            {language === 'vi' ? 'Thanh Toán Tại Khách Sạn' : 'Pay at the Hotel'} ⓘ
+                                          </span>
+                                          <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block w-64 bg-slate-800 text-white text-[10px] p-2.5 rounded-lg shadow-xl z-20 font-normal leading-relaxed">
+                                            {language === 'vi'
+                                              ? 'Bạn có thể chọn đặt ngay và thanh toán trực tiếp khi nhận phòng tại khách sạn.'
+                                              : 'You can choose to book now and pay directly at check-in.'}
+                                          </div>
+                                        </div>
+                                        <p className="text-[10px] text-slate-500 pl-4 font-normal">
+                                          {language === 'vi' ? 'Thanh toán khi bạn nhận phòng tại nơi ở' : 'Pay when you check-in at the property'}
+                                        </p>
+                                      </div>
+
+                                      {/* Áp dụng chính sách hủy phòng */}
+                                      <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold group relative cursor-pointer">
+                                        <span className="text-xs">✓</span>
+                                        <span className="hover:underline">
+                                          {language === 'vi' ? 'Áp dụng chính sách hủy phòng' : 'Cancellation policy applies'} ⓘ
+                                        </span>
+                                        <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block w-64 bg-slate-800 text-white text-[10px] p-2.5 rounded-lg shadow-xl z-20 font-normal leading-relaxed">
+                                          {language === 'vi'
+                                            ? 'Hủy miễn phí trước 24 giờ kể từ ngày nhận phòng. Sau thời gian đó sẽ áp dụng phí hủy đêm đầu tiên.'
+                                            : 'Free cancellation up to 24 hours before check-in. Otherwise first night fee applies.'}
+                                        </div>
                                       </div>
                                     </td>
 
