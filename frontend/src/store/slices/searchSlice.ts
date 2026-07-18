@@ -42,11 +42,22 @@ const loadSearchState = (): SearchState => {
     const saved = localStorage.getItem('search_criteria');
     if (saved) {
       const parsed = JSON.parse(saved);
+      const todayStr = getDateString(0);
+      
+      let checkIn = parsed.checkInDate;
+      let checkOut = parsed.checkOutDate;
+      
+      // Nếu ngày nhận phòng đã lưu cũ hơn ngày hôm nay, reset về hôm nay và ngày mai
+      if (!checkIn || checkIn < todayStr) {
+        checkIn = defaultState.checkInDate;
+        checkOut = defaultState.checkOutDate;
+      }
+      
       return {
         ...defaultState,
         ...parsed,
-        checkInDate: parsed.checkInDate || defaultState.checkInDate,
-        checkOutDate: parsed.checkOutDate || defaultState.checkOutDate,
+        checkInDate: checkIn,
+        checkOutDate: checkOut,
       };
     }
   } catch (e) {
