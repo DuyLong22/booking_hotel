@@ -9,7 +9,7 @@ import {
   Sun, Moon, Globe, LogOut, Settings, User, Menu,
   Hotel, Bed, CalendarRange, CreditCard, Star, FileText, BarChart3,
   CheckCircle, Trash2, ChevronDown, Sliders, RefreshCw, X,
-  Download, Send, ShieldAlert
+  Download, Send, ShieldAlert, Edit3
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -32,6 +32,12 @@ interface RoomType {
   id: string;
   name: string;
   basePrice: number;
+  description?: string;
+  capacity?: number;
+  bedCount?: number;
+  size?: number;
+  amenities?: string[];
+  images?: { url: string; isPrimary: boolean }[];
 }
 
 interface Conversation {
