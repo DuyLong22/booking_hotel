@@ -1990,43 +1990,47 @@ export const HotelDetail: React.FC = () => {
                                       )}
 
                                       {/* Thanh Toán / Phương thức */}
-                                      <div className="space-y-0.5">
-                                        <div className="flex items-center gap-1.5 text-xs text-[#006ce4] font-extrabold group relative cursor-pointer">
-                                          <span className="text-xs">✓</span>
-                                          <span className="hover:underline">
-                                            {rt.paymentPolicy === 'PAY_ONLINE' 
-                                              ? (language === 'vi' ? 'Thanh Toán Trực Tuyến' : 'Pay Online') 
-                                              : (language === 'vi' ? 'Thanh Toán Tại Khách Sạn' : 'Pay at the Hotel')} ⓘ
-                                          </span>
-                                          <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block w-64 bg-slate-800 text-white text-[10px] p-2.5 rounded-lg shadow-xl z-20 font-normal leading-relaxed">
-                                            {rt.paymentPolicy === 'PAY_ONLINE'
-                                              ? (language === 'vi' ? 'Bạn cần thanh toán toàn bộ giá trị đặt phòng trực tuyến bằng thẻ hoặc chuyển khoản.' : 'You need to pay the total booking value online using card or bank transfer.')
-                                              : (language === 'vi' ? 'Bạn có thể chọn đặt ngay và thanh toán trực tiếp khi nhận phòng tại khách sạn.' : 'You can choose to book now and pay directly at check-in.')}
+                                      {rt.paymentPolicy && rt.paymentPolicy !== 'NONE' && (
+                                        <div className="space-y-0.5">
+                                          <div className="flex items-center gap-1.5 text-xs text-[#006ce4] font-extrabold group relative cursor-pointer">
+                                            <span className="text-xs">✓</span>
+                                            <span className="hover:underline">
+                                              {rt.paymentPolicy === 'PAY_ONLINE' 
+                                                ? (language === 'vi' ? 'Thanh Toán Trực Tuyến' : 'Pay Online') 
+                                                : (language === 'vi' ? 'Thanh Toán Tại Khách Sạn' : 'Pay at the Hotel')} ⓘ
+                                            </span>
+                                            <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block w-64 bg-slate-800 text-white text-[10px] p-2.5 rounded-lg shadow-xl z-20 font-normal leading-relaxed">
+                                              {rt.paymentPolicy === 'PAY_ONLINE'
+                                                ? (language === 'vi' ? 'Bạn cần thanh toán toàn bộ giá trị đặt phòng trực tuyến bằng thẻ hoặc chuyển khoản.' : 'You need to pay the total booking value online using card or bank transfer.')
+                                                : (language === 'vi' ? 'Bạn có thể chọn đặt ngay và thanh toán trực tiếp khi nhận phòng tại khách sạn.' : 'You can choose to book now and pay directly at check-in.')}
+                                            </div>
                                           </div>
+                                          <p className="text-[10px] text-slate-500 pl-4 font-normal">
+                                            {rt.paymentPolicy === 'PAY_ONLINE'
+                                              ? (language === 'vi' ? 'Yêu cầu thanh toán trước khi nhận phòng' : 'Prepayment required before check-in')
+                                              : (language === 'vi' ? 'Thanh toán khi bạn nhận phòng tại nơi ở' : 'Pay when you check-in at the property')}
+                                          </p>
                                         </div>
-                                        <p className="text-[10px] text-slate-500 pl-4 font-normal">
-                                          {rt.paymentPolicy === 'PAY_ONLINE'
-                                            ? (language === 'vi' ? 'Yêu cầu thanh toán trước khi nhận phòng' : 'Prepayment required before check-in')
-                                            : (language === 'vi' ? 'Thanh toán khi bạn nhận phòng tại nơi ở' : 'Pay when you check-in at the property')}
-                                        </p>
-                                      </div>
+                                      )}
 
                                       {/* Chính sách hủy phòng */}
-                                      <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold group relative cursor-pointer">
-                                        <span className="text-xs">✓</span>
-                                        <span className="hover:underline">
-                                          {rt.cancellationPolicy === 'NON_REFUNDABLE'
-                                            ? (language === 'vi' ? 'Không hoàn tiền khi hủy' : 'Non-refundable')
-                                            : (language === 'vi' ? 'Áp dụng chính sách hủy phòng' : 'Cancellation policy applies')} ⓘ
-                                        </span>
-                                        <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block w-64 bg-slate-800 text-white text-[10px] p-2.5 rounded-lg shadow-xl z-20 font-normal leading-relaxed">
-                                          {rt.cancellationPolicy === 'NON_REFUNDABLE'
-                                            ? (language === 'vi' ? 'Đơn đặt phòng này không được hoàn tiền nếu hủy hoặc thay đổi.' : 'This booking is non-refundable if cancelled or modified.')
-                                            : rt.cancellationPolicy === 'FREE_48H'
-                                              ? (language === 'vi' ? 'Hủy miễn phí trước 48 giờ kể từ ngày nhận phòng. Sau thời gian đó sẽ áp dụng phí đêm đầu tiên.' : 'Free cancellation up to 48 hours before check-in. Otherwise first night fee applies.')
-                                              : (language === 'vi' ? 'Hủy miễn phí trước 24 giờ kể từ ngày nhận phòng. Sau thời gian đó sẽ áp dụng phí đêm đầu tiên.' : 'Free cancellation up to 24 hours before check-in. Otherwise first night fee applies.')}
+                                      {rt.cancellationPolicy && rt.cancellationPolicy !== 'NONE' && (
+                                        <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold group relative cursor-pointer">
+                                          <span className="text-xs">✓</span>
+                                          <span className="hover:underline">
+                                            {rt.cancellationPolicy === 'NON_REFUNDABLE'
+                                              ? (language === 'vi' ? 'Không hoàn tiền khi hủy' : 'Non-refundable')
+                                              : (language === 'vi' ? 'Áp dụng chính sách hủy phòng' : 'Cancellation policy applies')} ⓘ
+                                          </span>
+                                          <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block w-64 bg-slate-800 text-white text-[10px] p-2.5 rounded-lg shadow-xl z-20 font-normal leading-relaxed">
+                                            {rt.cancellationPolicy === 'NON_REFUNDABLE'
+                                              ? (language === 'vi' ? 'Đơn đặt phòng này không được hoàn tiền nếu hủy hoặc thay đổi.' : 'This booking is non-refundable if cancelled or modified.')
+                                              : rt.cancellationPolicy === 'FREE_48H'
+                                                ? (language === 'vi' ? 'Hủy miễn phí trước 48 giờ kể từ ngày nhận phòng. Sau thời gian đó sẽ áp dụng phí đêm đầu tiên.' : 'Free cancellation up to 48 hours before check-in. Otherwise first night fee applies.')
+                                                : (language === 'vi' ? 'Hủy miễn phí trước 24 giờ kể từ ngày nhận phòng. Sau thời gian đó sẽ áp dụng phí đêm đầu tiên.' : 'Free cancellation up to 24 hours before check-in. Otherwise first night fee applies.')}
+                                          </div>
                                         </div>
-                                      </div>
+                                      )}
                                     </td>
 
                                     {/* Capacity */}

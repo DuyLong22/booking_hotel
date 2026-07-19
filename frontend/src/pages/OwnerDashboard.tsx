@@ -2671,6 +2671,7 @@ export const OwnerDashboard: React.FC = () => {
                       onChange={(e) => setNewRoomCancellationPolicy(e.target.value)}
                       className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2 text-xs focus:border-[#2563EB] transition-all font-semibold outline-none cursor-pointer"
                     >
+                      <option value="NONE">Không áp dụng chính sách hủy</option>
                       <option value="FREE_24H">Hủy miễn phí trước 24h</option>
                       <option value="FREE_48H">Hủy miễn phí trước 48h</option>
                       <option value="NON_REFUNDABLE">Không hoàn tiền</option>
@@ -2684,6 +2685,7 @@ export const OwnerDashboard: React.FC = () => {
                       onChange={(e) => setNewRoomPaymentPolicy(e.target.value)}
                       className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2 text-xs focus:border-[#2563EB] transition-all font-semibold outline-none cursor-pointer"
                     >
+                      <option value="NONE">Không quy định chính sách</option>
                       <option value="PAY_AT_HOTEL">Thanh toán tại khách sạn</option>
                       <option value="PAY_ONLINE">Thanh toán online</option>
                     </select>
