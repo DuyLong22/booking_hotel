@@ -162,6 +162,7 @@ interface FeaturedHotel {
   province: string;
   starRating: number;
   priceFrom: number;
+  originalPriceFrom?: number;
   averageRating: number;
   category: string;
   images: { url: string }[];
@@ -476,6 +477,8 @@ export const Home: React.FC = () => {
       if (provId && provId !== 'all') {
         params.provinceId = provId;
       }
+      if (checkIn) params.checkIn = checkIn;
+      if (checkOut) params.checkOut = checkOut;
       const res = await apiClient.get('/hotels', { params });
       if (res.data.success) {
         setFeaturedHotels(res.data.data.hotels || []);
@@ -490,12 +493,15 @@ export const Home: React.FC = () => {
   useEffect(() => {
     setFeaturedStartIndex(0);
     fetchFeatured(activeFeaturedTab);
-  }, [activeFeaturedTab]);
+  }, [activeFeaturedTab, checkIn, checkOut]);
 
   const fetchTopRated = async () => {
     setTopRatedLoading(true);
     try {
-      const res = await apiClient.get('/hotels', { params: { limit: 100 } });
+      const params: any = { limit: 100 };
+      if (checkIn) params.checkIn = checkIn;
+      if (checkOut) params.checkOut = checkOut;
+      const res = await apiClient.get('/hotels', { params });
       if (res.data.success) {
         const hotelsList: FeaturedHotel[] = res.data.data.hotels || [];
         const sorted = [...hotelsList]
@@ -512,7 +518,7 @@ export const Home: React.FC = () => {
 
   useEffect(() => {
     fetchTopRated();
-  }, []);
+  }, [checkIn, checkOut]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
