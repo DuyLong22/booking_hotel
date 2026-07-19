@@ -32,6 +32,19 @@ export class UserUseCase {
       throw new AppError('Không tìm thấy người dùng', 404);
     }
 
+    if (phoneNumber && phoneNumber.trim() !== '') {
+      const cleanedPhone = phoneNumber.trim();
+      const existingPhone = await prisma.user.findFirst({
+        where: {
+          phoneNumber: cleanedPhone,
+          id: { not: userId }
+        },
+      });
+      if (existingPhone) {
+        throw new AppError('Số điện thoại đã được đăng ký sử dụng bởi tài khoản khác', 400);
+      }
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {

@@ -24,6 +24,17 @@ export class AuthUseCase {
       throw new AppError('Email đã được sử dụng trên hệ thống', 400);
     }
 
+    // Kiểm tra số điện thoại tồn tại
+    if (phoneNumber && phoneNumber.trim() !== '') {
+      const cleanedPhone = phoneNumber.trim();
+      const existingPhone = await prisma.user.findFirst({
+        where: { phoneNumber: cleanedPhone },
+      });
+      if (existingPhone) {
+        throw new AppError('Số điện thoại đã được đăng ký sử dụng trên hệ thống', 400);
+      }
+    }
+
     // Băm mật khẩu
     const hashedPassword = await bcrypt.hash(password, 10);
 
