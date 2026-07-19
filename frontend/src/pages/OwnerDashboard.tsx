@@ -189,6 +189,7 @@ export const OwnerDashboard: React.FC = () => {
   const [bulkAction, setBulkAction] = useState('PRICE'); // 'PRICE', 'SURCHARGE_WEEKEND', 'DISCOUNT'
   const [bulkValue, setBulkValue] = useState('');
   const [bulkAdjustmentType, setBulkAdjustmentType] = useState('PERCENTAGE'); // 'PERCENTAGE', 'FIXED'
+  const [bulkBaseOn, setBulkBaseOn] = useState('BASE'); // 'BASE' or 'CALENDAR'
 
   // Toast Trigger
   const triggerToast = (msg: string) => {
@@ -532,23 +533,32 @@ export const OwnerDashboard: React.FC = () => {
 
       if (bulkDaysOfWeek[index]) {
         const dateStr = d.toISOString().split('T')[0];
-        let calculatedPrice = Number(basePrice);
+        
+        let referencePrice = Number(basePrice);
+        if (bulkBaseOn === 'CALENDAR') {
+          const existingDay = calendarDays.find(cd => cd.date === dateStr);
+          if (existingDay) {
+            referencePrice = Number(existingDay.price);
+          }
+        }
+
+        let calculatedPrice = referencePrice;
 
         if (bulkAction === 'PRICE') {
-          calculatedPrice = Number(bulkValue) || Number(basePrice);
+          calculatedPrice = Number(bulkValue) || referencePrice;
         } else if (bulkAction === 'SURCHARGE_WEEKEND') {
           const val = Number(bulkValue) || 0;
           if (bulkAdjustmentType === 'PERCENTAGE') {
-            calculatedPrice = Number(basePrice) * (1 + val / 100);
+            calculatedPrice = referencePrice * (1 + val / 100);
           } else {
-            calculatedPrice = Number(basePrice) + val;
+            calculatedPrice = referencePrice + val;
           }
         } else if (bulkAction === 'DISCOUNT') {
           const val = Number(bulkValue) || 0;
           if (bulkAdjustmentType === 'PERCENTAGE') {
-            calculatedPrice = Number(basePrice) * (1 - val / 100);
+            calculatedPrice = referencePrice * (1 - val / 100);
           } else {
-            calculatedPrice = Math.max(0, Number(basePrice) - val);
+            calculatedPrice = Math.max(0, referencePrice - val);
           }
         }
 
@@ -1937,7 +1947,7 @@ export const OwnerDashboard: React.FC = () => {
                     <button onClick={() => setShowBulkConfig(false)} className="text-slate-450 hover:text-slate-700"><X className="w-4 h-4" /></button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-semibold">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-xs font-semibold">
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-[#64748B] uppercase">Ngày bắt đầu</label>
                       <input
@@ -1955,6 +1965,17 @@ export const OwnerDashboard: React.FC = () => {
                         onChange={(e) => setBulkEndDate(e.target.value)}
                         className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 outline-none font-semibold focus:border-[#2563EB] transition-all"
                       />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#64748B] uppercase">Tính toán dựa trên</label>
+                      <select
+                        value={bulkBaseOn}
+                        onChange={(e) => setBulkBaseOn(e.target.value)}
+                        className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 outline-none font-semibold focus:border-[#2563EB] transition-all cursor-pointer"
+                      >
+                        <option value="BASE">Giá gốc hạng phòng</option>
+                        <option value="CALENDAR">Giá hiện tại trên lịch</option>
+                      </select>
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-[#64748B] uppercase">Hình thức điều chỉnh</label>
