@@ -546,6 +546,11 @@ export const OwnerDashboard: React.FC = () => {
       return;
     }
 
+    if (bulkAction !== 'RESTORE' && (!bulkValue || isNaN(Number(bulkValue)) || Number(bulkValue) <= 0)) {
+      alert('Vui lòng nhập giá trị điều chỉnh hợp lệ lớn hơn 0.');
+      return;
+    }
+
     const basePrice = roomTypes.find((r) => r.id === selectedRoomTypeId)?.basePrice || 1200000;
     const pricesPayload: { date: string; price: number; isBlocked?: boolean }[] = [];
 

@@ -100,8 +100,9 @@ export const updatePriceCalendarSchema = z.object({
         date: z.string().refine((val) => !isNaN(Date.parse(val)), {
           message: 'Định dạng ngày không hợp lệ (sử dụng YYYY-MM-DD)',
         }),
-        price: z.number().positive('Giá phòng phải lớn hơn 0'),
-        isBlocked: z.boolean().default(false),
+        price: z.number().nonnegative('Giá phòng không được nhỏ hơn 0'),
+        isBlocked: z.boolean().optional().default(false),
+        isRestore: z.boolean().optional(),
       })
     ),
   }),
