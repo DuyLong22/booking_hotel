@@ -37,11 +37,20 @@ export class PriceCalendarUseCase {
     if (!roomType) throw new AppError('Không tìm thấy loại phòng', 404);
     if (roomType.hotel.ownerId !== ownerId) throw new AppError('Bạn không sở hữu khách sạn này', 403);
 
-    // Tiến hành upsert từng bản ghi lịch giá
+    // Tiến hành upsert hoặc xóa từng bản ghi lịch giá
     const transactions = prices.map((item) => {
       // Thiết lập ngày về 0h0m0s0ms theo giờ UTC/Local chuẩn để tránh lệch múi giờ
       const dateObj = new Date(item.date);
       dateObj.setHours(0, 0, 0, 0);
+
+      if (item.isRestore) {
+        return prisma.roomPriceCalendar.deleteMany({
+          where: {
+            roomTypeId,
+            date: dateObj,
+          },
+        });
+      }
 
       return prisma.roomPriceCalendar.upsert({
         where: {

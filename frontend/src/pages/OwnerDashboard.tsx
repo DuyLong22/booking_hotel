@@ -507,6 +507,30 @@ export const OwnerDashboard: React.FC = () => {
     }
   };
 
+  const handleRestoreDay = async () => {
+    if (!editDay || !selectedRoomTypeId) return;
+    try {
+      const updateData = {
+        prices: [
+          {
+            date: editDay.date,
+            price: 0,
+            isRestore: true,
+          },
+        ],
+      };
+
+      await apiClient.post(`/hotels/room-types/${selectedRoomTypeId}/price-calendar`, updateData);
+      
+      setRefreshCalendarTrigger((prev) => prev + 1);
+      setEditDay(null);
+      triggerToast('Đã khôi phục giá gốc thành công!');
+    } catch (err) {
+      console.error(err);
+      alert('Không thể khôi phục giá gốc.');
+    }
+  };
+
   const handleSaveBulkPriceCalendar = async () => {
     if (!selectedRoomTypeId) return;
     if (!bulkStartDate || !bulkEndDate) {
@@ -534,39 +558,47 @@ export const OwnerDashboard: React.FC = () => {
       if (bulkDaysOfWeek[index]) {
         const dateStr = d.toISOString().split('T')[0];
         
-        let referencePrice = Number(basePrice);
-        if (bulkBaseOn === 'CALENDAR') {
-          const existingDay = calendarDays.find(cd => cd.date === dateStr);
-          if (existingDay) {
-            referencePrice = Number(existingDay.price);
+        if (bulkAction === 'RESTORE') {
+          pricesPayload.push({
+            date: dateStr,
+            price: 0,
+            isRestore: true,
+          } as any);
+        } else {
+          let referencePrice = Number(basePrice);
+          if (bulkBaseOn === 'CALENDAR') {
+            const existingDay = calendarDays.find(cd => cd.date === dateStr);
+            if (existingDay) {
+              referencePrice = Number(existingDay.price);
+            }
           }
+
+          let calculatedPrice = referencePrice;
+
+          if (bulkAction === 'PRICE') {
+            calculatedPrice = Number(bulkValue) || referencePrice;
+          } else if (bulkAction === 'SURCHARGE_WEEKEND') {
+            const val = Number(bulkValue) || 0;
+            if (bulkAdjustmentType === 'PERCENTAGE') {
+              calculatedPrice = referencePrice * (1 + val / 100);
+            } else {
+              calculatedPrice = referencePrice + val;
+            }
+          } else if (bulkAction === 'DISCOUNT') {
+            const val = Number(bulkValue) || 0;
+            if (bulkAdjustmentType === 'PERCENTAGE') {
+              calculatedPrice = referencePrice * (1 - val / 100);
+            } else {
+              calculatedPrice = Math.max(0, referencePrice - val);
+            }
+          }
+
+          pricesPayload.push({
+            date: dateStr,
+            price: calculatedPrice,
+            isBlocked: false,
+          });
         }
-
-        let calculatedPrice = referencePrice;
-
-        if (bulkAction === 'PRICE') {
-          calculatedPrice = Number(bulkValue) || referencePrice;
-        } else if (bulkAction === 'SURCHARGE_WEEKEND') {
-          const val = Number(bulkValue) || 0;
-          if (bulkAdjustmentType === 'PERCENTAGE') {
-            calculatedPrice = referencePrice * (1 + val / 100);
-          } else {
-            calculatedPrice = referencePrice + val;
-          }
-        } else if (bulkAction === 'DISCOUNT') {
-          const val = Number(bulkValue) || 0;
-          if (bulkAdjustmentType === 'PERCENTAGE') {
-            calculatedPrice = referencePrice * (1 - val / 100);
-          } else {
-            calculatedPrice = Math.max(0, referencePrice - val);
-          }
-        }
-
-        pricesPayload.push({
-          date: dateStr,
-          price: calculatedPrice,
-          isBlocked: false,
-        });
       }
     }
 
@@ -1987,31 +2019,36 @@ export const OwnerDashboard: React.FC = () => {
                         <option value="PRICE">Giá cố định (mới)</option>
                         <option value="SURCHARGE_WEEKEND">Tăng giá (Cuối tuần / Lễ)</option>
                         <option value="DISCOUNT">Giảm giá phòng</option>
+                        <option value="RESTORE">Khôi phục giá gốc</option>
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-[#64748B] uppercase">
-                        {bulkAction === 'PRICE' ? 'Mức giá (đ)' : 'Giá trị điều chỉnh'}
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          value={bulkValue}
-                          onChange={(e) => setBulkValue(e.target.value)}
-                          placeholder={bulkAction === 'PRICE' ? '1500000' : '10'}
-                          className="flex-1 bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 outline-none font-semibold focus:border-[#2563EB] transition-all"
-                        />
-                        {bulkAction !== 'PRICE' && (
-                          <select
-                            value={bulkAdjustmentType}
-                            onChange={(e) => setBulkAdjustmentType(e.target.value)}
-                            className="bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl px-2.5 outline-none font-semibold focus:border-[#2563EB] transition-all cursor-pointer"
-                          >
-                            <option value="PERCENTAGE">%</option>
-                            <option value="FIXED">đ</option>
-                          </select>
-                        )}
-                      </div>
+                      {bulkAction !== 'RESTORE' && (
+                        <>
+                          <label className="text-[10px] font-bold text-[#64748B] uppercase">
+                            {bulkAction === 'PRICE' ? 'Mức giá (đ)' : 'Giá trị điều chỉnh'}
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              type="number"
+                              value={bulkValue}
+                              onChange={(e) => setBulkValue(e.target.value)}
+                              placeholder={bulkAction === 'PRICE' ? '1500000' : '10'}
+                              className="flex-1 bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 outline-none font-semibold focus:border-[#2563EB] transition-all"
+                            />
+                            {bulkAction !== 'PRICE' && (
+                              <select
+                                value={bulkAdjustmentType}
+                                onChange={(e) => setBulkAdjustmentType(e.target.value)}
+                                className="bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl px-2.5 outline-none font-semibold focus:border-[#2563EB] transition-all cursor-pointer"
+                              >
+                                <option value="PERCENTAGE">%</option>
+                                <option value="FIXED">đ</option>
+                              </select>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -2364,9 +2401,14 @@ export const OwnerDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex gap-2 justify-end pt-2 border-t border-[#E2E8F0]">
-              <button onClick={() => setEditDay(null)} className="px-4 py-2 bg-white border border-[#CBD5E1] text-[#334155] hover:bg-[#F8FAFC] rounded-xl text-xs font-bold transition-all shadow-sm">Quay lại</button>
-              <button onClick={handleSavePriceCalendar} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm">Lưu thay đổi</button>
+            <div className="flex gap-2 justify-between pt-2 border-t border-[#E2E8F0] flex-wrap items-center">
+              <button onClick={handleRestoreDay} className="px-3 py-2 bg-red-50 hover:bg-red-100 text-[#DC2626] rounded-xl text-[10px] font-extrabold transition-all shadow-sm">
+                Khôi phục giá gốc
+              </button>
+              <div className="flex gap-1.5 justify-end">
+                <button onClick={() => setEditDay(null)} className="px-3.5 py-2 bg-white border border-[#CBD5E1] text-[#334155] hover:bg-[#F8FAFC] rounded-xl text-[10px] font-bold transition-all shadow-sm">Quay lại</button>
+                <button onClick={handleSavePriceCalendar} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-3.5 py-2 rounded-xl text-[10px] font-bold transition-all shadow-sm">Lưu thay đổi</button>
+              </div>
             </div>
           </div>
         </div>
