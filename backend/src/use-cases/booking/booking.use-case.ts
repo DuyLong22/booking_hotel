@@ -2,6 +2,7 @@ import prisma from '../../config/database';
 import { AppError } from '../../infrastructure/middlewares/error.middleware';
 import { BookingStatus } from '@prisma/client';
 import couponUseCase from '../coupon/coupon.use-case';
+import socketService from '../../infrastructure/services/socket.service';
 
 export class BookingUseCase {
   public async cleanupExpiredBookings() {
@@ -280,6 +281,9 @@ export class BookingUseCase {
       where: { id: bookingId },
       data: { status },
     });
+
+    // Phát tín hiệu Socket.io thời gian thực
+    socketService.emitBookingStatusUpdate(bookingId, status);
 
     return updated;
   }

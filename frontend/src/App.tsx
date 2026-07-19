@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { Provider, useDispatch } from 'react-redux';
+import { Provider, useDispatch, useSelector } from 'react-redux';
 import store from './store';
 import { setAuth, clearAuth } from './store/slices/authSlice';
 import apiClient, { getAccessToken } from './core/api/client';
 import Layout from './components/common/Layout';
+import { socket } from './core/socket/socket';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import HotelDetail from './pages/HotelDetail';
@@ -30,6 +31,7 @@ const Profile: React.FC = () => (
 // --- Component tự động kiểm tra Session (Auto Login) khi load trang ---
 const AuthInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useDispatch();
+  const user = useSelector((state: any) => state.auth.user);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -66,6 +68,34 @@ const AuthInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) 
       window.removeEventListener('auth:logout', handleLogoutEvent);
     };
   }, [dispatch]);
+
+  // Quản lý kết nối Socket.io Real-time
+  useEffect(() => {
+    if (user?.id) {
+      socket.connect();
+      socket.emit('joinUser', user.id);
+
+      socket.on('bookingStatusUpdated', (data) => {
+        // Bắn Custom Event của trình duyệt để các trang đang hiển thị tự cập nhật
+        window.dispatchEvent(new CustomEvent('booking:statusUpdated', { detail: data }));
+      });
+
+      socket.on('hotelStatusUpdated', (data) => {
+        window.dispatchEvent(new CustomEvent('hotel:statusUpdated', { detail: data }));
+      });
+
+      socket.on('calendarUpdated', (data) => {
+        window.dispatchEvent(new CustomEvent('calendar:updated', { detail: data }));
+      });
+    }
+
+    return () => {
+      socket.off('bookingStatusUpdated');
+      socket.off('hotelStatusUpdated');
+      socket.off('calendarUpdated');
+      socket.disconnect();
+    };
+  }, [user]);
 
   return <>{children}</>;
 };

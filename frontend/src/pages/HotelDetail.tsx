@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setSearchCriteria } from '../store/slices/searchSlice';
 import type { RootState } from '../store';
 import apiClient from '../core/api/client';
+import { socket } from '../core/socket/socket';
 import {
   MapPin,
   Waves,
@@ -1041,6 +1042,26 @@ export const HotelDetail: React.FC = () => {
   useEffect(() => {
     fetchDetail();
   }, [id, checkIn, checkOut]);
+
+  useEffect(() => {
+    if (id) {
+      socket.connect();
+      socket.emit('joinHotel', id);
+
+      const handleCalendarUpdate = (e: any) => {
+        const data = e.detail;
+        if (data.hotelId === id) {
+          fetchDetail();
+        }
+      };
+
+      window.addEventListener('calendar:updated', handleCalendarUpdate);
+
+      return () => {
+        window.removeEventListener('calendar:updated', handleCalendarUpdate);
+      };
+    }
+  }, [id]);
 
   // Icon mapping
   const getAmenityIcon = (name: string, className: string = "w-5 h-5") => {

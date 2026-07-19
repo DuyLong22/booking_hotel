@@ -2,6 +2,7 @@ import { PrismaClient, BookingStatus, PaymentStatus } from '@prisma/client';
 import prisma from '../../config/database';
 import { PaymentService } from '../../infrastructure/services/payment.service';
 import mailService, { MailService } from '../../infrastructure/services/mail.service';
+import socketService from '../../infrastructure/services/socket.service';
 
 export class PaymentUseCase {
   constructor(
@@ -27,6 +28,7 @@ export class PaymentUseCase {
       where: { id: bookingId },
       data: { status: BookingStatus.PAYMENT_PROCESSING }
     });
+    socketService.emitBookingStatusUpdate(bookingId, BookingStatus.PAYMENT_PROCESSING);
 
     // Tạo intent
     const { id: intentId, clientSecret } = await this.paymentService.createPaymentIntent(
@@ -98,6 +100,7 @@ export class PaymentUseCase {
       where: { id: bookingId },
       data: { status: BookingStatus.PAYMENT_PROCESSING }
     });
+    socketService.emitBookingStatusUpdate(bookingId, BookingStatus.PAYMENT_PROCESSING);
 
     // Sinh URL
     const paymentUrl = this.paymentService.generateVnPayUrl({
@@ -144,6 +147,7 @@ export class PaymentUseCase {
         where: { id: bookingId },
         data: { status: BookingStatus.PENDING }
       });
+      socketService.emitBookingStatusUpdate(bookingId, BookingStatus.PENDING);
       await this.prisma.payment.update({
         where: { bookingId },
         data: { status: PaymentStatus.FAILED, transactionId }
@@ -170,6 +174,7 @@ export class PaymentUseCase {
         }
       }
     });
+    socketService.emitBookingStatusUpdate(bookingId, BookingStatus.CONFIRMED);
 
     await this.prisma.payment.update({
       where: { bookingId },

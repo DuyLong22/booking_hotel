@@ -68,6 +68,16 @@ export const MyBookings: React.FC = () => {
 
   useEffect(() => {
     fetchBookings();
+
+    const handleBookingStatusUpdated = () => {
+      fetchBookings();
+    };
+
+    window.addEventListener('booking:statusUpdated', handleBookingStatusUpdated);
+
+    return () => {
+      window.removeEventListener('booking:statusUpdated', handleBookingStatusUpdated);
+    };
   }, []);
 
   const getStatusBadge = (status: string) => {

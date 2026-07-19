@@ -2,6 +2,7 @@ import prisma from '../../config/database';
 import { AppError } from '../../infrastructure/middlewares/error.middleware';
 import { HotelStatus, Role } from '@prisma/client';
 import axios from 'axios';
+import socketService from '../../infrastructure/services/socket.service';
 
 export class HotelUseCase {
   public async createHotel(ownerId: string, data: any) {
@@ -570,6 +571,9 @@ export class HotelUseCase {
         rejectReason: status === HotelStatus.REJECTED ? rejectReason : null,
       },
     });
+
+    // Phát tín hiệu Socket.io thời gian thực
+    socketService.emitHotelStatusUpdate(id, status, updatedHotel.ownerId);
 
     return updatedHotel;
   }

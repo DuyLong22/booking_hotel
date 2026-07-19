@@ -197,6 +197,8 @@ export const OwnerDashboard: React.FC = () => {
     setTimeout(() => setSuccessToast(''), 3000);
   };
 
+  const [refreshBookingsTrigger, setRefreshBookingsTrigger] = useState(0);
+
   const fetchOwnerStats = async () => {
     try {
       const res = await apiClient.get('/bookings/owner-stats');
@@ -206,6 +208,18 @@ export const OwnerDashboard: React.FC = () => {
       setRecentReviews(res.data.data.recentReviews || []);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const fetchAllBookings = async () => {
+    setBookingsLoading(true);
+    try {
+      const res = await apiClient.get('/bookings/my');
+      setBookings(res.data.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setBookingsLoading(false);
     }
   };
 
@@ -257,17 +271,7 @@ export const OwnerDashboard: React.FC = () => {
       }
     };
 
-    const fetchAllBookings = async () => {
-      setBookingsLoading(true);
-      try {
-        const res = await apiClient.get('/bookings/my');
-        setBookings(res.data.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setBookingsLoading(false);
-      }
-    };
+
 
     const fetchMeta = async () => {
       try {
@@ -305,6 +309,26 @@ export const OwnerDashboard: React.FC = () => {
       fetchOwnerReviews();
     }
   }, [activeMenu, hotelId]);
+
+  // Lắng nghe các sự kiện cập nhật thời gian thực qua CustomEvent
+  useEffect(() => {
+    const handleBookingUpdate = () => {
+      fetchAllBookings();
+      fetchOwnerStats();
+    };
+
+    const handleCalendarUpdate = () => {
+      setRefreshCalendarTrigger(prev => prev + 1);
+    };
+
+    window.addEventListener('booking:statusUpdated', handleBookingUpdate);
+    window.addEventListener('calendar:updated', handleCalendarUpdate);
+
+    return () => {
+      window.removeEventListener('booking:statusUpdated', handleBookingUpdate);
+      window.removeEventListener('calendar:updated', handleCalendarUpdate);
+    };
+  }, []);
 
   // Load districts when provinceId changes
   useEffect(() => {

@@ -75,6 +75,9 @@ export class PriceCalendarUseCase {
     // Thực hiện tất cả dưới dạng transaction
     await prisma.$transaction(transactions);
 
+    // Phát tín hiệu Socket.io thời gian thực báo lịch phòng cập nhật
+    socketService.emitCalendarUpdate(roomType.hotelId, roomTypeId);
+
     return { success: true };
   }
 }
