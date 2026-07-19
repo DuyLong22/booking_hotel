@@ -209,7 +209,7 @@ const RoomDetailsModal = ({
                 <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-bold text-slate-600 list-inside">
                   {room.amenities.map((a) => (
                     <li key={a} className="truncate">
-                      • {a}
+                      • {translateAmenityName(a)}
                     </li>
                   ))}
                 </ul>
@@ -1084,17 +1084,96 @@ export const HotelDetail: React.FC = () => {
   };
 
   const translateAmenityName = (name: string) => {
-    if (language === 'vi') return name;
+    if (!name) return '';
     const lower = name.toLowerCase().trim();
-    if (lower.includes('wifi') || lower.includes('internet')) return 'Free Wifi';
-    if (lower === 'hồ bơi') return 'Swimming Pool';
-    if (lower === 'bãi đỗ xe') return 'Parking Space';
-    if (lower === 'phòng gym / thể hình') return 'Fitness Center / Gym';
-    if (lower === 'điều hòa nhiệt độ') return 'Air Conditioning';
-    if (lower === 'nhà hàng ăn uống') return 'Restaurant & Dining';
-    if (lower === 'dịch vụ spa / massage') return 'Spa & Massage';
-    if (lower === 'quầy bar / lounge') return 'Bar & Lounge';
-    return name;
+    if (language === 'vi') {
+      if (lower.includes('wifi') || lower.includes('internet')) return 'Wifi miễn phí';
+      if (lower === 'air conditioning' || lower === 'ac') return 'Điều hòa';
+      if (lower === 'tv' || lower === 'television') return 'Tivi';
+      if (lower === 'refrigerator' || lower === 'fridge') return 'Tủ lạnh';
+      if (lower === 'bathtub') return 'Bồn tắm';
+      if (lower === 'balcony') return 'Ban công';
+      if (lower === 'electric kettle' || lower === 'kettle') return 'Ấm đun nước';
+      if (lower === 'slippers') return 'Dép đi trong nhà';
+      if (lower === 'safety box' || lower === 'safe') return 'Két an toàn';
+      if (lower === 'hairdryer') return 'Máy sấy tóc';
+      return name;
+    } else {
+      // Internet & Parking
+      if (lower.includes('wifi') || lower.includes('internet')) return 'Free Wifi';
+      if (lower.includes('bãi đỗ xe') || lower.includes('chỗ đỗ xe') || lower.includes('bãi đậu xe') || lower.includes('parking')) return 'Parking Space';
+      
+      // Leisure & Facilities
+      if (lower === 'hồ bơi' || lower === 'swimming pool') return 'Swimming Pool';
+      if (lower.includes('gym') || lower.includes('thể hình') || lower.includes('fitness')) return 'Fitness Center / Gym';
+      if (lower.includes('spa') || lower.includes('massage')) return 'Spa & Massage';
+      if (lower.includes('nhà hàng') || lower.includes('dining') || lower.includes('restaurant')) return 'Restaurant & Dining';
+      if (lower.includes('quầy bar') || lower.includes('lounge') || lower.includes('bar')) return 'Bar & Lounge';
+      if (lower.includes('dịch vụ phòng') || lower.includes('room service')) return 'Room Service';
+      
+      // Bathroom
+      if (lower === 'giấy vệ sinh') return 'Toilet Paper';
+      if (lower === 'khăn tắm') return 'Towels';
+      if (lower.includes('bidet')) return 'Bidet';
+      if (lower === 'dép lê' || lower === 'dép đi trong nhà' || lower === 'dép') return 'Slippers';
+      if (lower === 'phòng tắm riêng') return 'Private Bathroom';
+      if (lower === 'nhà vệ sinh' || lower === 'toilet') return 'Toilet';
+      if (lower.includes('vệ sinh cá nhân')) return 'Free Toiletries';
+      if (lower === 'máy sấy tóc') return 'Hairdryer';
+      if (lower === 'vòi sen' || lower === 'vòi hoa sen') return 'Shower';
+      if (lower === 'bồn tắm') return 'Bathtub';
+      
+      // Bedroom
+      if (lower.includes('khăn trải giường') || lower.includes('ga trải giường')) return 'Bed Sheets / Linens';
+      if (lower.includes('tủ quần áo') || lower.includes('phòng để quần áo')) return 'Wardrobe / Closet';
+      
+      // Outdoors
+      if (lower.includes('bàn ghế ngoài trời')) return 'Outdoor Furniture';
+      if (lower.includes('sân thượng') || lower.includes('hiên')) return 'Terrace / Patio';
+      if (lower === 'sân vườn' || lower === 'vườn') return 'Garden';
+      if (lower === 'ban công') return 'Balcony';
+      
+      // Kitchen
+      if (lower.includes('bếp chung')) return 'Shared Kitchen';
+      if (lower.includes('ấm đun nước')) return 'Electric Kettle';
+      if (lower.includes('lò vi sóng')) return 'Microwave';
+      if (lower === 'tủ lạnh' || lower === 'fridge' || lower === 'refrigerator') return 'Refrigerator';
+      
+      // Room details
+      if (lower.includes('giá treo')) return 'Clothes Rack';
+      if (lower.includes('két sắt') || lower.includes('két an toàn') || lower.includes('két sắt an toàn')) return 'Safety Deposit Box';
+      if (lower === 'điều hòa' || lower === 'điều hòa nhiệt độ' || lower === 'máy lạnh') return 'Air Conditioning';
+      if (lower === 'quạt máy' || lower === 'quạt') return 'Fan';
+      if (lower === 'tivi' || lower === 'tv') return 'TV';
+      if (lower.includes('tv màn hình phẳng') || lower.includes('tivi màn hình phẳng')) return 'Flat-screen TV';
+      if (lower.includes('truyền hình cáp')) return 'Cable Channels';
+      
+      // Services
+      if (lower.includes('dọn phòng hàng ngày')) return 'Daily Housekeeping';
+      if (lower.includes('sảnh chung')) return 'Shared Lounge / TV Area';
+      if (lower.includes('lễ tân 24 giờ') || lower.includes('lễ tân')) return '24-hour Front Desk';
+      if (lower.includes('trông trẻ')) return 'Babysitting Services';
+      if (lower.includes('nhận/trả phòng riêng')) return 'Private Check-in / Check-out';
+      
+      // Security
+      if (lower.includes('bình chữa cháy')) return 'Fire Extinguisher';
+      if (lower.includes('cctv bên ngoài')) return 'CCTV Outside Property';
+      if (lower.includes('cctv trong khu vực chung')) return 'CCTV in Common Areas';
+      if (lower.includes('báo cháy') || lower.includes('báo động')) return 'Smoke Alarms';
+      if (lower.includes('bảo vệ 24/7')) return '24/7 Security';
+      
+      // General
+      if (lower.includes('thang máy')) return 'Elevator';
+      if (lower.includes('phòng gia đình')) return 'Family Rooms';
+      if (lower.includes('không hút thuốc')) return 'Non-smoking Rooms';
+      if (lower.includes('cấm hút thuốc')) return 'All-inclusive Non-smoking';
+      
+      // Languages
+      if (lower.includes('tiếng anh')) return 'English';
+      if (lower.includes('tiếng việt')) return 'Vietnamese';
+
+      return name;
+    }
   };
 
   const handleBookRoom = (roomTypeId: string) => {
