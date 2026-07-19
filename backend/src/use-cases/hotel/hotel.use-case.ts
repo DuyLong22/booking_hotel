@@ -317,6 +317,8 @@ export class HotelUseCase {
       ownerId,
       limit = 10,
       page = 1,
+      checkIn,
+      checkOut,
     } = filters;
 
     // Phân trang an toàn
@@ -427,9 +429,7 @@ export class HotelUseCase {
             },
           },
           roomTypes: {
-            select: { basePrice: true },
-            orderBy: { basePrice: 'asc' },
-            take: 1, // Lấy giá phòng thấp nhất
+            select: { id: true, basePrice: true },
           },
           reviews: {
             select: { ratingOverall: true },
@@ -454,41 +454,98 @@ export class HotelUseCase {
     const favoriteSet = new Set(userFavorites.map(f => f.hotelId));
 
     // Format kết quả trả về
-    const formattedHotels = hotels.map((hotel) => {
-      let averageRating = 0;
-      if (hotel.reviews.length > 0) {
-        const sum = hotel.reviews.reduce((acc, rev) => acc + rev.ratingOverall, 0);
-        averageRating = parseFloat((sum / hotel.reviews.length).toFixed(1));
-      }
+    const formattedHotels = await Promise.all(
+      hotels.map(async (hotel) => {
+        let averageRating = 0;
+        if (hotel.reviews.length > 0) {
+          const sum = hotel.reviews.reduce((acc, rev) => acc + rev.ratingOverall, 0);
+          averageRating = parseFloat((sum / hotel.reviews.length).toFixed(1));
+        }
 
-      return {
-        id: hotel.id,
-        name: hotel.name,
-        description: hotel.description,
-        address: hotel.address,
-        province: hotel.province.name,
-        provinceId: hotel.provinceId,
-        district: hotel.district.name,
-        districtId: hotel.districtId,
-        ward: hotel.ward.name,
-        wardId: hotel.wardId,
-        starRating: hotel.starRating,
-        status: hotel.status,
-        rejectReason: hotel.rejectReason,
-        owner: hotel.owner,
-        images: hotel.images,
-        category: hotel.category.name,
-        categoryId: hotel.categoryId,
-        priceFrom: hotel.roomTypes[0] ? parseFloat(hotel.roomTypes[0].basePrice.toString()) : 0,
-        averageRating,
-        reviewCount: hotel.reviews.length,
-        isFavorite: favoriteSet.has(hotel.id),
-        amenities: hotel.amenities.map(ha => ({
-          id: ha.amenity.id,
-          name: ha.amenity.name
-        }))
-      };
-    });
+        let priceFrom = 0;
+        let originalPriceFrom = 0;
+
+        if (hotel.roomTypes && hotel.roomTypes.length > 0) {
+          const roomTypePrices = await Promise.all(
+            hotel.roomTypes.map(async (rt) => {
+              const basePrice = parseFloat(rt.basePrice.toString());
+              let calculatedPrice = basePrice;
+
+              if (checkIn && checkOut) {
+                const start = new Date(checkIn);
+                const end = new Date(checkOut);
+
+                const overrides = await prisma.roomPriceCalendar.findMany({
+                  where: {
+                    roomTypeId: rt.id,
+                    date: { gte: start, lt: end },
+                  },
+                });
+
+                if (overrides.some((o) => o.isBlocked)) {
+                  return { basePrice: Infinity, calculatedPrice: Infinity };
+                }
+
+                let total = 0;
+                let days = 0;
+                for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+                  const dateStr = d.toISOString().split('T')[0];
+                  const override = overrides.find(
+                    (o) => o.date.toISOString().split('T')[0] === dateStr
+                  );
+                  total += override ? parseFloat(override.price.toString()) : basePrice;
+                  days++;
+                }
+                calculatedPrice = days > 0 ? total / days : basePrice;
+              }
+
+              return { basePrice, calculatedPrice };
+            })
+          );
+
+          const validPrices = roomTypePrices.filter((p) => p.basePrice !== Infinity);
+          if (validPrices.length > 0) {
+            priceFrom = Math.min(...validPrices.map((p) => p.calculatedPrice));
+            const cheapestRoom = validPrices.reduce((prev, curr) => 
+              curr.calculatedPrice < prev.calculatedPrice ? curr : prev
+            , validPrices[0]);
+            originalPriceFrom = cheapestRoom.basePrice;
+          } else {
+            priceFrom = Math.min(...hotel.roomTypes.map((rt) => parseFloat(rt.basePrice.toString())));
+            originalPriceFrom = priceFrom;
+          }
+        }
+
+        return {
+          id: hotel.id,
+          name: hotel.name,
+          description: hotel.description,
+          address: hotel.address,
+          province: hotel.province.name,
+          provinceId: hotel.provinceId,
+          district: hotel.district.name,
+          districtId: hotel.districtId,
+          ward: hotel.ward.name,
+          wardId: hotel.wardId,
+          starRating: hotel.starRating,
+          status: hotel.status,
+          rejectReason: hotel.rejectReason,
+          owner: hotel.owner,
+          images: hotel.images,
+          category: hotel.category.name,
+          categoryId: hotel.categoryId,
+          priceFrom,
+          originalPriceFrom,
+          averageRating,
+          reviewCount: hotel.reviews.length,
+          isFavorite: favoriteSet.has(hotel.id),
+          amenities: hotel.amenities.map(ha => ({
+            id: ha.amenity.id,
+            name: ha.amenity.name
+          }))
+        };
+      })
+    );
 
     return {
       hotels: formattedHotels,
@@ -555,9 +612,7 @@ export class HotelUseCase {
             district: true,
             ward: true,
             roomTypes: {
-              select: { basePrice: true },
-              orderBy: { basePrice: 'asc' },
-              take: 1
+              select: { id: true, basePrice: true }
             },
             reviews: {
               select: { ratingOverall: true }
@@ -586,7 +641,12 @@ export class HotelUseCase {
         starRating: hotel.starRating,
         images: hotel.images,
         category: hotel.category.name,
-        priceFrom: hotel.roomTypes[0] ? parseFloat(hotel.roomTypes[0].basePrice.toString()) : 0,
+        priceFrom: hotel.roomTypes && hotel.roomTypes.length > 0
+          ? Math.min(...hotel.roomTypes.map(rt => parseFloat(rt.basePrice.toString())))
+          : 0,
+        originalPriceFrom: hotel.roomTypes && hotel.roomTypes.length > 0
+          ? Math.min(...hotel.roomTypes.map(rt => parseFloat(rt.basePrice.toString())))
+          : 0,
         averageRating,
         reviewCount: hotel.reviews.length,
         isFavorite: true

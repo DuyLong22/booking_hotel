@@ -1655,6 +1655,11 @@ export const Home: React.FC = () => {
 
                       <div className="text-right">
                         <span className="text-[10px] text-slate-400 font-medium">{t.priceFrom}</span>
+                        {hotel.originalPriceFrom && hotel.originalPriceFrom > hotel.priceFrom && (
+                          <span className="block text-[11px] text-slate-400 line-through leading-none mb-0.5">
+                            {formatPrice(hotel.originalPriceFrom, currency)}
+                          </span>
+                        )}
                         <p className="font-extrabold text-sm text-red-500">
                           {hotel.priceFrom ? formatPrice(hotel.priceFrom, currency) : t.contact}
                         </p>
@@ -1745,6 +1750,11 @@ export const Home: React.FC = () => {
 
                       <div className="text-right">
                         <span className="text-[10px] text-slate-400 font-medium">{t.priceFrom}</span>
+                        {hotel.originalPriceFrom && hotel.originalPriceFrom > hotel.priceFrom && (
+                          <span className="block text-[11px] text-slate-400 line-through leading-none mb-0.5">
+                            {formatPrice(hotel.originalPriceFrom, currency)}
+                          </span>
+                        )}
                         <p className="font-extrabold text-sm text-red-500">
                           {hotel.priceFrom ? formatPrice(hotel.priceFrom, currency) : t.contact}
                         </p>

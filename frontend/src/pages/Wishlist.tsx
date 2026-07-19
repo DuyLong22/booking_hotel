@@ -11,6 +11,7 @@ interface FavoriteHotel {
   province: string;
   starRating: number;
   priceFrom: number;
+  originalPriceFrom?: number;
   averageRating: number;
   category: string;
   images: { url: string }[];
@@ -153,6 +154,11 @@ export const Wishlist: React.FC = () => {
 
                   <div className="text-right">
                     <span className="text-[10px] text-slate-400 font-medium">Giá từ</span>
+                    {hotel.originalPriceFrom && hotel.originalPriceFrom > hotel.priceFrom && (
+                      <span className="block text-[11px] text-slate-400 line-through leading-none mb-0.5 font-semibold">
+                        {hotel.originalPriceFrom.toLocaleString('vi-VN')} đ
+                      </span>
+                    )}
                     <p className="font-extrabold text-sm text-red-500">
                       {hotel.priceFrom ? `${hotel.priceFrom.toLocaleString('vi-VN')} đ` : 'Liên hệ'}
                     </p>

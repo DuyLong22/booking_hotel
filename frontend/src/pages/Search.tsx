@@ -448,6 +448,8 @@ export const Search: React.FC = () => {
         if (criteria.starRating) params.starRating = criteria.starRating;
         if (criteria.priceMin) params.priceMin = criteria.priceMin;
         if (criteria.priceMax) params.priceMax = criteria.priceMax;
+        if (criteria.checkInDate) params.checkIn = criteria.checkInDate;
+        if (criteria.checkOutDate) params.checkOut = criteria.checkOutDate;
 
         if (criteria.searchQuery) {
           const matchedProv = PROVINCES.find(p =>
@@ -2121,10 +2123,15 @@ export const Search: React.FC = () => {
                           <div className="text-right">
                             {hotel.priceFrom > 0 ? (
                               <>
+                                {hotel.originalPriceFrom && hotel.originalPriceFrom > hotel.priceFrom && (
+                                  <span className="block text-xs text-slate-400 line-through leading-none mb-1 font-semibold">
+                                    {formatPrice(hotel.originalPriceFrom, currency)}
+                                  </span>
+                                )}
                                 <span className="block font-black text-2xl text-[#ff4d42] leading-none">
                                   {formatPrice(hotel.priceFrom, currency)}
                                 </span>
-                                <span className="block text-xs text-slate-500 font-bold mt-0.5">
+                                <span className="block text-xs text-slate-500 font-bold mt-1">
                                   {language === 'vi'
                                     ? `Tổng ${formatPrice(Math.round(hotel.priceFrom * 1.08), currency)} VND`
                                     : `Total ${formatPrice(Math.round(hotel.priceFrom * 1.08), currency)} VND`}

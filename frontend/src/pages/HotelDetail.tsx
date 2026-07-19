@@ -2020,14 +2020,14 @@ export const HotelDetail: React.FC = () => {
 
                                     {/* Price per night */}
                                     <td className="px-4 py-5 w-[25%] border-r border-slate-100 text-right">
-                                      <p className="font-black text-[#ff4d42] text-base sm:text-lg leading-none">
-                                        {formatPrice(getDisplayPrice(rt) * priceQty, currency)}
-                                      </p>
-                                      {rt.calculatedPrice !== rt.basePrice && (
-                                        <p className="text-xs text-slate-400 font-normal line-through mt-1.5">
+                                      {rt.calculatedPrice < rt.basePrice && (
+                                        <p className="text-xs text-slate-400 font-semibold line-through mb-1">
                                           {formatPrice(getDisplayBasePrice(rt) * priceQty, currency)}
                                         </p>
                                       )}
+                                      <p className="font-black text-[#ff4d42] text-base sm:text-lg leading-none">
+                                        {formatPrice(getDisplayPrice(rt) * priceQty, currency)}
+                                      </p>
                                       <p className="text-xs text-slate-500 font-normal mt-1 leading-tight">
                                         {getPriceSubtitle()}
                                       </p>

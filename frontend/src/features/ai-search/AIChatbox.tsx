@@ -11,6 +11,7 @@ interface HotelCard {
   district: string;
   starRating: number;
   priceFrom: number;
+  originalPriceFrom?: number;
   averageRating: number;
   images: { url: string }[];
 }
@@ -216,6 +217,11 @@ export const AIChatbox: React.FC = () => {
                                 </div>
                                 <div className="text-right border-t border-slate-50 pt-1">
                                   <span className="text-[10px] text-slate-400">Giá từ</span>
+                                  {hotel.originalPriceFrom && hotel.originalPriceFrom > hotel.priceFrom && (
+                                    <span className="block text-[9px] text-slate-400 line-through leading-none mb-0.5 font-semibold">
+                                      {hotel.originalPriceFrom.toLocaleString('vi-VN')} đ
+                                    </span>
+                                  )}
                                   <p className="font-bold text-xs text-red-500">
                                     {hotel.priceFrom.toLocaleString('vi-VN')} đ
                                   </p>

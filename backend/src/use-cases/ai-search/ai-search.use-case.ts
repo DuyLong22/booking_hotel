@@ -150,7 +150,12 @@ export class AiSearchUseCase {
         starRating: hotel.starRating,
         images: hotel.images,
         category: hotel.category.name,
-        priceFrom: hotel.roomTypes[0] ? parseFloat(hotel.roomTypes[0].basePrice.toString()) : 0,
+        priceFrom: hotel.roomTypes && hotel.roomTypes.length > 0
+          ? Math.min(...hotel.roomTypes.map(rt => parseFloat(rt.basePrice.toString())))
+          : 0,
+        originalPriceFrom: hotel.roomTypes && hotel.roomTypes.length > 0
+          ? Math.min(...hotel.roomTypes.map(rt => parseFloat(rt.basePrice.toString())))
+          : 0,
         averageRating,
         reviewCount: hotel.reviews.length,
       };
