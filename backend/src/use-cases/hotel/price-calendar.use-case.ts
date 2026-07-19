@@ -1,5 +1,6 @@
 import prisma from '../../config/database';
 import { AppError } from '../../infrastructure/middlewares/error.middleware';
+import socketService from '../../infrastructure/services/socket.service';
 
 export class PriceCalendarUseCase {
   public async getPriceCalendar(roomTypeId: string, ownerId: string, startDate: string, endDate: string) {
