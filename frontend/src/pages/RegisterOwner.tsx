@@ -73,17 +73,17 @@ export const RegisterOwner: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-screen relative flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-hidden font-sans">
+    <div className="min-h-screen w-screen relative flex flex-col md:flex-row overflow-hidden font-sans">
       {/* Full-screen Background Image */}
       <div 
         className="absolute inset-0 bg-cover bg-center transition-transform duration-10000 hover:scale-105"
         style={{ backgroundImage: "url('/background.jpg')" }}
       ></div>
       {/* Dark Overlay with Blur */}
-      <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[3px] z-0"></div>
+      <div className="absolute inset-0 bg-slate-950/65 backdrop-blur-[2px] z-0"></div>
 
       {/* Floating Back to Home Button */}
-      <div className="absolute top-4 left-4 z-20">
+      <div className="absolute top-6 left-6 z-20">
         <Link 
           to="/" 
           className="inline-flex items-center gap-2 text-xs font-black tracking-wider uppercase bg-white/10 hover:bg-white/20 backdrop-blur-md px-4 py-2 rounded-full border border-white/15 text-white transition-all"
@@ -93,101 +93,119 @@ export const RegisterOwner: React.FC = () => {
         </Link>
       </div>
 
-      {/* Centered Register Owner Card */}
-      <div className="relative z-10 w-full max-w-md bg-white/95 backdrop-blur-md border border-white/10 p-8 rounded-premium shadow-2xl space-y-6">
-        <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-2">
-            <ShieldCheck className="w-6 h-6 animate-pulse" />
-          </div>
-          <h2 className="text-2xl font-black text-slate-800 tracking-tight">Đăng ký Đối tác</h2>
-          <p className="text-xs text-slate-400 font-bold">Đăng ký tài khoản Chủ chỗ nghỉ của bạn</p>
+      {/* Left Side: Welcoming text (Visible only on md screens and above) */}
+      <div className="hidden md:flex md:w-1/2 relative z-10 flex-col justify-center p-12 lg:p-16 text-white space-y-6">
+        <span className="self-start inline-flex items-center gap-1 bg-amber-400/20 text-amber-300 font-extrabold text-[10px] px-3 py-1 rounded-full uppercase tracking-wider border border-amber-400/10">
+          <ShieldCheck className="w-3.5 h-3.5 animate-pulse" /> Đăng ký Đối tác Chủ chỗ nghỉ
+        </span>
+        <h1 className="text-3xl lg:text-4xl xl:text-5xl font-black leading-tight tracking-tight">
+          Gia tăng doanh thu phòng cùng CloudBooking
+        </h1>
+        <p className="text-slate-200 text-xs lg:text-sm leading-relaxed font-semibold max-w-md">
+          Đăng ký tài khoản Đối tác để bắt đầu đăng tải khách sạn, homestay, biệt thự của bạn. Quản lý giá phòng, phòng trống linh hoạt qua lịch giá động và tiếp cận tệp khách hàng tiềm năng khổng lồ mỗi ngày.
+        </p>
+        <div className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase pt-4">
+          © {new Date().getFullYear()} CloudBooking Corporation. All rights reserved.
         </div>
+      </div>
 
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 rounded text-xs font-semibold">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleRegisterSubmit} className="space-y-4">
-          {/* Họ tên */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Họ và tên chủ sở hữu</label>
-            <div className="relative">
-              <User className="absolute left-3.5 top-3.5 text-slate-400 w-4 h-4" />
-              <input
-                type="text"
-                required
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Nguyễn Văn A"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-primary focus:bg-white transition-all font-semibold text-slate-700"
-              />
+      {/* Right Side: Centered Register Owner Card */}
+      <div className="w-full md:w-1/2 min-h-screen relative z-10 flex items-center justify-center p-6 sm:p-12 md:p-16 overflow-y-auto">
+        <div className="w-full max-w-md bg-white/95 backdrop-blur-md border border-white/10 p-8 rounded-premium shadow-2xl space-y-6">
+          <div className="text-center space-y-2">
+            <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-2">
+              <ShieldCheck className="w-6 h-6 animate-pulse" />
             </div>
+            <h2 className="text-2xl font-black text-slate-800 tracking-tight">Đăng ký Đối tác</h2>
+            <p className="text-xs text-slate-400 font-bold">Đăng ký tài khoản Chủ chỗ nghỉ của bạn</p>
           </div>
 
-          {/* Email */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Địa chỉ Email doanh nghiệp</label>
-            <div className="relative">
-              <Mail className="absolute left-3.5 top-3.5 text-slate-400 w-4 h-4" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="nguyenvana@gmail.com"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-primary focus:bg-white transition-all font-semibold text-slate-700"
-              />
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 rounded text-xs font-semibold">
+              {error}
             </div>
-          </div>
+          )}
 
-          {/* Số điện thoại */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Số điện thoại liên hệ</label>
-            <div className="relative">
-              <Phone className="absolute left-3.5 top-3.5 text-slate-400 w-4 h-4" />
-              <input
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="0912345678"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-primary focus:bg-white transition-all font-semibold text-slate-700"
-              />
+          <form onSubmit={handleRegisterSubmit} className="space-y-4">
+            {/* Họ tên */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Họ và tên chủ sở hữu</label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-3.5 text-slate-400 w-4 h-4" />
+                <input
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Nguyễn Văn A"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-primary focus:bg-white transition-all font-semibold text-slate-700"
+                />
+              </div>
             </div>
-          </div>
 
-          {/* Mật khẩu */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mật khẩu</label>
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-3.5 text-slate-400 w-4 h-4" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Tối thiểu 6 ký tự"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-primary focus:bg-white transition-all font-semibold text-slate-700"
-              />
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Địa chỉ Email doanh nghiệp</label>
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-3.5 text-slate-400 w-4 h-4" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="nguyenvana@gmail.com"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-primary focus:bg-white transition-all font-semibold text-slate-700"
+                />
+              </div>
             </div>
+
+            {/* Số điện thoại */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Số điện thoại liên hệ</label>
+              <div className="relative">
+                <Phone className="absolute left-3.5 top-3.5 text-slate-400 w-4 h-4" />
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="0912345678"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-primary focus:bg-white transition-all font-semibold text-slate-700"
+                />
+              </div>
+            </div>
+
+            {/* Mật khẩu */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mật khẩu</label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-3.5 text-slate-400 w-4 h-4" />
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Tối thiểu 6 ký tự"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-primary focus:bg-white transition-all font-semibold text-slate-700"
+                />
+              </div>
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-slate-250 text-slate-900 font-black text-sm py-3.5 rounded-xl transition-all shadow-md shadow-amber-500/10 mt-2 active:scale-95"
+            >
+              {loading ? 'Đang gửi thông tin đăng ký...' : 'Đăng ký tài khoản Đối tác'}
+            </button>
+          </form>
+
+          <div className="text-center pt-4 border-t border-slate-50 text-xs font-semibold text-slate-400">
+            Đã có tài khoản?{' '}
+            <Link to="/login" className="text-primary font-bold hover:underline">
+              Đăng nhập
+            </Link>
           </div>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-slate-250 text-slate-900 font-black text-sm py-3.5 rounded-xl transition-all shadow-md shadow-amber-500/10 mt-2 active:scale-95"
-          >
-            {loading ? 'Đang gửi thông tin đăng ký...' : 'Đăng ký tài khoản Đối tác'}
-          </button>
-        </form>
-
-        <div className="text-center pt-4 border-t border-slate-50 text-xs font-semibold text-slate-400">
-          Đã có tài khoản?{' '}
-          <Link to="/login" className="text-primary font-bold hover:underline">
-            Đăng nhập
-          </Link>
         </div>
       </div>
 
