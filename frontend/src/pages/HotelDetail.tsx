@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { setSearchCriteria } from '../store/slices/searchSlice';
@@ -664,8 +664,12 @@ export const HotelDetail: React.FC = () => {
     { id: 'reviews-section', label: language === 'vi' ? 'Đánh giá' : 'Reviews' },
   ];
 
+  const isScrollingRef = useRef(false);
+  const scrollTimeoutRef = useRef<number | null>(null);
+
   useEffect(() => {
     const handleScroll = () => {
+      if (isScrollingRef.current) return;
       const scrollPosition = window.scrollY + 120; // offset
 
       for (const tab of tabs) {
@@ -682,16 +686,32 @@ export const HotelDetail: React.FC = () => {
     };
 
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeoutRef.current) {
+        window.clearTimeout(scrollTimeoutRef.current);
+      }
+    };
   }, [language]);
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
+      isScrollingRef.current = true;
+      setActiveTab(id);
+
+      if (scrollTimeoutRef.current) {
+        window.clearTimeout(scrollTimeoutRef.current);
+      }
+
       const yOffset = -70; // offset for the sticky sub-nav bar itself (which is 48px high)
       const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: y, behavior: 'smooth' });
-      setActiveTab(id);
+
+      // Re-enable scroll listener after smooth scroll finishes
+      scrollTimeoutRef.current = window.setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 800);
     }
   };
 
@@ -1778,31 +1798,29 @@ export const HotelDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Sub Navigation Tabs */}
-      <div className="sticky top-0 z-40 bg-white border-b border-slate-200/85 shadow-sm backdrop-blur-md">
-        <div className="max-w-[1350px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex overflow-x-auto no-scrollbar justify-between items-center w-full h-12">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => scrollToSection(tab.id)}
-                className={`text-xs sm:text-sm font-bold border-b-2 py-3 px-1 transition-all duration-200 whitespace-nowrap focus:outline-none flex-1 text-center ${
-                  activeTab === tab.id
-                    ? 'border-[#006ce4] text-[#006ce4]'
-                    : 'border-transparent text-slate-500 hover:text-[#006ce4] hover:border-[#006ce4]'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* Main Details Body Container - A single unified white box sheet */}
       <div className="max-w-[1350px] mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        <div id="overview-section" className="bg-white border border-slate-150 rounded-3xl p-6 sm:p-8 space-y-10 shadow-sm">
+        <div id="overview-section" className="bg-white border border-slate-150 rounded-3xl p-6 sm:p-8 space-y-10 shadow-sm relative">
+
+          {/* Sub Navigation Tabs */}
+          <div className="sticky top-0 z-40 bg-white border-b border-slate-150 pb-2 -mx-6 sm:-mx-8 px-6 sm:px-8 -mt-6 sm:-mt-8 rounded-t-3xl shadow-sm">
+            <div className="flex overflow-x-auto no-scrollbar justify-between items-center w-full h-12">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => scrollToSection(tab.id)}
+                  className={`text-xs sm:text-sm font-bold border-b-2 py-3 px-1 transition-all duration-200 whitespace-nowrap focus:outline-none flex-1 text-center ${
+                    activeTab === tab.id
+                      ? 'border-[#006ce4] text-[#006ce4]'
+                      : 'border-transparent text-slate-500 hover:text-[#006ce4] hover:border-[#006ce4]'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Title Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
