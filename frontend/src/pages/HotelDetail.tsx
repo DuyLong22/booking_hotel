@@ -2668,7 +2668,6 @@ export const HotelDetail: React.FC = () => {
                   </div>
                 </div>
               </div>
-              </div>
             </div>
           </section>
 
