@@ -83,7 +83,7 @@ export const BecomePartner: React.FC = () => {
           </p>
           <div className="pt-4">
             <button
-              onClick={() => navigate('/register')}
+              onClick={() => navigate('/register/owner')}
               className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-extrabold text-base px-8 py-3.5 rounded-premium shadow-lg shadow-amber-400/25 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 mx-auto"
             >
               {t.startBtn} <ArrowRight className="w-5 h-5" />
@@ -173,7 +173,7 @@ export const BecomePartner: React.FC = () => {
             </p>
             <div className="pt-2">
               <button
-                onClick={() => navigate('/register')}
+                onClick={() => navigate('/register/owner')}
                 className="bg-white hover:bg-slate-100 text-primary font-extrabold text-sm px-6 py-3 rounded-lg shadow-md transition-all hover:scale-105 active:scale-95 inline-flex items-center gap-1.5"
               >
                 {t.ctaBtn} <CheckCircle2 className="w-4 h-4" />

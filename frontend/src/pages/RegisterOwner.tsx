@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import apiClient from '../core/api/client';
-import { Sparkles, Mail, Lock, User, Phone, CheckCircle } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, Phone, CheckCircle, ShieldCheck } from 'lucide-react';
 
-export const Register: React.FC = () => {
+export const RegisterOwner: React.FC = () => {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [role, setRole] = useState<'CUSTOMER' | 'HOTEL_OWNER'>('CUSTOMER');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -30,11 +29,11 @@ export const Register: React.FC = () => {
         password,
         fullName,
         phoneNumber,
-        role
+        role: 'HOTEL_OWNER'
       });
 
       if (res.data.success) {
-        alert('Đăng ký tài khoản thành công! Bạn có thể tiến hành đăng nhập.');
+        alert('Đăng ký tài khoản Chủ chỗ nghỉ thành công! Vui lòng liên hệ Admin phê duyệt hoặc tiến hành đăng nhập.');
         navigate('/login');
       } else {
         setError(res.data.message || 'Đăng ký thất bại');
@@ -77,11 +76,11 @@ export const Register: React.FC = () => {
     <div className="max-w-md mx-auto my-12 px-4 relative">
       <div className="bg-white border border-slate-100 rounded-premium p-8 shadow-xl space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-2">
-            <Sparkles className="w-6 h-6 animate-pulse" />
+          <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-2">
+            <ShieldCheck className="w-6 h-6 animate-pulse" />
           </div>
-          <h2 className="text-2xl font-black text-slate-800 tracking-tight">Tạo tài khoản mới</h2>
-          <p className="text-xs text-slate-400 font-medium">Bắt đầu trải nghiệm các tính năng nghỉ dưỡng tích hợp AI</p>
+          <h2 className="text-2xl font-black text-slate-800 tracking-tight">Đăng ký Đối tác Chủ chỗ nghỉ</h2>
+          <p className="text-xs text-slate-400 font-medium">Bắt đầu tiếp cận hàng triệu khách hàng cùng CloudBooking</p>
         </div>
 
         {error && (
@@ -91,11 +90,9 @@ export const Register: React.FC = () => {
         )}
 
         <form onSubmit={handleRegisterSubmit} className="space-y-4">
-
-
           {/* Họ tên */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase">Họ và tên</label>
+            <label className="text-xs font-bold text-slate-500 uppercase">Họ và tên chủ sở hữu</label>
             <div className="relative">
               <User className="absolute left-3 top-3 text-slate-400 w-4 h-4" />
               <input
@@ -111,7 +108,7 @@ export const Register: React.FC = () => {
 
           {/* Email */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase">Địa chỉ Email</label>
+            <label className="text-xs font-bold text-slate-500 uppercase">Địa chỉ Email doanh nghiệp</label>
             <div className="relative">
               <Mail className="absolute left-3 top-3 text-slate-400 w-4 h-4" />
               <input
@@ -127,7 +124,7 @@ export const Register: React.FC = () => {
 
           {/* Số điện thoại */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase">Số điện thoại</label>
+            <label className="text-xs font-bold text-slate-500 uppercase">Số điện thoại liên hệ</label>
             <div className="relative">
               <Phone className="absolute left-3 top-3 text-slate-400 w-4 h-4" />
               <input
@@ -160,9 +157,9 @@ export const Register: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary hover:bg-primary-dark disabled:bg-slate-250 text-white font-bold text-sm py-3 rounded-premium transition-all shadow-md"
+            className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-slate-250 text-slate-900 font-black text-sm py-3 rounded-premium transition-all shadow-md"
           >
-            {loading ? 'Đang gửi thông tin...' : 'Đăng ký tài khoản'}
+            {loading ? 'Đang gửi thông tin đăng ký...' : 'Đăng ký tài khoản Đối tác'}
           </button>
         </form>
 
@@ -217,4 +214,5 @@ export const Register: React.FC = () => {
     </div>
   );
 };
-export default Register;
+
+export default RegisterOwner;

@@ -11,6 +11,7 @@ import Search from './pages/Search';
 import HotelDetail from './pages/HotelDetail';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import RegisterOwner from './pages/RegisterOwner';
 import Checkout from './pages/Checkout';
 import Payment from './pages/Payment';
 import MyBookings from './pages/MyBookings';
@@ -123,6 +124,7 @@ const AppContent: React.FC = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/login-success" element={<LoginSuccess />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/register/owner" element={<RegisterOwner />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/my-bookings" element={<MyBookings />} />
             <Route path="/wishlist" element={<Wishlist />} />
