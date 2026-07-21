@@ -653,7 +653,48 @@ export const HotelDetail: React.FC = () => {
   const [selectedRoomForModal, setSelectedRoomForModal] = useState<RoomTypeDetail | null>(null);
   const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
 
-  // Auth & Review States
+  const [activeTab, setActiveTab] = useState('overview-section');
+
+  const tabs = [
+    { id: 'overview-section', label: language === 'vi' ? 'Tổng quan' : 'Overview' },
+    { id: 'rooms-section', label: language === 'vi' ? 'Phòng' : 'Rooms' },
+    { id: 'location-section', label: language === 'vi' ? 'Vị trí' : 'Location' },
+    { id: 'facilities-section', label: language === 'vi' ? 'Tiện ích' : 'Amenities' },
+    { id: 'policies-section', label: language === 'vi' ? 'Chính sách' : 'Policies' },
+    { id: 'reviews-section', label: language === 'vi' ? 'Đánh giá' : 'Reviews' },
+  ];
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 120; // offset
+
+      for (const tab of tabs) {
+        const el = document.getElementById(tab.id);
+        if (el) {
+          const top = el.offsetTop;
+          const height = el.offsetHeight;
+          if (scrollPosition >= top && scrollPosition < top + height) {
+            setActiveTab(tab.id);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [language]);
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      const yOffset = -70; // offset for the sticky sub-nav bar itself (which is 48px high)
+      const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+      setActiveTab(id);
+    }
+  };
+
   const auth = useSelector((state: RootState) => state.auth);
   const isLoggedIn = !!auth.user;
 
@@ -1737,9 +1778,31 @@ export const HotelDetail: React.FC = () => {
         </div>
       </div>
 
+      {/* Sub Navigation Tabs */}
+      <div className="sticky top-0 z-40 bg-white border-b border-slate-200/85 shadow-sm backdrop-blur-md">
+        <div className="max-w-[1350px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex overflow-x-auto no-scrollbar gap-6 md:gap-8 h-12 items-center">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => scrollToSection(tab.id)}
+                className={`text-xs sm:text-sm font-bold border-b-2 py-3 px-1 transition-all whitespace-nowrap focus:outline-none ${
+                  activeTab === tab.id
+                    ? 'border-[#006ce4] text-[#006ce4]'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Main Details Body Container - A single unified white box sheet */}
       <div className="max-w-[1350px] mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        <div className="bg-white border border-slate-150 rounded-3xl p-6 sm:p-8 space-y-10 shadow-sm">
+        <div id="overview-section" className="bg-white border border-slate-150 rounded-3xl p-6 sm:p-8 space-y-10 shadow-sm">
 
           {/* Title Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
@@ -1835,7 +1898,7 @@ export const HotelDetail: React.FC = () => {
           </div>
 
           <hr className="border-slate-100" />
-          <section className="space-y-6">
+          <section id="rooms-section" className="space-y-6">
             {/* Header of Room Selection */}
             <div className="pb-2">
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
@@ -2198,7 +2261,7 @@ export const HotelDetail: React.FC = () => {
           </section>
 
           {/* Nearby Locations Section */}
-          <section className="space-y-6 pt-4">
+          <section id="location-section" className="space-y-6 pt-4">
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
               <span className="w-1.5 h-6 bg-[#006ce4] rounded-full inline-block"></span>
               {language === 'vi' ? `Xung quanh ${hotel.name} có gì` : `What's around ${hotel.name}`}
@@ -2382,7 +2445,7 @@ export const HotelDetail: React.FC = () => {
           <hr className="border-slate-100" />
 
           {/* Section: Policies and General Info */}
-          <section className="space-y-6">
+          <section id="policies-section" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Left Column: Title Box */}
               <div className="md:col-span-1 bg-[#ebf3ff]/50 p-6 rounded-2xl flex flex-col justify-between">
@@ -2565,7 +2628,7 @@ export const HotelDetail: React.FC = () => {
           <hr className="border-slate-100" />
 
           {/* Review and Ratings */}
-          <section className="space-y-6">
+          <section id="reviews-section" className="space-y-6">
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
               <span className="w-1.5 h-6.5 bg-[#006ce4] rounded-full inline-block"></span>
               {t.reviewsTitle}
