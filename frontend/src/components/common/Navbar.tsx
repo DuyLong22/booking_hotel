@@ -71,7 +71,8 @@ export const Navbar: React.FC = () => {
 
   const isHomePage = location.pathname === '/';
   const isSearchPage = location.pathname === '/search';
-  const hasBanner = isHomePage || isSearchPage;
+  const isHotelDetailPage = location.pathname.startsWith('/hotel/');
+  const hasBanner = isHomePage || isSearchPage || isHotelDetailPage;
   const t = navTranslations[language];
 
   const handleLogout = async () => {
