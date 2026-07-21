@@ -36,7 +36,11 @@ import {
   Users,
   CreditCard,
   Ban,
-  Moon
+  Moon,
+  Clock,
+  Ruler,
+  Flame,
+  Footprints
 } from 'lucide-react';
 import { formatPrice } from '../utils/price';
 import L from 'leaflet';
@@ -180,15 +184,15 @@ const RoomDetailsModal = ({
                 <h3 className="font-extrabold text-slate-900 text-sm">{language === 'vi' ? 'Thông tin phòng' : 'Room info'}</h3>
                 <div className="space-y-2 text-xs font-bold text-slate-700">
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-400 text-sm">📏</span>
+                    <Ruler className="w-4 h-4 text-slate-400 shrink-0" />
                     <span>{language === 'vi' ? 'Diện tích:' : 'Size:'} {room.size || 25} m²</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-400 text-sm">🛏️</span>
+                    <Bed className="w-4 h-4 text-slate-400 shrink-0" />
                     <span>{room.bedCount} {language === 'vi' ? 'giường đôi' : 'large beds'}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-400 text-sm">👤</span>
+                    <User className="w-4 h-4 text-slate-400 shrink-0" />
                     <span>{room.capacity} {language === 'vi' ? 'khách' : 'guests'}</span>
                   </div>
                 </div>
@@ -199,11 +203,11 @@ const RoomDetailsModal = ({
                 <h3 className="font-extrabold text-slate-900 text-sm">{language === 'vi' ? 'Tính năng phòng bạn thích' : 'Features you like'}</h3>
                 <div className="space-y-2 text-xs font-bold text-slate-700">
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-400 text-sm">🚿</span>
+                    <Bath className="w-4 h-4 text-slate-400 shrink-0" />
                     <span>{language === 'vi' ? 'Vòi tắm đứng' : 'Standing shower'}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-400 text-sm">♨️</span>
+                    <Flame className="w-4 h-4 text-slate-400 shrink-0" />
                     <span>{language === 'vi' ? 'Nước nóng' : 'Hot water'}</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -2058,12 +2062,12 @@ export const HotelDetail: React.FC = () => {
                         {/* Specs: NO background, NO borders, larger text */}
                         <div className="space-y-3 text-sm text-slate-700 font-bold">
                           <div className="flex items-center gap-2">
-                            <span className="text-slate-400 text-base">📐</span>
+                            <Ruler className="w-4.5 h-4.5 text-slate-400 shrink-0" />
                             <span>{language === 'vi' ? 'Diện tích:' : 'Size:'} {representative.size || 25} m²</span>
                           </div>
 
                           <div className="flex items-center gap-2">
-                            <span className="text-slate-400 text-base">🛏️</span>
+                            <Bed className="w-4.5 h-4.5 text-slate-400 shrink-0" />
                             <span>{representative.bedCount} {language === 'vi' ? 'Giường lớn' : 'Large beds'}</span>
                           </div>
 
@@ -2141,7 +2145,7 @@ export const HotelDetail: React.FC = () => {
                                       {/* Chi phí trẻ em (nếu tìm kiếm có trẻ em) */}
                                       {children > 0 && (
                                         <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold group relative cursor-pointer">
-                                          <span className="text-slate-400">👶</span>
+                                          <Baby className="w-4 h-4 text-slate-400 shrink-0" />
                                           <span className="underline decoration-dotted">
                                             {language === 'vi' ? 'Chi tiết phí trẻ em tại đây' : 'Child fee details here'} ⓘ
                                           </span>
@@ -2207,7 +2211,7 @@ export const HotelDetail: React.FC = () => {
                                     <td className="px-2 py-5 w-[10%] border-r border-slate-100">
                                       <div className="flex justify-center items-center gap-0.5 text-slate-600">
                                         {Array.from({ length: Math.min(rt.capacity, 3) }).map((_, i) => (
-                                          <span key={i} className="text-base">👤</span>
+                                          <User key={i} className="w-4 h-4 text-slate-500 shrink-0 inline-block" />
                                         ))}
                                         {rt.capacity > 3 && <span className="text-xs font-bold">+{rt.capacity - 3}</span>}
                                       </div>
@@ -2483,7 +2487,7 @@ export const HotelDetail: React.FC = () => {
                     : `Policies and related info of ${hotel.name}`
                   }
                 </h3>
-                <span className="hidden md:block text-slate-400 text-3xl font-black opacity-20 mt-4 align-bottom">ℹ️</span>
+                <Info className="hidden md:block text-slate-400 w-8 h-8 stroke-[2.5] opacity-25 mt-4 align-bottom" />
               </div>
 
               {/* Right Column: Policies List */}
@@ -2567,7 +2571,10 @@ export const HotelDetail: React.FC = () => {
                             0 - 2 {language === 'vi' ? 'tuổi' : 'years old'}
                           </div>
                           <div className="px-4 py-3 flex justify-between items-center font-bold text-slate-700">
-                            <span className="flex items-center gap-1.5">👶 {language === 'vi' ? 'Có nôi/cũi nếu yêu cầu' : 'Crib upon request'}</span>
+                            <span className="flex items-center gap-1.5">
+                              <Baby className="w-4 h-4 text-slate-500 shrink-0" />
+                              <span>{language === 'vi' ? 'Có nôi/cũi nếu yêu cầu' : 'Crib upon request'}</span>
+                            </span>
                             <span className="text-emerald-650 font-black">{language === 'vi' ? 'Miễn phí' : 'Free'}</span>
                           </div>
                         </div>
@@ -2617,7 +2624,7 @@ export const HotelDetail: React.FC = () => {
                   {/* Row 11: Vật nuôi */}
                   <div className="grid grid-cols-1 md:grid-cols-10 p-5 gap-4">
                     <div className="md:col-span-3 flex items-start gap-2.5 font-extrabold text-slate-900">
-                      <span className="text-lg leading-none shrink-0 select-none">🐾</span>
+                      <Footprints className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
                       <span>{language === 'vi' ? 'Vật nuôi' : 'Pets'}</span>
                     </div>
                     <div className="md:col-span-7 text-slate-600 font-semibold">
@@ -2880,7 +2887,7 @@ export const HotelDetail: React.FC = () => {
             <div className="p-6 overflow-y-auto space-y-5 flex-1 divide-y divide-slate-100 text-xs sm:text-sm font-semibold text-slate-700">
               {/* Early Check-in */}
               <div className="flex gap-4 items-start pt-4 first:pt-0 border-none">
-                <span className="text-xl shrink-0 mt-0.5">⏱️</span>
+                <Clock className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm uppercase tracking-wider">
                     {language === 'vi' ? 'Nhận phòng sớm' : 'Early Check-in'}
@@ -2896,7 +2903,7 @@ export const HotelDetail: React.FC = () => {
 
               {/* Late Check-out */}
               <div className="flex gap-4 items-start pt-5">
-                <span className="text-xl shrink-0 mt-0.5">🕒</span>
+                <Clock className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm uppercase tracking-wider">
                     {language === 'vi' ? 'Trả phòng trễ' : 'Late Check-out'}
@@ -2912,7 +2919,7 @@ export const HotelDetail: React.FC = () => {
 
               {/* Smoking */}
               <div className="flex gap-4 items-start pt-5">
-                <span className="text-xl shrink-0 mt-0.5">🚭</span>
+                <Ban className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm uppercase tracking-wider">
                     {language === 'vi' ? 'Hút thuốc' : 'Smoking'}
@@ -2928,7 +2935,7 @@ export const HotelDetail: React.FC = () => {
 
               {/* Pets */}
               <div className="flex gap-4 items-start pt-5">
-                <span className="text-xl shrink-0 mt-0.5">🐾</span>
+                <Footprints className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm uppercase tracking-wider">
                     {language === 'vi' ? 'Thú cưng' : 'Pets'}
