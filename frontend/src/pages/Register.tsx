@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import apiClient from '../core/api/client';
-import { Sparkles, Mail, Lock, User, Phone, CheckCircle } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, Phone, CheckCircle, Home } from 'lucide-react';
 
 export const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -10,7 +10,6 @@ export const Register: React.FC = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [role, setRole] = useState<'CUSTOMER' | 'HOTEL_OWNER'>('CUSTOMER');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -30,7 +29,7 @@ export const Register: React.FC = () => {
         password,
         fullName,
         phoneNumber,
-        role
+        role: 'CUSTOMER'
       });
 
       if (res.data.success) {
@@ -74,103 +73,145 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto my-12 px-4 relative">
-      <div className="bg-white border border-slate-100 rounded-premium p-8 shadow-xl space-y-6">
-        <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-2">
-            <Sparkles className="w-6 h-6 animate-pulse" />
-          </div>
-          <h2 className="text-2xl font-black text-slate-800 tracking-tight">Tạo tài khoản mới</h2>
-          <p className="text-xs text-slate-400 font-medium">Bắt đầu trải nghiệm các tính năng nghỉ dưỡng tích hợp AI</p>
+    <div className="h-screen w-screen flex overflow-hidden bg-slate-50 font-sans">
+      {/* Left side: Background Image & Greetings */}
+      <div className="hidden md:flex md:w-1/2 relative flex-col justify-between p-12 text-white overflow-hidden">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-10000 hover:scale-105"
+          style={{ backgroundImage: "url('/background.jpg')" }}
+        ></div>
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/50 to-slate-900/30 z-0"></div>
+
+        {/* Back to home */}
+        <div className="relative z-10">
+          <Link 
+            to="/" 
+            className="inline-flex items-center gap-2 text-xs font-black tracking-wider uppercase bg-white/10 hover:bg-white/20 backdrop-blur-md px-4 py-2 rounded-full border border-white/15 transition-all"
+          >
+            <Home className="w-3.5 h-3.5" />
+            Về Trang Chủ
+          </Link>
         </div>
 
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 rounded text-xs font-semibold">
-            {error}
-          </div>
-        )}
+        {/* Welcome message */}
+        <div className="relative z-10 space-y-4 max-w-lg mb-12">
+          <span className="inline-flex items-center gap-1 bg-primary/20 text-blue-300 font-extrabold text-[10px] px-3 py-1 rounded-full uppercase tracking-wider border border-blue-400/10">
+            <Sparkles className="w-3 h-3 animate-pulse" /> Trải nghiệm cá nhân hóa cùng AI
+          </span>
+          <h1 className="text-3xl lg:text-4xl xl:text-5xl font-black leading-tight tracking-tight">
+            Bắt đầu chuyến đi mơ ước của bạn
+          </h1>
+          <p className="text-slate-200 text-xs lg:text-sm leading-relaxed font-semibold">
+            Đăng ký tài khoản Khách du lịch để trải nghiệm ngay bộ tìm kiếm khách sạn thông minh bằng trợ lý AI, lưu trữ chỗ nghỉ yêu thích và quản lý đặt phòng dễ dàng nhất.
+          </p>
+        </div>
 
-        <form onSubmit={handleRegisterSubmit} className="space-y-4">
+        {/* Footer info */}
+        <div className="relative z-10 text-[10px] text-slate-400 font-semibold tracking-wider uppercase">
+          © {new Date().getFullYear()} CloudBooking Corporation. All rights reserved.
+        </div>
+      </div>
 
-
-          {/* Họ tên */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase">Họ và tên</label>
-            <div className="relative">
-              <User className="absolute left-3 top-3 text-slate-400 w-4 h-4" />
-              <input
-                type="text"
-                required
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Nguyễn Văn A"
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary focus:bg-white transition-all font-medium text-slate-700"
-              />
+      {/* Right side: Register Form */}
+      <div className="w-full md:w-1/2 h-full flex flex-col justify-center items-center p-6 sm:p-12 md:p-16 bg-white overflow-y-auto">
+        <div className="w-full max-w-md space-y-6">
+          {/* Logo / Header for mobile */}
+          <div className="text-center md:text-left space-y-2">
+            <div className="md:hidden w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-2">
+              <Sparkles className="w-6 h-6 animate-pulse" />
             </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">Tạo tài khoản mới</h2>
+            <p className="text-xs text-slate-400 font-bold">Trở thành thành viên CloudBooking để đặt chỗ thông minh</p>
           </div>
 
-          {/* Email */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase">Địa chỉ Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 text-slate-400 w-4 h-4" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="nguyenvana@gmail.com"
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary focus:bg-white transition-all font-medium text-slate-700"
-              />
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 rounded text-xs font-semibold">
+              {error}
             </div>
-          </div>
+          )}
 
-          {/* Số điện thoại */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase">Số điện thoại</label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-3 text-slate-400 w-4 h-4" />
-              <input
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="0912345678"
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary focus:bg-white transition-all font-medium text-slate-700"
-              />
+          <form onSubmit={handleRegisterSubmit} className="space-y-4">
+            {/* Họ tên */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Họ và tên</label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-3.5 text-slate-400 w-4 h-4" />
+                <input
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Nguyễn Văn A"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-primary focus:bg-white transition-all font-semibold text-slate-700"
+                />
+              </div>
             </div>
-          </div>
 
-          {/* Mật khẩu */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase">Mật khẩu</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 text-slate-400 w-4 h-4" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Tối thiểu 6 ký tự"
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary focus:bg-white transition-all font-medium text-slate-700"
-              />
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Địa chỉ Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-3.5 text-slate-400 w-4 h-4" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="nguyenvana@gmail.com"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-primary focus:bg-white transition-all font-semibold text-slate-700"
+                />
+              </div>
             </div>
+
+            {/* Số điện thoại */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Số điện thoại</label>
+              <div className="relative">
+                <Phone className="absolute left-3.5 top-3.5 text-slate-400 w-4 h-4" />
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="0912345678"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-primary focus:bg-white transition-all font-semibold text-slate-700"
+                />
+              </div>
+            </div>
+
+            {/* Mật khẩu */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mật khẩu</label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-3.5 text-slate-400 w-4 h-4" />
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Tối thiểu 6 ký tự"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-primary focus:bg-white transition-all font-semibold text-slate-700"
+                />
+              </div>
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary hover:bg-primary-dark disabled:bg-slate-250 text-white font-extrabold text-xs py-3.5 rounded-xl transition-all shadow-md shadow-primary/10 mt-2 active:scale-95"
+            >
+              {loading ? 'Đang gửi thông tin...' : 'Đăng ký tài khoản'}
+            </button>
+          </form>
+
+          <div className="text-center pt-4 border-t border-slate-50 text-xs font-semibold text-slate-400">
+            Đã có tài khoản?{' '}
+            <Link to="/login" className="text-primary font-bold hover:underline">
+              Đăng nhập
+            </Link>
           </div>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary hover:bg-primary-dark disabled:bg-slate-250 text-white font-bold text-sm py-3 rounded-premium transition-all shadow-md"
-          >
-            {loading ? 'Đang gửi thông tin...' : 'Đăng ký tài khoản'}
-          </button>
-        </form>
-
-        <div className="text-center pt-4 border-t border-slate-50 text-xs font-medium text-slate-400">
-          Đã có tài khoản?{' '}
-          <Link to="/login" className="text-primary font-bold hover:underline">
-            Đăng nhập
-          </Link>
         </div>
       </div>
 
@@ -217,4 +258,5 @@ export const Register: React.FC = () => {
     </div>
   );
 };
+
 export default Register;
