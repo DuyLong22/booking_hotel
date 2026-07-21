@@ -28,7 +28,15 @@ import {
   Trees,
   ShieldCheck,
   Tv,
-  Globe
+  Globe,
+  LogIn,
+  LogOut,
+  Info,
+  Baby,
+  Users,
+  CreditCard,
+  Ban,
+  Moon
 } from 'lucide-react';
 import { formatPrice } from '../utils/price';
 import L from 'leaflet';
@@ -2478,167 +2486,188 @@ export const HotelDetail: React.FC = () => {
 
               {/* Right Column: Policies List */}
               <div className="md:col-span-2 space-y-6">
-                <div className="space-y-4">
-                  {/* Rule 1: Check-in/Check-out */}
-                  <div className="flex gap-4 items-start">
-                    <span className="text-xl shrink-0 mt-0.5">🕒</span>
-                    <div className="space-y-0.5">
-                      <h4 className="font-extrabold text-slate-800 text-sm">
-                        {language === 'vi' ? 'Thời gian nhận phòng/trả phòng' : 'Check-in/Check-out time'}
-                      </h4>
-                      <p className="text-slate-600 text-xs font-semibold">
+                <div className="border border-slate-200 bg-white rounded-2xl shadow-sm divide-y divide-slate-150 overflow-hidden text-xs sm:text-sm font-semibold text-slate-700">
+                  {/* Row 1: Nhận phòng */}
+                  <div className="grid grid-cols-1 md:grid-cols-10 p-5 gap-4">
+                    <div className="md:col-span-3 flex items-start gap-2.5 font-extrabold text-slate-900">
+                      <LogIn className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+                      <span>{language === 'vi' ? 'Nhận phòng' : 'Check-in'}</span>
+                    </div>
+                    <div className="md:col-span-7 text-slate-600 space-y-1.5">
+                      <p className="font-extrabold text-slate-800">{language === 'vi' ? `Từ ${hotel.checkInTime || '15:00'}` : `From ${hotel.checkInTime || '15:00'}`}</p>
+                      <p className="text-xs text-slate-500 font-medium leading-relaxed">
                         {language === 'vi' 
-                          ? `Giờ nhận phòng: Từ ${hotel.checkInTime || '14:00'} | Giờ trả phòng: Trước ${hotel.checkOutTime || '12:00'}`
-                          : `Check-in: From ${hotel.checkInTime || '14:00'} | Check-out: Before ${hotel.checkOutTime || '12:00'}`
-                        }
+                          ? 'Khách được yêu cầu xuất trình giấy tờ tùy thân có ảnh và thẻ tín dụng lúc nhận phòng.'
+                          : 'Guests are required to show a photo ID and credit card upon check-in.'}
+                      </p>
+                      <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                        {language === 'vi'
+                          ? 'Trước đó bạn sẽ cần cho chỗ nghỉ biết giờ bạn sẽ đến nơi.'
+                          : 'You\'ll need to let the property know in advance what time you\'ll arrive.'}
                       </p>
                     </div>
                   </div>
 
-                  {/* Rule 2: Mandated Hardcopy Docs */}
-                  <div className="flex gap-4 items-start border-t border-slate-100 pt-4">
-                    <span className="text-xl shrink-0 mt-0.5">🪪</span>
-                    <div className="space-y-0.5">
-                      <h4 className="font-extrabold text-slate-800 text-sm">
-                        {language === 'vi' ? 'Giấy Tờ Bắt Buộc' : 'Mandatory Documents'}
-                      </h4>
-                      <p className="text-slate-600 text-xs font-semibold leading-relaxed">
-                        {language === 'vi' 
-                          ? 'Khi nhận phòng, bạn cần cung cấp CMND/CCCD. Vui lòng mang theo các giấy tờ cần thiết dưới dạng bản cứng.'
-                          : 'Upon check-in, you must provide ID/Passport. Please bring the necessary hardcopy documents with you.'
-                        }
-                      </p>
+                  {/* Row 2: Trả phòng */}
+                  <div className="grid grid-cols-1 md:grid-cols-10 p-5 gap-4">
+                    <div className="md:col-span-3 flex items-start gap-2.5 font-extrabold text-slate-900">
+                      <LogOut className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+                      <span>{language === 'vi' ? 'Trả phòng' : 'Check-out'}</span>
+                    </div>
+                    <div className="md:col-span-7 text-slate-600">
+                      <p className="font-extrabold text-slate-800">{language === 'vi' ? `Đến ${hotel.checkOutTime || '11:00'}` : `Until ${hotel.checkOutTime || '11:00'}`}</p>
                     </div>
                   </div>
 
-                  {/* Rule 3: Contact before arrival */}
-                  <div className="flex gap-4 items-start border-t border-slate-100 pt-4">
-                    <span className="text-xl shrink-0 mt-0.5">📞</span>
-                    <div className="space-y-0.5">
-                      <h4 className="font-extrabold text-slate-800 text-sm">
-                        {language === 'vi' ? 'Liên Hệ Nơi Lưu Trú Trước Khi Đến' : 'Contact Accommodation Before Arrival'}
-                      </h4>
-                      <p className="text-slate-600 text-xs font-semibold leading-relaxed">
-                        {language === 'vi' 
-                          ? 'Khách phải liên hệ khách sạn 1 ngày trước khi đến nhận phòng'
-                          : 'Guests must contact the hotel 1 day before arrival for check-in coordination'
-                        }
-                      </p>
+                  {/* Row 3: Hủy đặt phòng/ Trả trước */}
+                  <div className="grid grid-cols-1 md:grid-cols-10 p-5 gap-4">
+                    <div className="md:col-span-3 flex items-start gap-2.5 font-extrabold text-slate-900">
+                      <Info className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+                      <span>{language === 'vi' ? 'Hủy đặt phòng/ Trả trước' : 'Cancellation/ Prepayment'}</span>
+                    </div>
+                    <div className="md:col-span-7 text-slate-500 font-medium leading-relaxed text-xs">
+                      {language === 'vi' 
+                        ? 'Các chính sách hủy và thanh toán trước sẽ khác nhau tùy vào từng loại chỗ nghỉ. Vui lòng nhập ngày lưu trú và xem điều kiện áp dụng cho lựa chọn chỗ nghỉ của bạn.'
+                        : 'Cancellation and prepayment policies vary according to accommodation type. Please check what conditions apply to your preferred room.'}
+                    </div>
+                  </div>
+
+                  {/* Row 4: Trẻ em và giường */}
+                  <div className="grid grid-cols-1 md:grid-cols-10 p-5 gap-4">
+                    <div className="md:col-span-3 flex items-start gap-2.5 font-extrabold text-slate-900">
+                      <Baby className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+                      <span>{language === 'vi' ? 'Trẻ em và giường' : 'Children & Beds'}</span>
+                    </div>
+                    <div className="md:col-span-7 space-y-4">
+                      {/* Chính sách trẻ em */}
+                      <div className="space-y-1">
+                        <h5 className="font-extrabold text-slate-800 text-xs sm:text-sm">{language === 'vi' ? 'Chính sách trẻ em' : 'Child policies'}</h5>
+                        <p className="text-slate-650 text-xs sm:text-sm font-bold">{language === 'vi' ? 'Phù hợp cho tất cả trẻ em.' : 'Suitable for all children.'}</p>
+                        <p className="text-slate-600 text-xs sm:text-sm font-medium">
+                          {language === 'vi' 
+                            ? 'Trẻ em từ 3 tuổi trở lên sẽ được tính giá như người lớn tại chỗ nghỉ này.' 
+                            : 'Children aged 3 years and above are considered adults at this property.'}
+                        </p>
+                        <p className="text-xs text-slate-450 font-medium italic pt-1">
+                          {language === 'vi'
+                            ? 'Để xem thông tin giá và tình trạng phòng trống chính xác, vui lòng thêm số lượng và độ tuổi của trẻ em trong nhóm của bạn khi tìm kiếm.'
+                            : 'To see correct prices and occupancy info, please add the number and ages of children in your group to your search.'}
+                        </p>
+                      </div>
+
+                      {/* Chính sách nôi cũi & giường phụ */}
+                      <div className="space-y-3 pt-3 border-t border-slate-100">
+                        <h5 className="font-extrabold text-slate-800 text-xs sm:text-sm">{language === 'vi' ? 'Chính sách nôi (cũi) và giường phụ' : 'Crib and extra bed policies'}</h5>
+                        
+                        {/* Crib details box */}
+                        <div className="border border-slate-200 rounded-xl overflow-hidden text-xs max-w-md bg-slate-50/50 shadow-sm">
+                          <div className="px-4 py-2 bg-slate-100 border-b border-slate-200 font-extrabold text-slate-700">
+                            0 - 2 {language === 'vi' ? 'tuổi' : 'years old'}
+                          </div>
+                          <div className="px-4 py-3 flex justify-between items-center font-bold text-slate-700">
+                            <span className="flex items-center gap-1.5">👶 {language === 'vi' ? 'Có nôi/cũi nếu yêu cầu' : 'Crib upon request'}</span>
+                            <span className="text-emerald-650 font-black">{language === 'vi' ? 'Miễn phí' : 'Free'}</span>
+                          </div>
+                        </div>
+
+                        <ul className="list-disc pl-4 space-y-1.5 text-xs text-slate-500 font-medium">
+                          <li>{language === 'vi' ? 'Số lượng nôi/cũi được phép tùy thuộc vào tùy chọn của bạn. Vui lòng kiểm tra tùy chọn mà bạn đã chọn để biết thêm thông tin.' : 'The number of cribs allowed depends on your selection. Please check your choice for more details.'}</li>
+                          <li>{language === 'vi' ? 'Chỗ nghỉ này không có giường phụ.' : 'This property does not offer extra beds.'}</li>
+                          <li>{language === 'vi' ? 'Tất cả nôi/cũi tùy thuộc vào tình trạng có sẵn.' : 'All cribs are subject to availability.'}</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Row 5: Giới hạn độ tuổi */}
+                  <div className="grid grid-cols-1 md:grid-cols-10 p-5 gap-4">
+                    <div className="md:col-span-3 flex items-start gap-2.5 font-extrabold text-slate-900">
+                      <User className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+                      <span>{language === 'vi' ? 'Giới hạn độ tuổi' : 'Age restriction'}</span>
+                    </div>
+                    <div className="md:col-span-7 text-slate-600 font-semibold">
+                      {language === 'vi' ? 'Độ tuổi tối thiểu để nhận phòng là 18' : 'The minimum age for check-in is 18'}
+                    </div>
+                  </div>
+
+                  {/* Row 6: Nhóm */}
+                  <div className="grid grid-cols-1 md:grid-cols-10 p-5 gap-4">
+                    <div className="md:col-span-3 flex items-start gap-2.5 font-extrabold text-slate-900">
+                      <Users className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+                      <span>{language === 'vi' ? 'Nhóm' : 'Groups'}</span>
+                    </div>
+                    <div className="md:col-span-7 text-slate-500 font-medium leading-relaxed text-xs">
+                      {language === 'vi'
+                        ? 'Khi đặt phòng nhiều hơn 5 phòng, các chính sách khác và các điều lệ bổ sung có thể được áp dụng.'
+                        : 'When booking more than 5 rooms, different policies and additional supplements may apply.'}
+                    </div>
+                  </div>
+
+                  {/* Row 7: Thẻ được chấp nhận tại chỗ nghỉ */}
+                  <div className="grid grid-cols-1 md:grid-cols-10 p-5 gap-4">
+                    <div className="md:col-span-3 flex items-start gap-2.5 font-extrabold text-slate-900">
+                      <CreditCard className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+                      <span>{language === 'vi' ? 'Thẻ được chấp nhận tại chỗ nghỉ này' : 'Cards accepted at this property'}</span>
+                    </div>
+                    <div className="md:col-span-7 space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        {['Visa', 'Mastercard', 'AMEX', 'JCB', 'Maestro', 'UnionPay'].map((card) => (
+                          <span key={card} className="inline-flex items-center justify-center px-2.5 py-1 border border-slate-200 rounded bg-slate-50 text-[10px] sm:text-xs font-black text-slate-655 shadow-sm uppercase tracking-wider select-none">
+                            💳 {card}
+                          </span>
+                        ))}
+                      </div>
+                      <span className="inline-block px-3 py-1.5 bg-red-50 text-red-650 border border-red-100 rounded-lg text-xs font-bold shadow-sm">
+                        {language === 'vi' ? 'Không chấp nhận thanh toán bằng tiền mặt tại chỗ nghỉ' : 'Cashless payments not accepted at the property'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Row 8: Hút thuốc */}
+                  <div className="grid grid-cols-1 md:grid-cols-10 p-5 gap-4">
+                    <div className="md:col-span-3 flex items-start gap-2.5 font-extrabold text-slate-900">
+                      <Ban className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+                      <span>{language === 'vi' ? 'Hút thuốc' : 'Smoking'}</span>
+                    </div>
+                    <div className="md:col-span-7 text-slate-600 font-semibold">
+                      {language === 'vi' ? 'Không cho phép hút thuốc.' : 'Smoking is not allowed.'}
+                    </div>
+                  </div>
+
+                  {/* Row 9: Tiệc tùng */}
+                  <div className="grid grid-cols-1 md:grid-cols-10 p-5 gap-4">
+                    <div className="md:col-span-3 flex items-start gap-2.5 font-extrabold text-slate-900">
+                      <GlassWater className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+                      <span>{language === 'vi' ? 'Tiệc tùng' : 'Parties'}</span>
+                    </div>
+                    <div className="md:col-span-7 text-slate-600 font-semibold">
+                      {language === 'vi' ? 'Không cho phép tiệc tùng/sự kiện.' : 'Parties/events are not allowed.'}
+                    </div>
+                  </div>
+
+                  {/* Row 10: Thời gian yên lặng */}
+                  <div className="grid grid-cols-1 md:grid-cols-10 p-5 gap-4">
+                    <div className="md:col-span-3 flex items-start gap-2.5 font-extrabold text-slate-900">
+                      <Moon className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+                      <span>{language === 'vi' ? 'Thời gian yên lặng' : 'Quiet hours'}</span>
+                    </div>
+                    <div className="md:col-span-7 text-slate-600 font-semibold">
+                      {language === 'vi' ? 'Khách cần giữ yên lặng từ 22:00 đến 07:00.' : 'Guests must keep quiet between 22:00 and 07:00.'}
+                    </div>
+                  </div>
+
+                  {/* Row 11: Vật nuôi */}
+                  <div className="grid grid-cols-1 md:grid-cols-10 p-5 gap-4">
+                    <div className="md:col-span-3 flex items-start gap-2.5 font-extrabold text-slate-900">
+                      <span className="text-lg leading-none shrink-0 select-none">🐾</span>
+                      <span>{language === 'vi' ? 'Vật nuôi' : 'Pets'}</span>
+                    </div>
+                    <div className="md:col-span-7 text-slate-600 font-semibold">
+                      {language === 'vi' ? 'Vật nuôi không được phép.' : 'Pets are not allowed.'}
                     </div>
                   </div>
                 </div>
-
-                {/* Read all button */}
-                <button
-                  type="button"
-                  onClick={() => setIsPolicyModalOpen(true)}
-                  className="text-[#006ce4] hover:text-[#0056b3] font-extrabold text-xs sm:text-sm flex items-center gap-1 transition-all active:scale-95 w-fit"
-                >
-                  <span>{language === 'vi' ? 'Đọc tất cả' : 'Read all'}</span>
-                  <span>&gt;</span>
-                </button>
-
-                {/* General Information Table */}
-                <div className="space-y-3 pt-2">
-                  <h4 className="font-black text-slate-900 text-sm sm:text-base">
-                    {language === 'vi' ? 'Thông tin chung' : 'General information'}
-                  </h4>
-
-                  {/* Table Layout */}
-                  <div className="border border-slate-150 rounded-2xl overflow-hidden shadow-sm bg-white text-xs font-semibold text-slate-700">
-                    {/* Row 1: Common Amenities */}
-                    <div className="grid grid-cols-3 border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                      <div className="col-span-1 bg-slate-50/70 p-3.5 border-r border-slate-100 text-slate-500 font-bold">
-                        {language === 'vi' ? 'Tiện ích chung' : 'Common amenities'}
-                      </div>
-                      <div className="col-span-2 p-3.5 text-slate-800">
-                        {hotel.amenities?.slice(0, 5).map(a => translateAmenityName(a.name || a.amenity?.name)).join(', ') || '-'}
-                      </div>
-                    </div>
-
-                    {/* Row 2: Check-in/Check-out hours */}
-                    <div className="grid grid-cols-3 border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                      <div className="col-span-1 bg-slate-50/70 p-3.5 border-r border-slate-100 text-slate-500 font-bold">
-                        {language === 'vi' ? 'Thời gian nhận/trả phòng' : 'Check-in/Check-out hours'}
-                      </div>
-                      <div className="col-span-2 p-3.5 text-slate-800">
-                        {language === 'vi' 
-                          ? `Từ ${hotel.checkInTime || '14:00'} - đến ${hotel.checkOutTime || '12:00'}`
-                          : `From ${hotel.checkInTime || '14:00'} - to ${hotel.checkOutTime || '12:00'}`
-                        }
-                      </div>
-                    </div>
-
-                    {/* Row 3: City Center Distance */}
-                    <div className="grid grid-cols-3 border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                      <div className="col-span-1 bg-slate-50/70 p-3.5 border-r border-slate-100 text-slate-500 font-bold">
-                        {language === 'vi' ? 'Khoảng cách đến trung tâm thành phố' : 'Distance to city center'}
-                      </div>
-                      <div className="col-span-2 p-3.5 text-slate-800">
-                        {(() => {
-                          const centerLoc = hotel.nearbyLocations?.find(loc => 
-                            loc.name.toLowerCase().includes('trung tâm') || 
-                            loc.name.toLowerCase().includes('chợ') || 
-                            loc.name.toLowerCase().includes('hồ')
-                          );
-                          return centerLoc ? `${centerLoc.distance}` : '1.2 km';
-                        })()}
-                      </div>
-                    </div>
-
-                    {/* Row 4: Popular destinations */}
-                    <div className="grid grid-cols-3 border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                      <div className="col-span-1 bg-slate-50/70 p-3.5 border-r border-slate-100 text-slate-500 font-bold">
-                        {language === 'vi' ? 'Điểm đến phổ biến' : 'Popular destinations'}
-                      </div>
-                      <div className="col-span-2 p-3.5 text-slate-800 leading-relaxed">
-                        {hotel.nearbyLocations?.slice(0, 3).map(loc => loc.name).join(', ') || '-'}
-                      </div>
-                    </div>
-
-                    {/* Row 5: Available Rooms count */}
-                    <div className="grid grid-cols-3 border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                      <div className="col-span-1 bg-slate-50/70 p-3.5 border-r border-slate-100 text-slate-500 font-bold">
-                        {language === 'vi' ? `Số phòng còn trống tại ${hotel.name}` : `Available rooms at ${hotel.name}`}
-                      </div>
-                      <div className="col-span-2 p-3.5 text-slate-800">
-                        {hotel.roomTypes?.reduce((sum, rt) => sum + (rt.availableRooms || 0), 0) || 0}
-                      </div>
-                    </div>
-
-                    {/* Row 6: Floors count */}
-                    <div className="grid grid-cols-3 border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                      <div className="col-span-1 bg-slate-50/70 p-3.5 border-r border-slate-100 text-slate-500 font-bold">
-                        {language === 'vi' ? `Số lầu tại ${hotel.name}` : `Number of floors at ${hotel.name}`}
-                      </div>
-                      <div className="col-span-2 p-3.5 text-slate-800">
-                        {Math.abs(hotel.id.charCodeAt(0) % 6) + 4}
-                      </div>
-                    </div>
-
-                    {/* Row 7: Other amenities */}
-                    {hotel.amenities && hotel.amenities.length > 5 && (
-                      <div className="grid grid-cols-3 border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                        <div className="col-span-1 bg-slate-50/70 p-3.5 border-r border-slate-100 text-slate-500 font-bold">
-                          {language === 'vi' ? `Những tiện nghi khác tại ${hotel.name}` : `Other facilities at ${hotel.name}`}
-                        </div>
-                        <div className="col-span-2 p-3.5 text-slate-800 leading-relaxed">
-                          {hotel.amenities.slice(5).map(a => translateAmenityName(a.name || a.amenity?.name)).join(', ')}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Row 8: Nearby interesting places */}
-                    <div className="grid grid-cols-3 hover:bg-slate-50/50 transition-colors">
-                      <div className="col-span-1 bg-slate-50/70 p-3.5 border-r border-slate-100 text-slate-500 font-bold">
-                        {language === 'vi' ? 'Những địa điểm thú vị gần đó' : 'Nearby interesting places'}
-                      </div>
-                      <div className="col-span-2 p-3.5 text-slate-800 leading-relaxed">
-                        {hotel.nearbyLocations?.filter(loc => loc.type === 'ENTERTAINMENT' || loc.type === 'OTHER').slice(0, 3).map(loc => loc.name).join(', ') || '-'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              </div>
               </div>
             </div>
           </section>
