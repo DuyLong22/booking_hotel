@@ -2579,50 +2579,6 @@ export const HotelDetail: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Row 5: Giới hạn độ tuổi */}
-                  <div className="grid grid-cols-1 md:grid-cols-10 p-5 gap-4">
-                    <div className="md:col-span-3 flex items-start gap-2.5 font-extrabold text-slate-900">
-                      <User className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
-                      <span>{language === 'vi' ? 'Giới hạn độ tuổi' : 'Age restriction'}</span>
-                    </div>
-                    <div className="md:col-span-7 text-slate-600 font-semibold">
-                      {language === 'vi' ? 'Độ tuổi tối thiểu để nhận phòng là 18' : 'The minimum age for check-in is 18'}
-                    </div>
-                  </div>
-
-                  {/* Row 6: Nhóm */}
-                  <div className="grid grid-cols-1 md:grid-cols-10 p-5 gap-4">
-                    <div className="md:col-span-3 flex items-start gap-2.5 font-extrabold text-slate-900">
-                      <Users className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
-                      <span>{language === 'vi' ? 'Nhóm' : 'Groups'}</span>
-                    </div>
-                    <div className="md:col-span-7 text-slate-500 font-medium leading-relaxed text-xs">
-                      {language === 'vi'
-                        ? 'Khi đặt phòng nhiều hơn 5 phòng, các chính sách khác và các điều lệ bổ sung có thể được áp dụng.'
-                        : 'When booking more than 5 rooms, different policies and additional supplements may apply.'}
-                    </div>
-                  </div>
-
-                  {/* Row 7: Thẻ được chấp nhận tại chỗ nghỉ */}
-                  <div className="grid grid-cols-1 md:grid-cols-10 p-5 gap-4">
-                    <div className="md:col-span-3 flex items-start gap-2.5 font-extrabold text-slate-900">
-                      <CreditCard className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
-                      <span>{language === 'vi' ? 'Thẻ được chấp nhận tại chỗ nghỉ này' : 'Cards accepted at this property'}</span>
-                    </div>
-                    <div className="md:col-span-7 space-y-3">
-                      <div className="flex flex-wrap gap-2">
-                        {['Visa', 'Mastercard', 'AMEX', 'JCB', 'Maestro', 'UnionPay'].map((card) => (
-                          <span key={card} className="inline-flex items-center justify-center px-2.5 py-1 border border-slate-200 rounded bg-slate-50 text-[10px] sm:text-xs font-black text-slate-655 shadow-sm uppercase tracking-wider select-none">
-                            💳 {card}
-                          </span>
-                        ))}
-                      </div>
-                      <span className="inline-block px-3 py-1.5 bg-red-50 text-red-650 border border-red-100 rounded-lg text-xs font-bold shadow-sm">
-                        {language === 'vi' ? 'Không chấp nhận thanh toán bằng tiền mặt tại chỗ nghỉ' : 'Cashless payments not accepted at the property'}
-                      </span>
-                    </div>
-                  </div>
-
                   {/* Row 8: Hút thuốc */}
                   <div className="grid grid-cols-1 md:grid-cols-10 p-5 gap-4">
                     <div className="md:col-span-3 flex items-start gap-2.5 font-extrabold text-slate-900">
