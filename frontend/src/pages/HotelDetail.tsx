@@ -215,7 +215,7 @@ const RoomDetailsModal = ({
               <div className="space-y-3">
                 <h3 className="font-extrabold text-slate-900 text-sm">{language === 'vi' ? 'Tiện nghi phòng' : 'Room amenities'}</h3>
                 <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-bold text-slate-600 list-inside">
-                  {room.amenities.map((a) => (
+                  {room.amenities && room.amenities.map((a) => (
                     <li key={a} className="truncate">
                       • {translateAmenityName(a)}
                     </li>
@@ -2072,7 +2072,7 @@ export const HotelDetail: React.FC = () => {
 
                           {/* Basic amenities list */}
                           <div className="space-y-1.5 pt-2.5 border-t border-slate-100 text-slate-500 font-semibold text-xs">
-                            {representative.amenities.slice(0, 4).map((a) => (
+                            {representative.amenities && representative.amenities.slice(0, 4).map((a) => (
                               <div key={a} className="flex items-center gap-1.5">
                                 <span className="text-slate-355">•</span>
                                 <span>{translateAmenityName(a)}</span>
