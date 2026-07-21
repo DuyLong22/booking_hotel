@@ -1371,7 +1371,7 @@ export const HotelDetail: React.FC = () => {
         {/* Hero Section */}
         <section
           style={{ backgroundImage: "url('/banner.webp')" }}
-          className="relative bg-cover bg-center text-white pt-16 pb-12 px-4 sm:px-6 lg:px-8 shadow-2xl overflow-hidden min-h-[170px] flex items-center justify-center"
+          className="relative bg-cover bg-center text-white pt-28 pb-16 px-4 sm:px-6 lg:px-8 shadow-2xl overflow-hidden min-h-[260px] flex items-center justify-center"
         >
           {/* Lớp phủ tối nhẹ sắc nét bảo vệ độ tương phản chữ */}
           <div className="absolute inset-0 bg-black/35 z-0"></div>
