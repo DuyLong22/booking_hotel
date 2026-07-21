@@ -1781,16 +1781,16 @@ export const HotelDetail: React.FC = () => {
       {/* Sub Navigation Tabs */}
       <div className="sticky top-0 z-40 bg-white border-b border-slate-200/85 shadow-sm backdrop-blur-md">
         <div className="max-w-[1350px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex overflow-x-auto no-scrollbar gap-6 md:gap-8 h-12 items-center">
+          <div className="flex overflow-x-auto no-scrollbar justify-between items-center w-full h-12">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => scrollToSection(tab.id)}
-                className={`text-xs sm:text-sm font-bold border-b-2 py-3 px-1 transition-all whitespace-nowrap focus:outline-none ${
+                className={`text-xs sm:text-sm font-bold border-b-2 py-3 px-1 transition-all duration-200 whitespace-nowrap focus:outline-none flex-1 text-center ${
                   activeTab === tab.id
                     ? 'border-[#006ce4] text-[#006ce4]'
-                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                    : 'border-transparent text-slate-500 hover:text-[#006ce4] hover:border-[#006ce4]'
                 }`}
               >
                 {tab.label}
