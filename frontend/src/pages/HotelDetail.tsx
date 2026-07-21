@@ -64,12 +64,14 @@ const RoomDetailsModal = ({
   language,
   currency,
   onBook,
+  translateAmenityName,
 }: {
   room: RoomTypeDetail;
   onClose: () => void;
   language: string;
   currency: string;
   onBook: (roomTypeId: string) => void;
+  translateAmenityName: (name: string) => string;
 }) => {
   const [activeImgIdx, setActiveImgIdx] = useState(0);
   const images = room.images && room.images.length > 0
@@ -2852,6 +2854,7 @@ export const HotelDetail: React.FC = () => {
           language={language}
           currency={currency}
           onBook={handleBookRoom}
+          translateAmenityName={translateAmenityName}
         />
       )}
 
