@@ -165,7 +165,6 @@ export const OwnerDashboard: React.FC = () => {
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomPrice, setNewRoomPrice] = useState('');
   const [newRoomCapacity, setNewRoomCapacity] = useState('2');
-  const [newRoomBed, setNewRoomBed] = useState('King Size');
   const [newRoomBedCount, setNewRoomBedCount] = useState('1');
   const [newRoomSize, setNewRoomSize] = useState('30');
   const [newRoomCount, setNewRoomCount] = useState('1');
@@ -196,8 +195,6 @@ export const OwnerDashboard: React.FC = () => {
     setSuccessToast(msg);
     setTimeout(() => setSuccessToast(''), 3000);
   };
-
-  const [refreshBookingsTrigger, setRefreshBookingsTrigger] = useState(0);
 
   const fetchOwnerStats = async () => {
     try {
@@ -844,16 +841,6 @@ export const OwnerDashboard: React.FC = () => {
     } catch (err) {
       console.error(err);
       alert('Không thể lưu thông tin hạng phòng.');
-    }
-  };
-
-  const handleCreatePhysicalRoom = async (roomTypeId: string, roomNumber: string) => {
-    try {
-      await apiClient.post('/hotels/rooms', { roomTypeId, roomNumber });
-      triggerToast(`Đã thêm số phòng ${roomNumber} thành công!`);
-    } catch (err: any) {
-      console.error(err);
-      alert(err.response?.data?.message || 'Không thể tạo phòng vật lý mới.');
     }
   };
 

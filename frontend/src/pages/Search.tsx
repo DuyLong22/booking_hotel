@@ -287,6 +287,7 @@ interface HotelResult {
   ward: string;
   starRating: number;
   priceFrom: number;
+  originalPriceFrom?: number;
   averageRating: number;
   reviewCount: number;
   category: string;

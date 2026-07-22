@@ -33,8 +33,6 @@ import {
   LogOut,
   Info,
   Baby,
-  Users,
-  CreditCard,
   Ban,
   Moon,
   Clock,
@@ -276,6 +274,10 @@ interface RoomTypeDetail {
   images: { url: string }[];
   availableRooms: number;
   isBlocked: boolean;
+  includeBreakfast?: boolean;
+  childSurcharge?: number;
+  paymentPolicy?: string;
+  cancellationPolicy?: string;
 }
 
 interface ReviewDetail {
@@ -309,6 +311,8 @@ interface HotelDetailData {
   latitude: number | null;
   longitude: number | null;
   nearbyLocations?: { name: string; distance: string; type: string }[];
+  checkInTime?: string;
+  checkOutTime?: string;
 }
 
 const detailTranslations = {

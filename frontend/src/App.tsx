@@ -20,14 +20,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import Wishlist from './pages/Wishlist';
 import BecomePartner from './pages/BecomePartner';
 import LoginSuccess from './pages/LoginSuccess';
-
-// --- Các trang Mockup/Placeholder để tránh lỗi điều hướng ---
-const Profile: React.FC = () => (
-  <div className="max-w-md mx-auto my-20 p-8 bg-white border border-slate-100 rounded-premium shadow text-center space-y-4">
-    <h2 className="text-xl font-bold text-slate-800">Trang Cá Nhân</h2>
-    <p className="text-xs text-slate-400">Trang hồ sơ cá nhân đang được xây dựng (Phase 6)</p>
-  </div>
-);
+import Profile from './pages/Profile';
 
 // --- Component tự động kiểm tra Session (Auto Login) khi load trang ---
 const AuthInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
