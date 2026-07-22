@@ -21,7 +21,9 @@ import {
   Compass,
   Eye,
   EyeOff,
-  MapPin
+  MapPin,
+  Bell,
+  Info
 } from 'lucide-react';
 
 interface BookingItem {
@@ -114,6 +116,39 @@ export const Profile: React.FC = () => {
     setTimeout(() => setToastMessage(''), 3000);
   };
 
+  // --- Loyalty States ---
+  const [loyaltySummary, setLoyaltySummary] = useState<any>(null);
+  const [loyaltyHistory, setLoyaltyHistory] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loyaltyLoading, setLoyaltyLoading] = useState(false);
+
+  const fetchLoyaltyData = async () => {
+    setLoyaltyLoading(true);
+    try {
+      const [summaryRes, historyRes] = await Promise.all([
+        apiClient.get('/loyalty/summary'),
+        apiClient.get('/loyalty/history')
+      ]);
+      if (summaryRes.data.success) setLoyaltySummary(summaryRes.data.data);
+      if (historyRes.data.success) setLoyaltyHistory(historyRes.data.data);
+    } catch (err) {
+      console.error('Failed to fetch loyalty data:', err);
+    } finally {
+      setLoyaltyLoading(false);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await apiClient.get('/auth/notifications');
+      if (res.data.success) {
+        setNotifications(res.data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+    }
+  };
+
   // Fetch Bookings
   const fetchBookings = async () => {
     setBookingsLoading(true);
@@ -162,6 +197,8 @@ export const Profile: React.FC = () => {
     }
     fetchBookings();
     loadSavedCards();
+    fetchLoyaltyData();
+    fetchNotifications();
   }, [user]);
 
   // Sync tab selection from query params
@@ -171,24 +208,12 @@ export const Profile: React.FC = () => {
   }, [searchParams]);
 
   // Calculate Loyalty Points dynamically
-  const bookingsCount = bookings.filter(b => b.status === 'CONFIRMED' || b.status === 'COMPLETED' || b.status === 'CHECKED_OUT').length;
-  const loyaltyPoints = bookingsCount * 100;
-
-  // Determine Loyalty Tier
-  let loyaltyTier = 'Bronze';
-  let nextTierPoints = 300;
-  let pointsToNext = 300 - loyaltyPoints;
-  let nextTierName = 'Silver';
-
-  if (loyaltyPoints >= 800) {
-    loyaltyTier = 'Gold';
-    pointsToNext = 0;
-  } else if (loyaltyPoints >= 300) {
-    loyaltyTier = 'Silver';
-    nextTierPoints = 800;
-    pointsToNext = 800 - loyaltyPoints;
-    nextTierName = 'Gold';
-  }
+  const loyaltyPoints = loyaltySummary?.pointsBalance ?? 0;
+  const loyaltyTier = loyaltySummary?.tier ?? 'Bronze';
+  const nextTierPoints = loyaltySummary?.nextTierPoints ?? 1000;
+  const pointsToNext = loyaltySummary?.pointsToNext ?? 1000;
+  const nextTierName = loyaltySummary?.nextTierName ?? 'Silver';
+  const expiringSoon = loyaltySummary?.expiringSoon ?? 0;
 
   // Update Profile Request
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -775,10 +800,17 @@ export const Profile: React.FC = () => {
           {/* Tab 4: Loyalty Points & Perks */}
           {activeTab === 'rewards' && (
             <div className="bg-white border border-slate-150 rounded-2xl shadow-sm p-6 sm:p-8 space-y-6">
-              <div className="border-b border-slate-100 pb-4">
-                <h3 className="text-lg sm:text-xl font-extrabold text-slate-800">{language === 'vi' ? 'Điểm thưởng tích lũy' : 'Loyalty Rewards & Levels'}</h3>
-                <p className="text-xs text-slate-400 font-medium mt-1">{language === 'vi' ? 'Đặt phòng càng nhiều, cấp bậc càng cao và ưu đãi càng khủng.' : 'Book more to level up and unlock exclusive benefits.'}</p>
-              </div>
+              {loyaltyLoading && !loyaltySummary ? (
+                <div className="py-20 flex flex-col items-center justify-center gap-3 text-slate-400 font-semibold text-xs">
+                  <span className="animate-spin text-2xl text-blue-500">⌛</span>
+                  <span>{language === 'vi' ? 'Đang tải dữ liệu tích điểm...' : 'Loading loyalty rewards data...'}</span>
+                </div>
+              ) : (
+                <>
+                  <div className="border-b border-slate-100 pb-4">
+                    <h3 className="text-lg sm:text-xl font-extrabold text-slate-800">{language === 'vi' ? 'Điểm thưởng tích lũy' : 'Loyalty Rewards & Levels'}</h3>
+                    <p className="text-xs text-slate-400 font-medium mt-1">{language === 'vi' ? 'Đặt phòng tích lũy điểm thưởng để thăng cấp thành viên và nhận chiết khấu trực tiếp.' : 'Book, earn loyalty points, level up, and enjoy direct discounts.'}</p>
+                  </div>
 
               {/* Progress Card */}
               <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-sm relative overflow-hidden space-y-4 select-none">
@@ -787,28 +819,30 @@ export const Profile: React.FC = () => {
                 
                 <div className="flex justify-between items-center relative z-10">
                   <div className="space-y-1">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{language === 'vi' ? 'Hạng thành viên hiện tại' : 'CURRENT LOYALTY TIER'}</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{language === 'vi' ? 'HẠNG THÀNH VIÊN HIỆN TẠI' : 'CURRENT LOYALTY TIER'}</span>
                     <h4 className={`text-2xl font-black italic tracking-wide uppercase ${
+                      loyaltyTier === 'Platinum' ? 'text-cyan-400' :
                       loyaltyTier === 'Gold' ? 'text-amber-400' :
-                      loyaltyTier === 'Silver' ? 'text-slate-300' : 'text-amber-600'
+                      loyaltyTier === 'Silver' ? 'text-slate-350' : 'text-amber-600'
                     }`}>
                       {loyaltyTier === 'Bronze' && (language === 'vi' ? 'HẠNG ĐỒNG' : 'BRONZE')}
                       {loyaltyTier === 'Silver' && (language === 'vi' ? 'HẠNG BẠC' : 'SILVER')}
                       {loyaltyTier === 'Gold' && (language === 'vi' ? 'HẠNG VÀNG' : 'GOLD')}
+                      {loyaltyTier === 'Platinum' && (language === 'vi' ? 'HẠNG BẠCH KIM' : 'PLATINUM')}
                     </h4>
                   </div>
                   
                   <div className="text-right">
-                    <span className="text-[10px] font-black text-slate-400 block uppercase tracking-widest">{language === 'vi' ? 'TỔNG ĐIỂM TÍCH LŨY' : 'TOTAL SCORE'}</span>
+                    <span className="text-[10px] font-black text-slate-400 block uppercase tracking-widest">{language === 'vi' ? 'ĐIỂM KHẢ DỤNG HỢP LỆ' : 'AVAILABLE POINTS'}</span>
                     <span className="text-2xl font-black text-blue-400">{loyaltyPoints} <span className="text-xs font-bold text-slate-350">{language === 'vi' ? 'điểm' : 'pts'}</span></span>
                   </div>
                 </div>
 
                 {/* Progress bar to next level */}
-                {loyaltyTier !== 'Gold' && (
+                {loyaltyTier !== 'Platinum' && (
                   <div className="space-y-2 relative z-10 pt-2 border-t border-white/5">
                     <div className="flex justify-between text-xs font-bold text-slate-350">
-                      <span>{language === 'vi' ? `Cần thêm ${pointsToNext} điểm để lên ${nextTierName}` : `${pointsToNext} pts to next tier (${nextTierName})`}</span>
+                      <span>{language === 'vi' ? `Cần thêm ${pointsToNext} điểm để lên hạng ${nextTierName}` : `${pointsToNext} pts to next tier (${nextTierName})`}</span>
                       <span>{loyaltyPoints} / {nextTierPoints}</span>
                     </div>
                     {/* Visual Progress Bar */}
@@ -820,52 +854,177 @@ export const Profile: React.FC = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Warning for expiring points */}
+                {expiringSoon > 0 && (
+                  <div className="bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs rounded-xl p-3 flex items-center gap-2 relative z-10">
+                    <Info className="w-4 h-4 shrink-0 text-amber-400" />
+                    <span>
+                      {language === 'vi'
+                        ? `Chú ý: Bạn có ${expiringSoon} điểm tích lũy sắp hết hạn sử dụng trong 30 ngày tới!`
+                        : `Attention: You have ${expiringSoon} points expiring in the next 30 days!`}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Perks details tables & perks list */}
               <div className="space-y-4 pt-2">
-                <h4 className="font-extrabold text-slate-800 text-sm">{language === 'vi' ? 'Đặc quyền theo cấp thành viên' : 'Tier Benefits & Perks'}</h4>
+                <h4 className="font-extrabold text-slate-800 text-sm">{language === 'vi' ? 'Quy chế tích lũy và đặc quyền' : 'Tier Benefits & Perks'}</h4>
                 
                 <div className="border border-slate-150 rounded-2xl overflow-hidden shadow-sm bg-white text-xs text-slate-700">
                   {/* Header Row */}
                   <div className="grid grid-cols-3 bg-slate-50 border-b border-slate-150 font-black text-slate-655 text-[10px] sm:text-xs uppercase tracking-wider text-center py-3">
                     <div>{language === 'vi' ? 'Hạng thành viên' : 'Loyalty Tier'}</div>
-                    <div className="border-x border-slate-200/75">{language === 'vi' ? 'Yêu cầu đặt phòng' : 'Requirement'}</div>
-                    <div>{language === 'vi' ? 'Ưu đãi đặc quyền' : 'Discount perk'}</div>
+                    <div className="border-x border-slate-200/75">{language === 'vi' ? 'Yêu cầu tích lũy' : 'Requirement'}</div>
+                    <div>{language === 'vi' ? 'Đặc quyền thành viên' : 'Benefits & Perks'}</div>
                   </div>
 
                   {/* Bronze Row */}
                   <div className="grid grid-cols-3 border-b border-slate-100 hover:bg-slate-50/50 transition-colors text-center py-3.5 font-bold">
-                    <div className="text-amber-700 uppercase font-black tracking-wide">{language === 'vi' ? 'Đồng' : 'Bronze'}</div>
-                    <div className="border-x border-slate-100 text-slate-500 font-semibold">{language === 'vi' ? '0 - 2 lượt đặt' : '0 - 2 bookings'}</div>
-                    <div className="text-slate-600 font-semibold">{language === 'vi' ? 'Giá cơ bản chuẩn' : 'Base standard pricing'}</div>
+                    <div className="text-amber-700 uppercase font-black tracking-wide">{language === 'vi' ? 'Đồng (Bronze)' : 'Bronze'}</div>
+                    <div className="border-x border-slate-100 text-slate-500 font-semibold">0 - 999 {language === 'vi' ? 'điểm' : 'pts'}</div>
+                    <div className="text-slate-600 font-semibold">{language === 'vi' ? 'Tích lũy x1.0 điểm' : 'Earn x1.0 points'}</div>
                   </div>
 
                   {/* Silver Row */}
                   <div className="grid grid-cols-3 border-b border-slate-100 hover:bg-slate-50/50 transition-colors text-center py-3.5 font-bold">
-                    <div className="text-slate-500 uppercase font-black tracking-wide">{language === 'vi' ? 'Bạc' : 'Silver'}</div>
-                    <div className="border-x border-slate-100 text-slate-500 font-semibold">{language === 'vi' ? '3 - 7 lượt đặt' : '3 - 7 bookings'}</div>
-                    <div className="text-emerald-650 font-black">{language === 'vi' ? 'Giảm ngay 10%' : '10% OFF all bookings'}</div>
+                    <div className="text-slate-500 uppercase font-black tracking-wide">{language === 'vi' ? 'Bạc (Silver)' : 'Silver'}</div>
+                    <div className="border-x border-slate-100 text-slate-500 font-semibold">1,000 - 4,999 {language === 'vi' ? 'điểm' : 'pts'}</div>
+                    <div className="text-slate-750 font-semibold text-left pl-4 space-y-0.5 py-2">
+                      <p>• {language === 'vi' ? 'Tích lũy x1.1 điểm' : 'Earn x1.1 points'}</p>
+                      <p>• {language === 'vi' ? 'Ưu tiên CSKH' : 'Priority Support'}</p>
+                    </div>
                   </div>
 
                   {/* Gold Row */}
+                  <div className="grid grid-cols-3 border-b border-slate-100 hover:bg-slate-50/50 transition-colors text-center py-3.5 font-bold">
+                    <div className="text-amber-500 uppercase font-black tracking-wide">{language === 'vi' ? 'Vàng (Gold)' : 'Gold'}</div>
+                    <div className="border-x border-slate-100 text-slate-500 font-semibold">5,000 - 9,999 {language === 'vi' ? 'điểm' : 'pts'}</div>
+                    <div className="text-slate-750 font-semibold text-left pl-4 space-y-0.5 py-2">
+                      <p>• {language === 'vi' ? 'Tích lũy x1.25 điểm' : 'Earn x1.25 points'}</p>
+                      <p>• {language === 'vi' ? 'Quà & Voucher sinh nhật' : 'Birthday Vouchers'}</p>
+                    </div>
+                  </div>
+
+                  {/* Platinum Row */}
                   <div className="grid grid-cols-3 hover:bg-slate-50/50 transition-colors text-center py-3.5 font-bold">
-                    <div className="text-amber-500 uppercase font-black tracking-wide">{language === 'vi' ? 'Vàng' : 'Gold'}</div>
-                    <div className="border-x border-slate-100 text-slate-500 font-semibold">{language === 'vi' ? 'Từ 8 lượt đặt trở lên' : '8+ bookings'}</div>
-                    <div className="text-emerald-650 font-black">{language === 'vi' ? 'Giảm ngay 15%' : '15% OFF all bookings'}</div>
+                    <div className="text-cyan-600 uppercase font-black tracking-wide">{language === 'vi' ? 'Bạch Kim (Platinum)' : 'Platinum'}</div>
+                    <div className="border-x border-slate-100 text-slate-500 font-semibold">Từ 10,000 {language === 'vi' ? 'điểm trở lên' : '10,000+ pts'}</div>
+                    <div className="text-slate-750 font-semibold text-left pl-4 space-y-0.5 py-2">
+                      <p>• {language === 'vi' ? 'Tích lũy x1.5 điểm' : 'Earn x1.5 points'}</p>
+                      <p>• {language === 'vi' ? 'Voucher độc quyền VIP' : 'Exclusive VIP Voucher'}</p>
+                      <p>• {language === 'vi' ? 'Hỗ trợ khẩn cấp 24/7' : '24/7 Support'}</p>
+                    </div>
                   </div>
                 </div>
 
+                {/* Point exchange rules alert */}
                 <div className="bg-blue-50/40 border border-blue-100 rounded-2xl p-4 text-xs font-semibold text-slate-700 leading-relaxed space-y-1.5">
-                  <p className="flex items-center gap-1.5 font-extrabold text-[#006ce4] text-sm"><Award className="w-5 h-5 shrink-0" /> {language === 'vi' ? 'Cách tích lũy điểm thưởng:' : 'How to earn points:'}</p>
+                  <p className="flex items-center gap-1.5 font-extrabold text-[#006ce4] text-sm"><Award className="w-5 h-5 shrink-0" /> {language === 'vi' ? 'Quy chế tích điểm và thanh toán:' : 'Earning and spending rules:'}</p>
                   <ul className="list-disc pl-5 space-y-1 text-slate-600 font-medium">
-                    <li>{language === 'vi' ? 'Sau mỗi đêm nghỉ thành công tại các đối tác CloudBooking, bạn sẽ tự động nhận thêm 100 điểm thưởng.' : 'You will automatically earn 100 points for each successfully completed booking.'}</li>
-                    <li>{language === 'vi' ? 'Ưu đãi giảm giá thành viên Silver/Gold sẽ tự động áp dụng trực tiếp khi thanh toán đơn đặt phòng tiếp theo.' : 'Silver/Gold member discounts are automatically applied directly at checkout on future stays.'}</li>
+                    <li>{language === 'vi' ? 'Đơn phòng sau khi thanh toán thành công và hoàn tất trả phòng (Checked-out) sẽ tự động cộng điểm tích lũy.' : 'Points are automatically added after check-out is complete on fully paid stays.'}</li>
+                    <li>{language === 'vi' ? 'Mỗi 10.000 VNĐ chi tiêu thanh toán sẽ quy đổi tương ứng với 1 điểm thưởng cơ bản.' : 'Each 10,000 VND spent converts to 1 base loyalty point.'}</li>
+                    <li>{language === 'vi' ? 'Khi thanh toán đơn tiếp theo, 1 điểm quy đổi = 200 VNĐ. Tối đa khấu trừ không vượt quá 30% giá phòng.' : 'Redeem points at checkout (1 point = 200 VND) up to a maximum of 30% of the total booking price.'}</li>
+                    <li>{language === 'vi' ? 'Điểm thưởng có giá trị sử dụng trong vòng 1 năm kể từ thời điểm nhận.' : 'Points expire exactly 1 year from the date they are earned.'}</li>
                   </ul>
                 </div>
+
+                {/* Loyalty Notifications Section */}
+                <div className="space-y-3 pt-2">
+                  <h4 className="font-extrabold text-slate-800 text-sm flex items-center gap-1.5">
+                    <Bell className="w-4 h-4 text-blue-500" />
+                    <span>{language === 'vi' ? 'Thông báo về điểm gần đây' : 'Recent Loyalty Notifications'}</span>
+                  </h4>
+                  
+                  {notifications.filter(n => 
+                    n.title.toLowerCase().includes('điểm') || 
+                    n.title.toLowerCase().includes('hạng') || 
+                    n.title.toLowerCase().includes('loyalty') || 
+                    n.content.toLowerCase().includes('điểm') || 
+                    n.content.toLowerCase().includes('hạng') || 
+                    n.content.toLowerCase().includes('loyalty')
+                  ).length === 0 ? (
+                    <div className="bg-slate-50 rounded-xl p-4 text-center text-slate-400 font-medium text-xs">
+                      {language === 'vi' ? 'Chưa có thông báo điểm thưởng nào.' : 'No loyalty notifications yet.'}
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {notifications.filter(n => 
+                        n.title.toLowerCase().includes('điểm') || 
+                        n.title.toLowerCase().includes('hạng') || 
+                        n.title.toLowerCase().includes('loyalty') || 
+                        n.content.toLowerCase().includes('điểm') || 
+                        n.content.toLowerCase().includes('hạng') || 
+                        n.content.toLowerCase().includes('loyalty')
+                      ).slice(0, 5).map(n => (
+                        <div key={n.id} className="bg-slate-50/70 border border-slate-100 rounded-xl p-3 text-xs flex justify-between items-start">
+                          <div className="space-y-1">
+                            <p className="font-extrabold text-slate-800">{n.title}</p>
+                            <p className="text-slate-500 font-medium text-[11px]">{n.content}</p>
+                          </div>
+                          <span className="text-[10px] text-slate-400 whitespace-nowrap ml-2">
+                            {new Date(n.createdAt).toLocaleDateString('vi-VN')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Loyalty History table */}
+                <div className="space-y-3 pt-2">
+                  <h4 className="font-extrabold text-slate-800 text-sm flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-blue-500" />
+                    <span>{language === 'vi' ? 'Lịch sử biến động điểm' : 'Points Transaction History'}</span>
+                  </h4>
+                  
+                  {loyaltyHistory.length === 0 ? (
+                    <div className="bg-slate-50 rounded-xl p-4 text-center text-slate-400 font-medium text-xs">
+                      {language === 'vi' ? 'Chưa có giao dịch tích điểm nào.' : 'No point transactions yet.'}
+                    </div>
+                  ) : (
+                    <div className="border border-slate-150 rounded-2xl overflow-hidden shadow-sm bg-white text-xs text-slate-700">
+                      <div className="grid grid-cols-4 bg-slate-50 border-b border-slate-150 font-black text-slate-655 text-[10px] sm:text-xs uppercase tracking-wider text-center py-2.5">
+                        <div>{language === 'vi' ? 'Thời gian' : 'Date'}</div>
+                        <div>{language === 'vi' ? 'Loại' : 'Type'}</div>
+                        <div>{language === 'vi' ? 'Biến động' : 'Points'}</div>
+                        <div>{language === 'vi' ? 'Nội dung' : 'Description'}</div>
+                      </div>
+
+                      <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto">
+                        {loyaltyHistory.map((h: any) => (
+                          <div key={h.id} className="grid grid-cols-4 items-center text-center py-3 font-semibold text-slate-600 hover:bg-slate-50/50 transition-colors">
+                            <div className="text-[11px] font-medium text-slate-500">
+                              {new Date(h.createdAt).toLocaleDateString('vi-VN')}
+                            </div>
+                            <div>
+                              <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                                h.type === 'EARN' ? 'bg-green-50 text-green-700' :
+                                h.type === 'REFUND' ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'
+                              }`}>
+                                {h.type === 'EARN' && (language === 'vi' ? 'Cộng điểm' : 'Earn')}
+                                {h.type === 'REFUND' && (language === 'vi' ? 'Hoàn điểm' : 'Refund')}
+                                {h.type === 'SPEND' && (language === 'vi' ? 'Tiêu điểm' : 'Spend')}
+                              </span>
+                            </div>
+                            <div className={`font-bold ${h.points > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                              {h.points > 0 ? `+${h.points}` : h.points}
+                            </div>
+                            <div className="text-[11px] font-medium text-slate-500 text-left px-2 line-clamp-1" title={h.description}>
+                              {h.description}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            </>
+            )}
+          </div>
+        )}
 
         </div>
 

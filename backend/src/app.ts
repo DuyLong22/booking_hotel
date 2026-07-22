@@ -10,6 +10,7 @@ import couponRoutes from './interfaces/routes/coupon.routes';
 import aiRoutes from './interfaces/routes/ai.routes';
 import paymentRoutes from './interfaces/routes/payment.routes';
 import chatRoutes from './interfaces/routes/chat.routes';
+import loyaltyRoutes from './interfaces/routes/loyalty.routes';
 
 const app = express();
 
@@ -81,6 +82,7 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/chats', chatRoutes);
+app.use('/api/loyalty', loyaltyRoutes);
 
 
 

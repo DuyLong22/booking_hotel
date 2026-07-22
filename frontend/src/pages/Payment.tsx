@@ -22,6 +22,8 @@ interface BookingDetail {
   checkOutDate: string;
   totalPrice: number;
   discountAmount: number;
+  pointsUsed: number;
+  pointsDiscount: number;
   finalPrice: number;
   guestName: string;
   guestEmail: string;
@@ -685,8 +687,15 @@ export const Payment: React.FC = () => {
                 <div className="bg-white border border-slate-150 p-5 rounded-2xl shadow-sm space-y-3 shrink-0">
                   <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                     <div className="space-y-0.5">
-                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{language === 'vi' ? 'Tổng tiền phải thanh toán' : 'Total Payment Amount'}</span>
-                      <div className="text-slate-800 font-black text-xl flex items-center gap-1.5">
+                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide block">{language === 'vi' ? 'Tổng tiền phải thanh toán' : 'Total Payment Amount'}</span>
+                      {booking.pointsDiscount > 0 && (
+                        <span className="text-[10px] font-extrabold text-green-600 block">
+                          {language === 'vi' 
+                            ? `Khấu trừ ${booking.pointsUsed} điểm Loyalty: -${Number(booking.pointsDiscount).toLocaleString('vi-VN')} VND`
+                            : `Loyalty points discount (${booking.pointsUsed} pts): -${Number(booking.pointsDiscount).toLocaleString('vi-VN')} VND`}
+                        </span>
+                      )}
+                      <div className="text-slate-800 font-black text-xl flex items-center gap-1.5 mt-0.5">
                         <span>{booking.finalPrice.toLocaleString('vi-VN')} VND</span>
                         <ChevronDown className="w-4 h-4 text-slate-400 cursor-pointer" />
                       </div>

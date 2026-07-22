@@ -560,6 +560,32 @@ export class AuthController {
       next(error);
     }
   }
+
+  public async getMyNotifications(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      const notifications = await prisma.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' }
+      });
+      res.status(200).json({ success: true, data: notifications });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public async markNotificationAsRead(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const updated = await prisma.notification.update({
+        where: { id },
+        data: { isRead: true }
+      });
+      res.status(200).json({ success: true, data: updated });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new AuthController();

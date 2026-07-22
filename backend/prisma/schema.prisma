@@ -70,6 +70,8 @@ model User {
   conversationsAsCustomer Conversation[] @relation("CustomerConversations")
   conversationsAsOwner    Conversation[] @relation("OwnerConversations")
   auditLogs     AuditLog[]
+  loyaltyPoints Int @default(0)
+  loyaltyTransactions LoyaltyTransaction[]
 }
 
 model RefreshToken {
@@ -265,6 +267,8 @@ model Booking {
   notes          String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+  pointsUsed     Int           @default(0)
+  pointsDiscount Decimal       @default(0) @db.Decimal(10, 2)
 
   // Relations
   user           User          @relation(fields: [userId], references: [id])
@@ -447,4 +451,15 @@ model NearbyLocation {
   type      String   // "NEARBY" | "TRANSPORT" | "ENTERTAINMENT" | "OTHER"
   hotel     Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 }
+model LoyaltyTransaction {
+  id          String   @id @default(uuid())
+  userId      String
+  bookingId   String?
+  points      Int      // Số điểm cộng (dương) hoặc tiêu/hết hạn (âm)
+  type        String   // "EARN" | "SPEND" | "REFUND"
+  description String?
+  expiredAt   DateTime? // 1 năm sau kể từ ngày EARN
+  createdAt   DateTime @default(now())
 
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

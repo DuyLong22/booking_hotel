@@ -2,6 +2,7 @@ import prisma from '../../config/database';
 import { AppError } from '../../infrastructure/middlewares/error.middleware';
 import { BookingStatus } from '@prisma/client';
 import couponUseCase from '../coupon/coupon.use-case';
+import loyaltyUseCase from '../user/loyalty.use-case';
 import socketService from '../../infrastructure/services/socket.service';
 
 export class BookingUseCase {
@@ -20,7 +21,7 @@ export class BookingUseCase {
 
   public async createBooking(userId: string | null, data: any) {
     await this.cleanupExpiredBookings();
-    const { checkInDate, checkOutDate, guestName, guestEmail, guestPhone, notes, couponCode, insuranceSelected, bookingItems } = data;
+    const { checkInDate, checkOutDate, guestName, guestEmail, guestPhone, notes, couponCode, insuranceSelected, bookingItems, usePoints } = data;
 
     let finalUserId = userId;
     if (!finalUserId) {
@@ -153,7 +154,27 @@ export class BookingUseCase {
       discountAmount = validatedCoupon.discountAmount;
     }
 
-    const finalPrice = totalPrice - discountAmount + (insuranceSelected ? 43500 : 0);
+    // --- 2.5. Áp dụng Điểm thưởng Loyalty (nếu dùng) ---
+    let pointsUsedVal = 0;
+    let pointsDiscountVal = 0;
+
+    if (usePoints && Number(usePoints) > 0) {
+      pointsUsedVal = Math.floor(Number(usePoints));
+      const userPointsBalance = await loyaltyUseCase.getUserPointsBalance(finalUserId);
+      
+      if (pointsUsedVal > userPointsBalance) {
+        throw new AppError(`Số điểm sử dụng vượt quá số điểm hiện có (${userPointsBalance} điểm)`, 400);
+      }
+
+      pointsDiscountVal = pointsUsedVal * 200; // 1 điểm = 200 VND
+      const maxPointsDiscount = totalPrice * 0.3; // Tối đa 30% giá trị booking gốc
+
+      if (pointsDiscountVal > maxPointsDiscount) {
+        throw new AppError(`Giá trị quy đổi điểm thưởng (${pointsDiscountVal.toLocaleString('vi-VN')} đ) vượt quá giới hạn 30% giá trị booking (${maxPointsDiscount.toLocaleString('vi-VN')} đ)`, 400);
+      }
+    }
+
+    const finalPrice = totalPrice - discountAmount - pointsDiscountVal + (insuranceSelected ? 43500 : 0);
 
     // --- 3. Tạo đơn Booking trong Database sử dụng Transaction ---
     const booking = await prisma.$transaction(async (tx) => {
@@ -166,6 +187,8 @@ export class BookingUseCase {
           totalPrice,
           discountAmount,
           finalPrice,
+          pointsUsed: pointsUsedVal,
+          pointsDiscount: pointsDiscountVal,
           status: BookingStatus.PENDING,
           insuranceSelected: !!insuranceSelected,
           guestName,
@@ -202,6 +225,34 @@ export class BookingUseCase {
               increment: 1,
             },
           },
+        });
+      }
+
+      // 3.3. Nếu tiêu điểm Loyalty thành công, tạo bản ghi LoyaltyTransaction và cập nhật user
+      if (pointsUsedVal > 0) {
+        await tx.loyaltyTransaction.create({
+          data: {
+            userId: finalUserId,
+            bookingId: newBooking.id,
+            points: -pointsUsedVal,
+            type: 'SPEND',
+            description: `Sử dụng điểm tích lũy thanh toán đơn phòng #${newBooking.id.substring(0, 8).toUpperCase()}`
+          }
+        });
+
+        const currentPoints = await loyaltyUseCase.getUserPointsBalance(finalUserId);
+        await tx.user.update({
+          where: { id: finalUserId },
+          data: { loyaltyPoints: Math.max(0, currentPoints - pointsUsedVal) }
+        });
+
+        await tx.notification.create({
+          data: {
+            userId: finalUserId,
+            title: 'Khấu trừ điểm tích lũy 💳',
+            content: `Bạn đã sử dụng ${pointsUsedVal} điểm Loyalty cho đơn đặt phòng #${newBooking.id.substring(0, 8).toUpperCase()}.`,
+            type: 'SYSTEM'
+          }
         });
       }
 
@@ -281,6 +332,21 @@ export class BookingUseCase {
       where: { id: bookingId },
       data: { status },
     });
+
+    // Xử lý điểm tích lũy Loyalty
+    if (status === BookingStatus.CHECKED_OUT || status === BookingStatus.COMPLETED) {
+      try {
+        await loyaltyUseCase.earnPoints(bookingId);
+      } catch (err) {
+        console.error('Failed to earn points:', err);
+      }
+    } else if (status === BookingStatus.CANCELLED) {
+      try {
+        await loyaltyUseCase.refundPoints(bookingId);
+      } catch (err) {
+        console.error('Failed to refund points:', err);
+      }
+    }
 
     // Phát tín hiệu Socket.io thời gian thực
     socketService.emitBookingStatusUpdate(bookingId, status);

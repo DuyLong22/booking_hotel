@@ -32,6 +32,8 @@ router.get('/facebook/callback', authController.handleFacebookCallback);
 // Các route yêu cầu đăng nhập
 router.get('/me', requireAuth, authController.getMe);
 router.put('/profile', requireAuth, validateRequest(updateProfileSchema), authController.updateProfile);
+router.get('/notifications', requireAuth, authController.getMyNotifications);
+router.put('/notifications/:id/read', requireAuth, authController.markNotificationAsRead);
 
 // --- Admin routes ---
 router.get('/admin/users', requireAuth, requireRole([Role.ADMIN]), authController.getAllUsers);
