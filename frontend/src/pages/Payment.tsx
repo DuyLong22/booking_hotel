@@ -851,13 +851,8 @@ export const Payment: React.FC = () => {
                                 disabled={applyingDiscount}
                                 onChange={(e) => {
                                   setUsePointsToggle(e.target.checked);
-                                  if (!e.target.checked) {
+                                  if (!e.target.checked && booking.pointsUsed > 0) {
                                     handlePointsUpdate('0');
-                                  } else {
-                                    const maxAllowedDiscount = Number(booking.totalPrice) * 0.3;
-                                    const maxAllowedPoints = Math.floor(maxAllowedDiscount / 200);
-                                    const autoPoints = Math.min(availablePoints, maxAllowedPoints);
-                                    handlePointsUpdate(autoPoints.toString());
                                   }
                                 }}
                                 className="w-4 h-4 text-[#0194f3] border-slate-300 rounded focus:ring-[#0194f3]"
@@ -877,7 +872,6 @@ export const Payment: React.FC = () => {
                                     value={pointsInput}
                                     disabled={applyingDiscount}
                                     onChange={(e) => setPointsInput(e.target.value)}
-                                    onBlur={() => handlePointsUpdate(pointsInput)}
                                     className="w-24 bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-black text-slate-800 focus:outline-none focus:border-[#0194f3]"
                                   />
                                   <button
@@ -888,12 +882,29 @@ export const Payment: React.FC = () => {
                                       const maxAllowedPoints = Math.floor(maxAllowedDiscount / 200);
                                       const maxPoints = Math.min(availablePoints, maxAllowedPoints);
                                       setPointsInput(maxPoints.toString());
-                                      handlePointsUpdate(maxPoints.toString());
                                     }}
                                     className="bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-extrabold text-[10px] px-2.5 py-1 rounded-lg transition-colors"
                                   >
                                     {language === 'vi' ? 'Tối đa' : 'Max'}
                                   </button>
+                                  <button
+                                    type="button"
+                                    disabled={applyingDiscount}
+                                    onClick={() => handlePointsUpdate(pointsInput)}
+                                    className="bg-[#0194f3] hover:bg-[#007cc7] text-white font-extrabold text-[10px] px-3 py-1 rounded-lg transition-colors shadow-sm"
+                                  >
+                                    {language === 'vi' ? 'Áp dụng' : 'Apply'}
+                                  </button>
+                                  {booking.pointsUsed > 0 && (
+                                    <button
+                                      type="button"
+                                      disabled={applyingDiscount}
+                                      onClick={() => handlePointsUpdate('0')}
+                                      className="bg-red-50 hover:bg-red-100 text-red-600 font-extrabold text-[10px] px-3 py-1 rounded-lg transition-colors border border-red-150"
+                                    >
+                                      {language === 'vi' ? 'Hủy' : 'Cancel'}
+                                    </button>
+                                  )}
                                 </div>
                                 <p className="text-[10px] text-slate-400 font-medium">
                                   * {language === 'vi' 
