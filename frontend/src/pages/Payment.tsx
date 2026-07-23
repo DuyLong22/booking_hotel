@@ -77,6 +77,103 @@ export const Payment: React.FC = () => {
   const [submitMessage, setSubmitMessage] = useState('');
   const [vnpayRedirecting, setVnpayRedirecting] = useState(false);
 
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  // Discount & Loyalty states
+  const [couponInput, setCouponInput] = useState('');
+  const [usePointsToggle, setUsePointsToggle] = useState(false);
+  const [pointsInput, setPointsInput] = useState('0');
+  const [availablePoints, setAvailablePoints] = useState(0);
+  const [applyingDiscount, setApplyingDiscount] = useState(false);
+  const [couponSuccessMessage, setCouponSuccessMessage] = useState('');
+  const [couponErrorMessage, setCouponErrorMessage] = useState('');
+
+  // Fetch available loyalty points on mount
+  useEffect(() => {
+    if (user) {
+      const fetchLoyaltyPoints = async () => {
+        try {
+          const res = await apiClient.get('/loyalty/summary');
+          if (res.data.success) {
+            setAvailablePoints(res.data.data.pointsBalance || 0);
+          }
+        } catch (err) {
+          console.error('Failed to fetch loyalty points summary:', err);
+        }
+      };
+      fetchLoyaltyPoints();
+    }
+  }, [user]);
+
+  // Set initial loyalty points values from booking if already populated
+  useEffect(() => {
+    if (booking) {
+      if (booking.pointsUsed > 0) {
+        setUsePointsToggle(true);
+        setPointsInput(booking.pointsUsed.toString());
+      }
+    }
+  }, [booking]);
+
+  const handleApplyDiscount = async () => {
+    if (!bookingId) return;
+    setApplyingDiscount(true);
+    setCouponSuccessMessage('');
+    setCouponErrorMessage('');
+    try {
+      const res = await apiClient.put(`/bookings/${bookingId}/apply-discount`, {
+        couponCode: couponInput,
+        usePoints: usePointsToggle ? Number(pointsInput) : 0
+      });
+      if (res.data.success) {
+        setBooking(res.data.data);
+        if (couponInput) {
+          setCouponSuccessMessage(
+            language === 'vi' 
+              ? `Áp dụng mã giảm giá thành công: giảm -${Number(res.data.data.discountAmount).toLocaleString('vi-VN')} đ` 
+              : `Successfully applied code: saved -${Number(res.data.data.discountAmount).toLocaleString('vi-VN')} VND`
+          );
+        }
+        // Refresh available loyalty points
+        const loyaltyRes = await apiClient.get('/loyalty/summary');
+        if (loyaltyRes.data.success) {
+          setAvailablePoints(loyaltyRes.data.data.pointsBalance || 0);
+        }
+      }
+    } catch (err: any) {
+      console.error(err);
+      setCouponErrorMessage(err.response?.data?.message || (language === 'vi' ? 'Không thể áp dụng mã giảm giá.' : 'Could not apply code.'));
+    } finally {
+      setApplyingDiscount(false);
+    }
+  };
+
+  const handlePointsUpdate = async (pts: string) => {
+    if (!bookingId) return;
+    const num = Math.min(Math.floor(Number(pts) || 0), availablePoints);
+    setPointsInput(num.toString());
+    setApplyingDiscount(true);
+    try {
+      const res = await apiClient.put(`/bookings/${bookingId}/apply-discount`, {
+        couponCode: couponInput,
+        usePoints: num
+      });
+      if (res.data.success) {
+        setBooking(res.data.data);
+        // Refresh available loyalty points
+        const loyaltyRes = await apiClient.get('/loyalty/summary');
+        if (loyaltyRes.data.success) {
+          setAvailablePoints(loyaltyRes.data.data.pointsBalance || 0);
+        }
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || (language === 'vi' ? 'Lỗi cập nhật điểm thưởng.' : 'Error updating loyalty points.'));
+    } finally {
+      setApplyingDiscount(false);
+    }
+  };
+
 
 
   useEffect(() => {
@@ -340,6 +437,134 @@ export const Payment: React.FC = () => {
               </div>
             ) : (
               <>
+                {/* Coupon & Loyalty Points Card */}
+                {user && booking && (
+                  <div className="bg-white border border-slate-150 p-6 rounded-2xl shadow-sm space-y-4 mb-4">
+                    <div className="flex items-start gap-2.5 border-b border-slate-50 pb-3">
+                      <span className="text-xl">🎁</span>
+                      <div>
+                        <h3 className="font-extrabold text-slate-800 text-base">
+                          {language === 'vi' ? 'Khuyến mãi & Điểm tích lũy' : 'Coupons & Loyalty Points'}
+                        </h3>
+                        <p className="text-xs text-slate-400 font-medium">
+                          {language === 'vi' 
+                            ? 'Áp dụng mã giảm giá hoặc đổi điểm Loyalty để giảm trực tiếp vào hóa đơn thanh toán.' 
+                            : 'Apply a promo code or redeem loyalty points to save on your bill.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                      {/* Coupon Input Column */}
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold text-slate-655 block">
+                          {language === 'vi' ? 'Mã giảm giá (Coupon):' : 'Promo Code (Coupon):'}
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={couponInput}
+                            onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                            disabled={applyingDiscount}
+                            placeholder={language === 'vi' ? 'Ví dụ: DUNGTHU10' : 'E.g. SUMMER20'}
+                            className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#0194f3] uppercase text-slate-800 disabled:bg-slate-50"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleApplyDiscount}
+                            disabled={applyingDiscount}
+                            className="bg-[#0194f3] hover:bg-[#007cc7] text-white font-extrabold text-xs px-4 py-2 rounded-xl transition-all disabled:opacity-50"
+                          >
+                            {applyingDiscount ? '...' : (language === 'vi' ? 'Áp dụng' : 'Apply')}
+                          </button>
+                        </div>
+                        {couponSuccessMessage && (
+                          <p className="text-[10px] text-emerald-600 font-bold">✓ {couponSuccessMessage}</p>
+                        )}
+                        {couponErrorMessage && (
+                          <p className="text-[10px] text-red-500 font-bold">⚠️ {couponErrorMessage}</p>
+                        )}
+                      </div>
+
+                      {/* Loyalty Points Column */}
+                      <div className="space-y-3.5 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
+                        <div className="flex justify-between items-center text-xs font-bold text-slate-700 bg-slate-50 p-2.5 rounded-xl">
+                          <span>{language === 'vi' ? 'Điểm hiện có:' : 'Your points:'}</span>
+                          <span className="text-blue-600 font-black">{availablePoints.toLocaleString('vi-VN')} {language === 'vi' ? 'điểm' : 'pts'}</span>
+                        </div>
+
+                        {availablePoints > 0 ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                id="usePointsToggle"
+                                checked={usePointsToggle}
+                                disabled={applyingDiscount}
+                                onChange={(e) => {
+                                  setUsePointsToggle(e.target.checked);
+                                  if (!e.target.checked) {
+                                    handlePointsUpdate('0');
+                                  } else {
+                                    const maxAllowedDiscount = Number(booking.totalPrice) * 0.3;
+                                    const maxAllowedPoints = Math.floor(maxAllowedDiscount / 200);
+                                    const autoPoints = Math.min(availablePoints, maxAllowedPoints);
+                                    handlePointsUpdate(autoPoints.toString());
+                                  }
+                                }}
+                                className="w-4 h-4 text-[#0194f3] border-slate-300 rounded focus:ring-[#0194f3]"
+                              />
+                              <label htmlFor="usePointsToggle" className="text-xs font-extrabold text-slate-700 cursor-pointer">
+                                {language === 'vi' ? 'Dùng điểm tích lũy' : 'Redeem loyalty points'}
+                              </label>
+                            </div>
+
+                            {usePointsToggle && (
+                              <div className="space-y-1.5 pl-6 animate-in slide-in-from-top-2 duration-150">
+                                <div className="flex gap-2">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max={availablePoints}
+                                    value={pointsInput}
+                                    disabled={applyingDiscount}
+                                    onChange={(e) => setPointsInput(e.target.value)}
+                                    onBlur={() => handlePointsUpdate(pointsInput)}
+                                    className="w-24 bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-black text-slate-800 focus:outline-none focus:border-[#0194f3]"
+                                  />
+                                  <button
+                                    type="button"
+                                    disabled={applyingDiscount}
+                                    onClick={() => {
+                                      const maxAllowedDiscount = Number(booking.totalPrice) * 0.3;
+                                      const maxAllowedPoints = Math.floor(maxAllowedDiscount / 200);
+                                      const maxPoints = Math.min(availablePoints, maxAllowedPoints);
+                                      setPointsInput(maxPoints.toString());
+                                      handlePointsUpdate(maxPoints.toString());
+                                    }}
+                                    className="bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-extrabold text-[10px] px-2.5 py-1 rounded-lg transition-colors"
+                                  >
+                                    {language === 'vi' ? 'Tối đa' : 'Max'}
+                                  </button>
+                                </div>
+                                <p className="text-[10px] text-slate-400 font-medium">
+                                  * {language === 'vi' 
+                                    ? `Tối đa 30% giá phòng: -${(Number(booking.totalPrice) * 0.3).toLocaleString('vi-VN')} đ (${Math.floor((Number(booking.totalPrice) * 0.3) / 200)} điểm)`
+                                    : `Max 30% discount: -${(Number(booking.totalPrice) * 0.3).toLocaleString('vi-VN')} VND (${Math.floor((Number(booking.totalPrice) * 0.3) / 200)} pts)`}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-slate-400 font-semibold italic">
+                            {language === 'vi' ? 'Bạn chưa tích lũy được điểm nào.' : 'No loyalty points available.'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="border border-slate-150 rounded-2xl shadow-sm overflow-hidden flex flex-col bg-white">
 
                   {/* Integrated Countdown Alert Banner - touching payment body directly */}
@@ -688,7 +913,14 @@ export const Payment: React.FC = () => {
                   <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                     <div className="space-y-0.5">
                       <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide block">{language === 'vi' ? 'Tổng tiền phải thanh toán' : 'Total Payment Amount'}</span>
-                      {booking.pointsDiscount > 0 && (
+                      {Number(booking.discountAmount) > 0 && (
+                        <span className="text-[10px] font-extrabold text-green-600 block">
+                          {language === 'vi' 
+                            ? `Khấu trừ mã giảm giá: -${Number(booking.discountAmount).toLocaleString('vi-VN')} VND`
+                            : `Coupon discount: -${Number(booking.discountAmount).toLocaleString('vi-VN')} VND`}
+                        </span>
+                      )}
+                      {Number(booking.pointsDiscount) > 0 && (
                         <span className="text-[10px] font-extrabold text-green-600 block">
                           {language === 'vi' 
                             ? `Khấu trừ ${booking.pointsUsed} điểm Loyalty: -${Number(booking.pointsDiscount).toLocaleString('vi-VN')} VND`

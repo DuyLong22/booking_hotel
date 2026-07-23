@@ -19,5 +19,6 @@ router.get('/owner-stats', requireAuth, requireRole([Role.HOTEL_OWNER]), statsCo
 router.get('/my', requireAuth, bookingController.getMyBookings);
 router.get('/:id', bookingController.getDetail);
 router.put('/:id/status', requireAuth, bookingController.updateStatus);
+router.put('/:id/apply-discount', requireAuth, bookingController.applyDiscount);
 
 export default router;

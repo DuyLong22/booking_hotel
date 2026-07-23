@@ -407,6 +407,152 @@ export class BookingUseCase {
 
     return bookings;
   }
+
+  public async applyDiscount(bookingId: string, userId: string, couponCode?: string, usePoints?: number) {
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        bookingItems: {
+          include: {
+            roomType: {
+              include: { hotel: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!booking) {
+      throw new AppError('Không tìm thấy đơn đặt phòng', 404);
+    }
+
+    if (booking.userId !== userId) {
+      throw new AppError('Bạn không có quyền sửa đổi đơn đặt phòng này', 403);
+    }
+
+    if (booking.status !== BookingStatus.PENDING) {
+      throw new AppError('Chỉ có thể áp dụng mã giảm giá/điểm thưởng cho đơn đặt phòng đang chờ thanh toán', 400);
+    }
+
+    // A. Thu hồi (revert) các chiết khấu cũ trước khi áp dụng mới
+    // 1. Thu hồi coupon cũ
+    const oldUsages = await prisma.couponUsage.findMany({
+      where: { bookingId }
+    });
+    for (const usage of oldUsages) {
+      await prisma.coupon.update({
+        where: { id: usage.couponId },
+        data: { usedCount: { decrement: 1 } }
+      });
+    }
+    await prisma.couponUsage.deleteMany({
+      where: { bookingId }
+    });
+
+    // 2. Thu hồi điểm tích lũy cũ đã tiêu
+    const oldPointsSpend = await prisma.loyaltyTransaction.findFirst({
+      where: { bookingId, type: 'SPEND' }
+    });
+    if (oldPointsSpend) {
+      await prisma.loyaltyTransaction.delete({
+        where: { id: oldPointsSpend.id }
+      });
+      // Hoàn trả cache points tạm thời vào User
+      const userPoints = await loyaltyUseCase.getUserPointsBalance(userId);
+      await prisma.user.update({
+        where: { id: userId },
+        data: { loyaltyPoints: userPoints }
+      });
+    }
+
+    // B. Tính toán chiết khấu mới
+    // 1. Áp dụng Coupon mới
+    let discountAmount = 0;
+    let validatedCoupon = null;
+    if (couponCode && couponCode.trim() !== '') {
+      const hotelId = booking.bookingItems[0]?.roomType.hotelId;
+      validatedCoupon = await couponUseCase.validateCoupon(couponCode.trim(), hotelId, Number(booking.totalPrice));
+      discountAmount = validatedCoupon.discountAmount;
+    }
+
+    // 2. Áp dụng Điểm thưởng Loyalty mới
+    let pointsUsedVal = 0;
+    let pointsDiscountVal = 0;
+    if (usePoints && Number(usePoints) > 0) {
+      pointsUsedVal = Math.floor(Number(usePoints));
+      const userPointsBalance = await loyaltyUseCase.getUserPointsBalance(userId);
+      if (pointsUsedVal > userPointsBalance) {
+        throw new AppError(`Số điểm sử dụng vượt quá số điểm hiện có (${userPointsBalance} điểm)`, 400);
+      }
+      pointsDiscountVal = pointsUsedVal * 200;
+      const maxPointsDiscount = Number(booking.totalPrice) * 0.3;
+      if (pointsDiscountVal > maxPointsDiscount) {
+        throw new AppError(`Giá trị quy đổi điểm thưởng vượt quá giới hạn 30% giá trị phòng`, 400);
+      }
+    }
+
+    // 3. Tính giá cuối cùng
+    const insurancePrice = booking.insuranceSelected ? 43500 : 0;
+    const finalPrice = Math.max(0, Number(booking.totalPrice) - discountAmount - pointsDiscountVal + insurancePrice);
+
+    // C. Lưu vào Database thông qua Transaction
+    const updatedBooking = await prisma.$transaction(async (tx) => {
+      const updated = await tx.booking.update({
+        where: { id: bookingId },
+        data: {
+          discountAmount,
+          pointsUsed: pointsUsedVal,
+          pointsDiscount: pointsDiscountVal,
+          finalPrice
+        },
+        include: {
+          bookingItems: {
+            include: {
+              roomType: {
+                include: { hotel: true }
+              }
+            }
+          },
+          payment: true
+        }
+      });
+
+      if (validatedCoupon) {
+        await tx.couponUsage.create({
+          data: {
+            couponId: validatedCoupon.couponId,
+            userId,
+            bookingId
+          }
+        });
+        await tx.coupon.update({
+          where: { id: validatedCoupon.couponId },
+          data: { usedCount: { increment: 1 } }
+        });
+      }
+
+      if (pointsUsedVal > 0) {
+        await tx.loyaltyTransaction.create({
+          data: {
+            userId,
+            bookingId,
+            points: -pointsUsedVal,
+            type: 'SPEND',
+            description: `Tiêu điểm tích lũy thanh toán đơn phòng #${bookingId.substring(0, 8).toUpperCase()}`
+          }
+        });
+        const currentUserPoints = await loyaltyUseCase.getUserPointsBalance(userId);
+        await tx.user.update({
+          where: { id: userId },
+          data: { loyaltyPoints: currentUserPoints - pointsUsedVal }
+        });
+      }
+
+      return updated;
+    });
+
+    return updatedBooking;
+  }
 }
 
 // Map roles

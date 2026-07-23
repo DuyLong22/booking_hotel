@@ -67,6 +67,27 @@ export class BookingController {
       next(error);
     }
   }
+
+  public async applyDiscount(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const bookingId = req.params.id;
+      const { couponCode, usePoints } = req.body;
+      const userId = req.user!.userId;
+      const result = await bookingUseCase.applyDiscount(
+        bookingId,
+        userId,
+        couponCode,
+        usePoints !== undefined ? Number(usePoints) : undefined
+      );
+      res.status(200).json({
+        success: true,
+        message: 'Áp dụng mã giảm giá / điểm thưởng thành công',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new BookingController();

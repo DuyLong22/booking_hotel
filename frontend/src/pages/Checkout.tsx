@@ -72,52 +72,9 @@ export const Checkout: React.FC = () => {
 
   const { language } = useSelector((state: RootState) => state.settings);
 
-  // --- Loyalty States ---
-  const [availablePoints, setAvailablePoints] = useState(0);
-  const [usePointsToggle, setUsePointsToggle] = useState(false);
-  const [pointsInput, setPointsInput] = useState('0');
-  const [pointsDiscountAmount, setPointsDiscountAmount] = useState(0);
-
   useEffect(() => {
-    if (user) {
-      const fetchLoyaltySummary = async () => {
-        try {
-          const res = await apiClient.get('/loyalty/summary');
-          if (res.data.success) {
-            setAvailablePoints(res.data.data.pointsBalance || 0);
-          }
-        } catch (err) {
-          console.error('Failed to fetch loyalty summary:', err);
-        }
-      };
-      fetchLoyaltySummary();
-    }
-  }, [user]);
-
-  const handlePointsChange = (val: string) => {
-    if (!val || Number(val) < 0) {
-      setPointsInput('0');
-      setPointsDiscountAmount(0);
-      return;
-    }
-    const num = Math.min(Math.floor(Number(val)), availablePoints);
-    setPointsInput(num.toString());
-    
-    // Check 30% constraint
-    const discountVal = num * 200;
-    const maxDiscount = basePrice * 0.3;
-    if (discountVal > maxDiscount) {
-      const maxAllowedPoints = Math.floor(maxDiscount / 200);
-      setPointsInput(maxAllowedPoints.toString());
-      setPointsDiscountAmount(maxAllowedPoints * 200);
-    } else {
-      setPointsDiscountAmount(discountVal);
-    }
-  };
-
-  useEffect(() => {
-    setFinalPrice(basePrice - discount - pointsDiscountAmount + (insuranceSelected ? 43500 : 0));
-  }, [basePrice, discount, pointsDiscountAmount, insuranceSelected]);
+    setFinalPrice(basePrice - discount + (insuranceSelected ? 43500 : 0));
+  }, [basePrice, discount, insuranceSelected]);
 
   useEffect(() => {
     if (policyModalOpen) {
@@ -194,7 +151,6 @@ export const Checkout: React.FC = () => {
         guestPhone,
         notes: combinedNotes,
         insuranceSelected,
-        usePoints: usePointsToggle ? Number(pointsInput) : 0,
         bookingItems: [
           {
             roomTypeId: preview.roomTypeId,
@@ -614,96 +570,7 @@ export const Checkout: React.FC = () => {
               </div>
             </div>
 
-            {/* Loyalty Points Redeem Card */}
-            {user && (
-              <div className="bg-white border border-slate-150 p-6 rounded-2xl shadow-sm space-y-4">
-                <div className="flex items-start gap-2.5 border-b border-slate-50 pb-3">
-                  <span className="text-[#0194f3] text-xl">🏆</span>
-                  <div>
-                    <h3 className="font-extrabold text-slate-800 text-base">{language === 'vi' ? 'Điểm thưởng Loyalty' : 'Loyalty Points'}</h3>
-                    <p className="text-xs text-slate-400 font-medium">{language === 'vi' ? 'Sử dụng điểm tích lũy để nhận chiết khấu trực tiếp.' : 'Redeem points for direct discount.'}</p>
-                  </div>
-                </div>
 
-                <div className="space-y-3 pt-2">
-                  <div className="flex justify-between items-center text-xs font-bold text-slate-700 bg-slate-50 p-3 rounded-xl">
-                    <span>{language === 'vi' ? 'Điểm hiện có của bạn:' : 'Your available points:'}</span>
-                    <span className="text-blue-600 font-black text-sm">{availablePoints.toLocaleString('vi-VN')} {language === 'vi' ? 'điểm' : 'pts'}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center text-xs font-bold text-slate-600 bg-slate-50 p-3 rounded-xl">
-                    <span>{language === 'vi' ? 'Giá trị quy đổi (1 điểm = 200 VNĐ):' : 'Conversion value (1 pt = 200 VND):'}</span>
-                    <span className="text-slate-800 font-black">{(availablePoints * 200).toLocaleString('vi-VN')} đ</span>
-                  </div>
-
-                  {availablePoints > 0 ? (
-                    <div className="space-y-2 pt-1.5">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          id="usePointsCheckbox"
-                          checked={usePointsToggle}
-                          onChange={(e) => {
-                            setUsePointsToggle(e.target.checked);
-                            if (!e.target.checked) {
-                              setPointsInput('0');
-                              setPointsDiscountAmount(0);
-                            } else {
-                              // Auto set to max points allowed or user balance
-                              const maxAllowedDiscount = basePrice * 0.3;
-                              const maxAllowedPoints = Math.floor(maxAllowedDiscount / 200);
-                              const autoPoints = Math.min(availablePoints, maxAllowedPoints);
-                              handlePointsChange(autoPoints.toString());
-                            }
-                          }}
-                          className="w-4.5 h-4.5 text-[#0194f3] border-slate-300 rounded focus:ring-[#0194f3]"
-                        />
-                        <label htmlFor="usePointsCheckbox" className="text-xs font-extrabold text-slate-700 cursor-pointer">
-                          {language === 'vi' ? 'Áp dụng điểm tích lũy cho booking này' : 'Apply loyalty points to this booking'}
-                        </label>
-                      </div>
-
-                      {usePointsToggle && (
-                        <div className="space-y-1.5 pl-6 animate-in slide-in-from-top-2 duration-150">
-                          <label className="text-[11px] font-bold text-slate-500 block">{language === 'vi' ? 'Số điểm muốn tiêu dùng:' : 'Points to redeem:'}</label>
-                          <div className="flex gap-2">
-                            <input
-                              type="number"
-                              min="0"
-                              max={availablePoints}
-                              value={pointsInput}
-                              onChange={(e) => handlePointsChange(e.target.value)}
-                              className="w-32 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:border-[#0194f3]"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const maxAllowedDiscount = basePrice * 0.3;
-                                const maxAllowedPoints = Math.floor(maxAllowedDiscount / 200);
-                                const maxPoints = Math.min(availablePoints, maxAllowedPoints);
-                                handlePointsChange(maxPoints.toString());
-                              }}
-                              className="bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-extrabold text-[11px] px-3 py-1.5 rounded-lg transition-colors"
-                            >
-                              {language === 'vi' ? 'Tối đa' : 'Max'}
-                            </button>
-                          </div>
-                          <p className="text-[10px] text-slate-400 font-medium">
-                            * {language === 'vi' 
-                              ? `Giới hạn tối đa 30% giá trị phòng: chiết khấu tối đa ${(basePrice * 0.3).toLocaleString('vi-VN')} đ (${Math.floor((basePrice * 0.3) / 200)} điểm)`
-                              : `Max 30% discount cap: max ${(basePrice * 0.3).toLocaleString('vi-VN')} VND (${Math.floor((basePrice * 0.3) / 200)} pts)`}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-[11px] text-slate-400 font-semibold text-center italic bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
-                      {language === 'vi' ? 'Bạn chưa tích lũy được điểm Loyalty nào.' : 'You have no loyalty points yet.'}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
 
           </div>
 
@@ -801,12 +668,7 @@ export const Checkout: React.FC = () => {
                     </div>
                   )}
 
-                  {pointsDiscountAmount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>{language === 'vi' ? 'Khấu trừ điểm Loyalty' : 'Loyalty points discount'}:</span>
-                      <span>-{pointsDiscountAmount.toLocaleString('vi-VN')} đ</span>
-                    </div>
-                  )}
+
 
                   {insuranceSelected && (
                     <div className="flex justify-between text-slate-700">
