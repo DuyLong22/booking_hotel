@@ -8,15 +8,24 @@ import socketService from '../../infrastructure/services/socket.service';
 export class BookingUseCase {
   public async cleanupExpiredBookings() {
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-    await prisma.booking.updateMany({
+    const expiredBookings = await prisma.booking.findMany({
       where: {
         status: { in: [BookingStatus.PENDING, BookingStatus.PAYMENT_PROCESSING] },
         createdAt: { lt: tenMinutesAgo }
-      },
-      data: {
-        status: BookingStatus.CANCELLED
       }
     });
+
+    for (const booking of expiredBookings) {
+      await prisma.booking.update({
+        where: { id: booking.id },
+        data: { status: BookingStatus.CANCELLED }
+      });
+      try {
+        await loyaltyUseCase.refundPoints(booking.id);
+      } catch (err) {
+        console.error(`Failed to refund points for expired booking ${booking.id}:`, err);
+      }
+    }
   }
 
   public async createBooking(userId: string | null, data: any) {

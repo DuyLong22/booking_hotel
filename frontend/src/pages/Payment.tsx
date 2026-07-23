@@ -152,8 +152,9 @@ export const Payment: React.FC = () => {
   };
 
   const handlePointsUpdate = async (pts: string) => {
-    if (!bookingId) return;
-    const num = Math.min(Math.floor(Number(pts) || 0), availablePoints);
+    if (!bookingId || !booking) return;
+    const maxAvailableForThisBooking = availablePoints + (booking.pointsUsed || 0);
+    const num = Math.min(Math.floor(Number(pts) || 0), maxAvailableForThisBooking);
     setPointsInput(num.toString());
     setApplyingDiscount(true);
     try {
@@ -838,10 +839,19 @@ export const Payment: React.FC = () => {
                       <div className="space-y-3.5 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
                         <div className="flex justify-between items-center text-xs font-bold text-slate-700 bg-slate-50 p-2.5 rounded-xl">
                           <span>{language === 'vi' ? 'Điểm hiện có:' : 'Your points:'}</span>
-                          <span className="text-blue-600 font-black">{availablePoints.toLocaleString('vi-VN')} {language === 'vi' ? 'điểm' : 'pts'}</span>
+                          <div className="text-right">
+                            <span className="text-blue-600 font-black block">
+                              {(availablePoints + (booking.pointsUsed || 0)).toLocaleString('vi-VN')} {language === 'vi' ? 'điểm' : 'pts'}
+                            </span>
+                            {booking.pointsUsed > 0 && (
+                              <span className="text-[10px] text-slate-400 font-medium block">
+                                ({language === 'vi' ? `Đang dùng ${booking.pointsUsed} điểm cho đơn này` : `Using ${booking.pointsUsed} pts for this booking`})
+                              </span>
+                            )}
+                          </div>
                         </div>
 
-                        {availablePoints > 0 ? (
+                        {(availablePoints > 0 || booking.pointsUsed > 0) ? (
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
                               <input
@@ -868,7 +878,7 @@ export const Payment: React.FC = () => {
                                   <input
                                     type="number"
                                     min="0"
-                                    max={availablePoints}
+                                    max={availablePoints + (booking.pointsUsed || 0)}
                                     value={pointsInput}
                                     disabled={applyingDiscount}
                                     onChange={(e) => setPointsInput(e.target.value)}
@@ -880,7 +890,7 @@ export const Payment: React.FC = () => {
                                     onClick={() => {
                                       const maxAllowedDiscount = Number(booking.totalPrice) * 0.3;
                                       const maxAllowedPoints = Math.floor(maxAllowedDiscount / 200);
-                                      const maxPoints = Math.min(availablePoints, maxAllowedPoints);
+                                      const maxPoints = Math.min(availablePoints + (booking.pointsUsed || 0), maxAllowedPoints);
                                       setPointsInput(maxPoints.toString());
                                     }}
                                     className="bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-extrabold text-[10px] px-2.5 py-1 rounded-lg transition-colors"
