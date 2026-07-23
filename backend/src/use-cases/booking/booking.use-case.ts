@@ -31,7 +31,7 @@ export class BookingUseCase {
 
   public async createBooking(userId: string | null, data: any) {
     await this.cleanupExpiredBookings();
-    const { checkInDate, checkOutDate, guestName, guestEmail, guestPhone, notes, couponCode, insuranceSelected, bookingItems, usePoints } = data;
+    const { checkInDate, checkOutDate, guestName, guestEmail, guestPhone, notes, couponCode, insuranceSelected, bookingItems, usePoints, numGuests } = data;
 
     let finalUserId = userId;
     if (!finalUserId) {
@@ -205,6 +205,7 @@ export class BookingUseCase {
           guestEmail,
           guestPhone,
           notes,
+          numGuests: numGuests ? Number(numGuests) : 1,
           bookingItems: {
             create: itemsToCreate.map((item) => ({
               roomTypeId: item.roomTypeId,

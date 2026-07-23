@@ -30,6 +30,7 @@ interface Booking {
   guestEmail: string;
   notes?: string;
   internalNotes?: string;
+  numGuests: number;
   createdAt: string;
   pointsUsed: number;
   pointsDiscount: number;
@@ -2469,8 +2470,11 @@ export const OwnerDashboard: React.FC = () => {
                                   </p>
                                   <p className="text-[9px] text-[#64748B] font-normal">{nights} đêm</p>
                                 </td>
-                                <td className="px-4 py-3 text-slate-650">
-                                  <span className="font-bold">{language === 'vi' ? 'Theo phòng đặt' : 'Per room'}</span>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-1">
+                                    <span className="font-bold text-slate-700">{b.numGuests}</span>
+                                    <span className="text-[9px] text-slate-400">{language === 'vi' ? 'khách' : 'guests'}</span>
+                                  </div>
                                 </td>
                                 <td className="px-4 py-3">
                                   <p className="font-black text-[#0F172A]">{b.finalPrice.toLocaleString()} đ</p>
@@ -2607,6 +2611,9 @@ export const OwnerDashboard: React.FC = () => {
                                   <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#E2E8F0] text-[11px]">
                                     <p><span className="text-slate-400 font-bold">{language === 'vi' ? 'Nhận phòng:' : 'Check-in:'}</span><br />{new Date(selectedBooking.checkInDate).toLocaleDateString('vi-VN')}</p>
                                     <p><span className="text-slate-400 font-bold">{language === 'vi' ? 'Trả phòng:' : 'Check-out:'}</span><br />{new Date(selectedBooking.checkOutDate).toLocaleDateString('vi-VN')}</p>
+                                  </div>
+                                  <div className="pt-2 border-t border-[#E2E8F0] text-[11px]">
+                                    <p><span className="text-slate-400 font-bold">{language === 'vi' ? 'Số khách:' : 'Number of guests:'}</span> <span className="font-extrabold text-[#0F172A]">{selectedBooking.numGuests} {language === 'vi' ? 'khách' : 'guest(s)'}</span></p>
                                   </div>
                                 </div>
                               </div>

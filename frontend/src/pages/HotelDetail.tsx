@@ -1263,7 +1263,8 @@ export const HotelDetail: React.FC = () => {
         roomTypeId,
         quantity: selectedQuantities[roomTypeId] || 1,
         checkInDate: checkIn,
-        checkOutDate: checkOut
+        checkOutDate: checkOut,
+        numGuests: adults + children
       }
     });
   };
