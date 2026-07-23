@@ -14,6 +14,8 @@ export class UserUseCase {
         role: true,
         isVerified: true,
         createdAt: true,
+        gender: true,
+        dateOfBirth: true,
       },
     });
 
@@ -25,7 +27,7 @@ export class UserUseCase {
   }
 
   public async updateProfile(userId: string, data: any) {
-    const { fullName, phoneNumber, avatarUrl } = data;
+    const { fullName, phoneNumber, avatarUrl, gender, dateOfBirth } = data;
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
@@ -45,12 +47,16 @@ export class UserUseCase {
       }
     }
 
+    const parsedDateOfBirth = dateOfBirth ? new Date(dateOfBirth) : (dateOfBirth === null ? null : undefined);
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
         fullName: fullName || undefined,
         phoneNumber: phoneNumber !== undefined ? phoneNumber : undefined,
         avatarUrl: avatarUrl !== undefined ? avatarUrl : undefined,
+        gender: gender !== undefined ? gender : undefined,
+        dateOfBirth: parsedDateOfBirth,
       },
       select: {
         id: true,
@@ -60,6 +66,8 @@ export class UserUseCase {
         avatarUrl: true,
         role: true,
         isVerified: true,
+        gender: true,
+        dateOfBirth: true,
         updatedAt: true,
       },
     });

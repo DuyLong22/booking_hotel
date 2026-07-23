@@ -78,6 +78,8 @@ export const Profile: React.FC = () => {
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
+  const [gender, setGender] = useState(user?.gender || 'MALE');
+  const [dateOfBirth, setDateOfBirth] = useState(user?.dateOfBirth ? new Date(user.dateOfBirth).toISOString().substring(0, 10) : '');
   const [updatingProfile, setUpdatingProfile] = useState(false);
 
   // --- Bookings States ---
@@ -201,6 +203,17 @@ export const Profile: React.FC = () => {
     fetchNotifications();
   }, [user]);
 
+  // Sync profile details when redux user changes (e.g. after update or login)
+  useEffect(() => {
+    if (user) {
+      setFullName(user.fullName || '');
+      setPhoneNumber(user.phoneNumber || '');
+      setAvatarUrl(user.avatarUrl || '');
+      setGender(user.gender || 'MALE');
+      setDateOfBirth(user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().substring(0, 10) : '');
+    }
+  }, [user]);
+
   // Sync tab selection from query params
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -224,6 +237,8 @@ export const Profile: React.FC = () => {
         fullName: fullName.trim(),
         phoneNumber: phoneNumber.trim(),
         avatarUrl: avatarUrl.trim(),
+        gender,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth).toISOString() : null,
       });
 
       if (res.data.success) {
@@ -519,6 +534,41 @@ export const Profile: React.FC = () => {
                       placeholder={language === 'vi' ? 'Ví dụ: 0987654321' : 'Example: 0987654321'}
                       className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 hover:border-slate-350 focus:border-blue-600 focus:outline-none rounded-xl text-slate-800 transition-all font-semibold"
                     />
+                  </div>
+                </div>
+
+                {/* Gender & Date of Birth (Grid) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Gender Field */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">
+                      {language === 'vi' ? 'Giới tính' : 'Gender'}
+                    </label>
+                    <select
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value)}
+                      className="w-full px-4 py-3 bg-white border border-slate-200 hover:border-slate-350 focus:border-blue-600 focus:outline-none rounded-xl text-slate-800 transition-all font-semibold"
+                    >
+                      <option value="MALE">{language === 'vi' ? 'Nam' : 'Male'}</option>
+                      <option value="FEMALE">{language === 'vi' ? 'Nữ' : 'Female'}</option>
+                      <option value="OTHER">{language === 'vi' ? 'Khác' : 'Other'}</option>
+                    </select>
+                  </div>
+
+                  {/* Date of Birth Field */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">
+                      {language === 'vi' ? 'Ngày sinh' : 'Date of Birth'}
+                    </label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3.5 top-1/2 transform -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+                      <input
+                        type="date"
+                        value={dateOfBirth}
+                        onChange={(e) => setDateOfBirth(e.target.value)}
+                        className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 hover:border-slate-350 focus:border-blue-600 focus:outline-none rounded-xl text-slate-800 transition-all font-semibold"
+                      />
+                    </div>
                   </div>
                 </div>
 

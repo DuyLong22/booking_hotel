@@ -8,6 +8,8 @@ export interface UserProfile {
   fullName: string;
   phoneNumber?: string;
   avatarUrl?: string;
+  gender?: string;
+  dateOfBirth?: string;
   role: 'CUSTOMER' | 'HOTEL_OWNER' | 'ADMIN' | 'STAFF';
   isVerified: boolean;
 }

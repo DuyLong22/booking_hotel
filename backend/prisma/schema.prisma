@@ -48,6 +48,8 @@ model User {
   fullName      String
   phoneNumber   String?
   avatarUrl     String?
+  gender        String?
+  dateOfBirth   DateTime?
   role          Role      @default(CUSTOMER)
   isVerified    Boolean   @default(false)
   isApproved    Boolean   @default(true)

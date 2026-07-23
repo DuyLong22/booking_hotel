@@ -57,5 +57,7 @@ export const updateProfileSchema = z.object({
     fullName: z.string().min(2, 'Họ tên phải tối thiểu 2 ký tự').optional(),
     phoneNumber: z.string().optional(),
     avatarUrl: z.string().url('Đường dẫn ảnh đại diện không hợp lệ').or(z.literal('')).optional(),
+    gender: z.string().optional(),
+    dateOfBirth: z.string().optional(),
   }),
 });
