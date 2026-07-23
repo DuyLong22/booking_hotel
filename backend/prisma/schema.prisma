@@ -267,6 +267,7 @@ model Booking {
   guestEmail        String
   guestPhone        String
   notes          String?
+  internalNotes  String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   pointsUsed     Int           @default(0)
@@ -280,13 +281,14 @@ model Booking {
 }
 
 model BookingItem {
-  id         String   @id @default(uuid())
-  bookingId  String
-  roomTypeId String
-  quantity   Int      @default(1)
-  price      Decimal  @db.Decimal(10, 2) // Giá tại thời điểm đặt (tính tổng từ calendar)
-  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  roomType   RoomType @relation(fields: [roomTypeId], references: [id])
+  id          String   @id @default(uuid())
+  bookingId   String
+  roomTypeId  String
+  quantity    Int      @default(1)
+  price       Decimal  @db.Decimal(10, 2) // Giá tại thời điểm đặt (tính tổng từ calendar)
+  roomNumbers String?  // Các số phòng đã gán thực tế (VD: "101, 102")
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  roomType    RoomType @relation(fields: [roomTypeId], references: [id])
 }
 
 model Payment {

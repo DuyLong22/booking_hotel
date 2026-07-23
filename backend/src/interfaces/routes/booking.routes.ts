@@ -20,5 +20,9 @@ router.get('/my', requireAuth, bookingController.getMyBookings);
 router.get('/:id', bookingController.getDetail);
 router.put('/:id/status', requireAuth, bookingController.updateStatus);
 router.put('/:id/apply-discount', requireAuth, bookingController.applyDiscount);
+router.get('/:id/audit-logs', requireAuth, bookingController.getAuditLogs);
+router.put('/:id/internal-notes', requireAuth, bookingController.updateInternalNotes);
+router.put('/:id/assign-rooms', requireAuth, bookingController.updateRoomAssignments);
+router.put('/:id/change-dates', requireAuth, bookingController.changeBookingDates);
 
 export default router;

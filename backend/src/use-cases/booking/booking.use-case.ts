@@ -4,6 +4,7 @@ import { BookingStatus } from '@prisma/client';
 import couponUseCase from '../coupon/coupon.use-case';
 import loyaltyUseCase from '../user/loyalty.use-case';
 import socketService from '../../infrastructure/services/socket.service';
+import auditService from '../../infrastructure/services/audit.service';
 
 export class BookingUseCase {
   public async cleanupExpiredBookings() {
@@ -342,6 +343,16 @@ export class BookingUseCase {
       data: { status },
     });
 
+    // Log action to AuditLog
+    await auditService.log({
+      userId,
+      action: `UPDATE_STATUS_${status}`,
+      entityName: 'Booking',
+      entityId: bookingId,
+      oldValues: { status: booking.status },
+      newValues: { status }
+    });
+
     // Xử lý điểm tích lũy Loyalty
     const allowedEarnStatuses: BookingStatus[] = [
       BookingStatus.CONFIRMED,
@@ -561,6 +572,205 @@ export class BookingUseCase {
     });
 
     return updatedBooking;
+  }
+
+  public async getBookingAuditLogs(bookingId: string, userId: string) {
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        bookingItems: {
+          include: {
+            roomType: { include: { hotel: true } }
+          }
+        }
+      }
+    });
+    if (!booking) throw new AppError('Không tìm thấy đơn đặt phòng', 404);
+
+    const isOwnerOfRooms = booking.bookingItems.some(
+      (item) => item.roomType.hotel.ownerId === userId
+    );
+    const isUserAdmin = await prisma.user.findUnique({ where: { id: userId } }).then(u => u?.role === 'ADMIN');
+
+    if (!isUserAdmin && booking.userId !== userId && !isOwnerOfRooms) {
+      throw new AppError('Bạn không có quyền truy cập nhật ký hoạt động này', 403);
+    }
+
+    const logs = await prisma.auditLog.findMany({
+      where: {
+        entityName: 'Booking',
+        entityId: bookingId
+      },
+      include: {
+        user: {
+          select: {
+            fullName: true,
+            email: true,
+            role: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'asc' }
+    });
+    return logs;
+  }
+
+  public async updateInternalNotes(bookingId: string, userId: string, internalNotes: string) {
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        bookingItems: {
+          include: {
+            roomType: { include: { hotel: true } }
+          }
+        }
+      }
+    });
+    if (!booking) throw new AppError('Không tìm thấy đơn đặt phòng', 404);
+
+    const isOwnerOfRooms = booking.bookingItems.some(
+      (item) => item.roomType.hotel.ownerId === userId
+    );
+    const isUserAdmin = await prisma.user.findUnique({ where: { id: userId } }).then(u => u?.role === 'ADMIN');
+
+    if (!isUserAdmin && !isOwnerOfRooms) {
+      throw new AppError('Chỉ chủ khách sạn hoặc Admin mới được phép ghi chú nội bộ', 403);
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id: bookingId },
+      data: { internalNotes }
+    });
+
+    await auditService.log({
+      userId,
+      action: 'UPDATE_INTERNAL_NOTES',
+      entityName: 'Booking',
+      entityId: bookingId,
+      oldValues: { internalNotes: booking.internalNotes },
+      newValues: { internalNotes }
+    });
+
+    return updated;
+  }
+
+  public async updateRoomAssignments(bookingId: string, userId: string, roomAssignments: { [itemId: string]: string }) {
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        bookingItems: {
+          include: {
+            roomType: { include: { hotel: true } }
+          }
+        }
+      }
+    });
+    if (!booking) throw new AppError('Không tìm thấy đơn đặt phòng', 404);
+
+    const isOwnerOfRooms = booking.bookingItems.some(
+      (item) => item.roomType.hotel.ownerId === userId
+    );
+    const isUserAdmin = await prisma.user.findUnique({ where: { id: userId } }).then(u => u?.role === 'ADMIN');
+
+    if (!isUserAdmin && !isOwnerOfRooms) {
+      throw new AppError('Chỉ chủ khách sạn hoặc Admin mới được phép gán phòng', 403);
+    }
+
+    const oldAssignments: any = {};
+    booking.bookingItems.forEach(item => {
+      oldAssignments[item.id] = item.roomNumbers;
+    });
+
+    await prisma.$transaction(async (tx) => {
+      for (const [itemId, roomNumbers] of Object.entries(roomAssignments)) {
+        await tx.bookingItem.update({
+          where: { id: itemId },
+          data: { roomNumbers: roomNumbers || null }
+        });
+      }
+    });
+
+    await auditService.log({
+      userId,
+      action: 'ASSIGN_ROOMS',
+      entityName: 'Booking',
+      entityId: bookingId,
+      oldValues: oldAssignments,
+      newValues: roomAssignments
+    });
+
+    return prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        bookingItems: {
+          include: {
+            roomType: { include: { hotel: true } }
+          }
+        },
+        payment: true
+      }
+    });
+  }
+
+  public async changeBookingDates(bookingId: string, userId: string, checkInDateStr: string, checkOutDateStr: string) {
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        bookingItems: {
+          include: {
+            roomType: { include: { hotel: true } }
+          }
+        }
+      }
+    });
+    if (!booking) throw new AppError('Không tìm thấy đơn đặt phòng', 404);
+
+    const isOwnerOfRooms = booking.bookingItems.some(
+      (item) => item.roomType.hotel.ownerId === userId
+    );
+    const isUserAdmin = await prisma.user.findUnique({ where: { id: userId } }).then(u => u?.role === 'ADMIN');
+
+    if (!isUserAdmin && !isOwnerOfRooms) {
+      throw new AppError('Chỉ chủ khách sạn hoặc Admin mới được phép đổi ngày', 403);
+    }
+
+    const checkInDate = new Date(checkInDateStr);
+    const checkOutDate = new Date(checkOutDateStr);
+
+    if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
+      throw new AppError('Ngày không hợp lệ', 400);
+    }
+
+    if (checkInDate >= checkOutDate) {
+      throw new AppError('Ngày Check-in phải trước ngày Check-out', 400);
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        checkInDate,
+        checkOutDate
+      },
+      include: {
+        bookingItems: {
+          include: {
+            roomType: { include: { hotel: true } }
+          }
+        },
+        payment: true
+      }
+    });
+
+    await auditService.log({
+      userId,
+      action: 'CHANGE_BOOKING_DATES',
+      entityName: 'Booking',
+      entityId: bookingId,
+      oldValues: { checkInDate: booking.checkInDate, checkOutDate: booking.checkOutDate },
+      newValues: { checkInDate, checkOutDate }
+    });
+
+    return updated;
   }
 }
 

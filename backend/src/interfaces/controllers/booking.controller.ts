@@ -88,6 +88,68 @@ export class BookingController {
       next(error);
     }
   }
+
+  public async getAuditLogs(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const bookingId = req.params.id;
+      const userId = req.user!.userId;
+      const result = await bookingUseCase.getBookingAuditLogs(bookingId, userId);
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public async updateInternalNotes(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const bookingId = req.params.id;
+      const { internalNotes } = req.body;
+      const userId = req.user!.userId;
+      const result = await bookingUseCase.updateInternalNotes(bookingId, userId, internalNotes);
+      res.status(200).json({
+        success: true,
+        message: 'Cập nhật ghi chú nội bộ thành công',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public async updateRoomAssignments(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const bookingId = req.params.id;
+      const { roomAssignments } = req.body;
+      const userId = req.user!.userId;
+      const result = await bookingUseCase.updateRoomAssignments(bookingId, userId, roomAssignments);
+      res.status(200).json({
+        success: true,
+        message: 'Gán số phòng thực tế thành công',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public async changeBookingDates(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const bookingId = req.params.id;
+      const { checkInDate, checkOutDate } = req.body;
+      const userId = req.user!.userId;
+      const result = await bookingUseCase.changeBookingDates(bookingId, userId, checkInDate, checkOutDate);
+      res.status(200).json({
+        success: true,
+        message: 'Đổi ngày lưu trú thành công',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new BookingController();
