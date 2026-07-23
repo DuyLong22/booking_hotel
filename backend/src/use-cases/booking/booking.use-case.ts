@@ -334,7 +334,13 @@ export class BookingUseCase {
     });
 
     // Xử lý điểm tích lũy Loyalty
-    if (status === BookingStatus.CHECKED_OUT || status === BookingStatus.COMPLETED) {
+    const allowedEarnStatuses: BookingStatus[] = [
+      BookingStatus.CONFIRMED,
+      BookingStatus.CHECKED_IN,
+      BookingStatus.CHECKED_OUT,
+      BookingStatus.COMPLETED
+    ];
+    if (allowedEarnStatuses.includes(status)) {
       try {
         await loyaltyUseCase.earnPoints(bookingId);
       } catch (err) {

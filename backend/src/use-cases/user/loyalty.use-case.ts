@@ -143,8 +143,14 @@ export class LoyaltyUseCase {
     });
 
     if (!booking) return;
-    if (booking.status !== BookingStatus.CHECKED_OUT && booking.status !== BookingStatus.COMPLETED) {
-      return; // Chỉ cộng khi checked-out hoặc completed
+    const allowedStatuses: BookingStatus[] = [
+      BookingStatus.CONFIRMED,
+      BookingStatus.CHECKED_IN,
+      BookingStatus.CHECKED_OUT,
+      BookingStatus.COMPLETED
+    ];
+    if (!allowedStatuses.includes(booking.status)) {
+      return; // Chỉ cộng khi đã thanh toán thành công (CONFIRMED) trở đi
     }
 
     // Kiểm tra xem đã cộng điểm cho booking này chưa
@@ -222,45 +228,77 @@ export class LoyaltyUseCase {
     });
 
     if (!booking) return;
-    if (booking.pointsUsed <= 0) return;
 
-    // Kiểm tra xem đã hoàn điểm cho booking này chưa
-    const existingRefund = await prisma.loyaltyTransaction.findFirst({
-      where: { bookingId, type: 'REFUND' }
+    // 1. Hoàn lại số điểm khách đã TIÊU (nếu có)
+    if (booking.pointsUsed > 0) {
+      const existingRefund = await prisma.loyaltyTransaction.findFirst({
+        where: { bookingId, type: 'REFUND' }
+      });
+      if (!existingRefund) {
+        const currentPoints = await this.getUserPointsBalance(booking.userId);
+        await prisma.$transaction(async (tx) => {
+          await tx.loyaltyTransaction.create({
+            data: {
+              userId: booking.userId,
+              bookingId,
+              points: booking.pointsUsed, // Số điểm dương hoàn trả
+              type: 'REFUND',
+              description: `Hoàn điểm tích lũy từ đơn đặt phòng bị hủy #${bookingId.substring(0, 8).toUpperCase()}`
+            }
+          });
+          const newPointsBalance = currentPoints + booking.pointsUsed;
+          await tx.user.update({
+            where: { id: booking.userId },
+            data: { loyaltyPoints: newPointsBalance }
+          });
+          await tx.notification.create({
+            data: {
+              userId: booking.userId,
+              title: 'Hoàn trả điểm tích lũy 🔄',
+              content: `Hệ thống đã hoàn trả ${booking.pointsUsed} điểm Loyalty từ đơn phòng đã hủy của bạn.`,
+              type: 'SYSTEM'
+            }
+          });
+        });
+      }
+    }
+
+    // 2. Thu hồi số điểm khách đã NHẬN từ booking này (nếu có)
+    const existingEarn = await prisma.loyaltyTransaction.findFirst({
+      where: { bookingId, type: 'EARN' }
     });
-    if (existingRefund) return;
-
-    const currentPoints = await this.getUserPointsBalance(booking.userId);
-
-    await prisma.$transaction(async (tx) => {
-      // 1. Tạo giao dịch hoàn điểm
-      await tx.loyaltyTransaction.create({
-        data: {
-          userId: booking.userId,
-          bookingId,
-          points: booking.pointsUsed, // Số điểm dương hoàn trả
-          type: 'REFUND',
-          description: `Hoàn điểm tích lũy từ đơn đặt phòng bị hủy #${bookingId.substring(0, 8).toUpperCase()}`
-        }
+    if (existingEarn) {
+      const existingReversal = await prisma.loyaltyTransaction.findFirst({
+        where: { bookingId, type: 'SPEND', description: { startsWith: 'Thu hồi' } }
       });
-
-      // 2. Cập nhật cache loyaltyPoints trên User
-      const newPointsBalance = currentPoints + booking.pointsUsed;
-      await tx.user.update({
-        where: { id: booking.userId },
-        data: { loyaltyPoints: newPointsBalance }
-      });
-
-      // 3. Tạo thông báo hoàn điểm
-      await tx.notification.create({
-        data: {
-          userId: booking.userId,
-          title: 'Hoàn trả điểm tích lũy 🔄',
-          content: `Hệ thống đã hoàn trả ${booking.pointsUsed} điểm Loyalty từ đơn phòng đã hủy của bạn.`,
-          type: 'SYSTEM'
-        }
-      });
-    });
+      if (!existingReversal) {
+        const currentPoints = await this.getUserPointsBalance(booking.userId);
+        await prisma.$transaction(async (tx) => {
+          await tx.loyaltyTransaction.create({
+            data: {
+              userId: booking.userId,
+              bookingId,
+              points: -existingEarn.points, // Số điểm âm thu hồi
+              type: 'SPEND',
+              description: `Thu hồi điểm tích lũy từ đơn đặt phòng bị hủy #${bookingId.substring(0, 8).toUpperCase()}`
+            }
+          });
+          const newPointsBalance = Math.max(0, currentPoints - existingEarn.points);
+          await tx.user.update({
+            where: { id: booking.userId },
+            data: { loyaltyPoints: newPointsBalance }
+          });
+          await tx.notification.create({
+            data: {
+              userId: booking.userId,
+              title: 'Thu hồi điểm tích lũy ⚠️',
+              content: `Hệ thống đã thu hồi ${existingEarn.points} điểm Loyalty từ đơn đặt phòng đã hủy của bạn.`,
+              type: 'SYSTEM'
+            }
+          });
+        });
+      }
+    }
   }
 }
 

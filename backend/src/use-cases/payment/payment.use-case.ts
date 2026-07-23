@@ -3,6 +3,7 @@ import prisma from '../../config/database';
 import { PaymentService } from '../../infrastructure/services/payment.service';
 import mailService, { MailService } from '../../infrastructure/services/mail.service';
 import socketService from '../../infrastructure/services/socket.service';
+import loyaltyUseCase from '../user/loyalty.use-case';
 
 export class PaymentUseCase {
   constructor(
@@ -184,6 +185,12 @@ export class PaymentUseCase {
         paidAt: new Date()
       }
     });
+
+    try {
+      await loyaltyUseCase.earnPoints(bookingId);
+    } catch (err) {
+      console.error('Failed to earn points on payment confirmation:', err);
+    }
 
     // 2. Gửi mail kèm vé QR Code cho người dùng!
     //try {
