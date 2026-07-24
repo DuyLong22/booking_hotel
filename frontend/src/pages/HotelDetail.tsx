@@ -835,12 +835,28 @@ export const HotelDetail: React.FC = () => {
     return prov ? prov.name : '';
   };
 
-  // Đồng bộ hóa destInputText ban đầu theo provinceId
+  // Đồng bộ hóa destInputText ban đầu theo provinceId hoặc thông tin khách sạn khi load
   useEffect(() => {
     if (provinceId) {
-      setDestInputText(translateProvinceName(getProvinceName(provinceId), language));
+      const pName = getProvinceName(provinceId);
+      if (pName) {
+        setDestInputText(translateProvinceName(pName, language));
+      }
     }
   }, [provinceId, language]);
+
+  useEffect(() => {
+    if (hotel) {
+      const pId = (hotel as any).provinceId || (hotel.province as any)?.id || '';
+      if (pId && !provinceId) {
+        setProvinceId(pId);
+      }
+      const provName = (hotel.province as any)?.name || getProvinceName(pId) || hotel.address;
+      if (provName && (!destInputText || !provinceId)) {
+        setDestInputText(translateProvinceName(provName, language));
+      }
+    }
+  }, [hotel, language]);
 
   // Date list utilities cho Popover lịch
   const getDaysInMonth = (year: number, month: number) => {
