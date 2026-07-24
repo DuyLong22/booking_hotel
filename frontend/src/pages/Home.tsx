@@ -332,21 +332,30 @@ export const Home: React.FC = () => {
       try {
         const res = await apiClient.get('/hotels/meta/locations');
         if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-          const apiProvinces: ProvinceItem[] = res.data.data.map((p: any) => {
-            const existing = VIETNAM_PROVINCES.find(item => item.id === p.id || item.name.toLowerCase() === p.name.toLowerCase());
-            return {
-              id: p.id || p.code || existing?.id || '',
-              name: p.name,
-              keywords: existing ? existing.keywords : [removeVietnameseTones(p.name.toLowerCase())]
-            };
+          const cleanNameKey = (str: string) =>
+            removeVietnameseTones(str.replace(/^(Thành phố|Tỉnh|TP\.|TP)\s+/i, '').trim().toLowerCase());
+
+          const uniqueMap = new Map<string, ProvinceItem>();
+          VIETNAM_PROVINCES.forEach((p) => {
+            uniqueMap.set(cleanNameKey(p.name), p);
           });
-          const merged = [...apiProvinces];
-          VIETNAM_PROVINCES.forEach(vp => {
-            if (!merged.some(m => m.name.toLowerCase() === vp.name.toLowerCase())) {
-              merged.push(vp);
+
+          res.data.data.forEach((p: any) => {
+            const cKey = cleanNameKey(p.name);
+            const existing = uniqueMap.get(cKey);
+            if (existing) {
+              uniqueMap.set(cKey, { ...existing, id: p.id || existing.id });
+            } else {
+              const cleanNameDisplay = p.name.replace(/^(Thành phố|Tỉnh)\s+/i, '').trim();
+              uniqueMap.set(cKey, {
+                id: p.id || '',
+                name: cleanNameDisplay,
+                keywords: [removeVietnameseTones(cleanNameDisplay.toLowerCase())]
+              });
             }
           });
-          setProvincesList(merged);
+
+          setProvincesList(Array.from(uniqueMap.values()));
         }
       } catch (err) {
         console.error('Failed to fetch provinces from backend:', err);
@@ -812,6 +821,22 @@ export const Home: React.FC = () => {
     setCheckOut(endStr);
   };
 
+  const matchedProvinces = destInputText.trim()
+    ? provincesList.filter((p) => {
+        const normInput = removeVietnameseTones(destInputText.trim().toLowerCase());
+        const normName = removeVietnameseTones(p.name.toLowerCase());
+        if (normName.includes(normInput) || normInput.includes(normName)) return true;
+        return p.keywords?.some((k) => {
+          const normK = removeVietnameseTones(k.toLowerCase().trim());
+          if (!normK) return false;
+          if (normK === normInput) return true;
+          if (normK.length >= 3 && normInput.includes(normK)) return true;
+          if (normK.includes(normInput)) return true;
+          return false;
+        });
+      })
+    : [];
+
   const monthNames = [
     'tháng 1', 'tháng 2', 'tháng 3', 'tháng 4', 'tháng 5', 'tháng 6',
     'tháng 7', 'tháng 8', 'tháng 9', 'tháng 10', 'tháng 11', 'tháng 12'
@@ -826,17 +851,7 @@ export const Home: React.FC = () => {
     return 'Lịch linh hoạt';
   };
 
-  const matchedProvinces = destInputText
-    ? provincesList.filter((p) => {
-        const normInput = removeVietnameseTones(destInputText.toLowerCase()).trim();
-        const normName = removeVietnameseTones(p.name.toLowerCase());
-        const matchesName = normName.includes(normInput);
-        const matchesKeywords = p.keywords.some(
-          (k) => k.includes(normInput) || normInput.includes(k)
-        );
-        return matchesName || matchesKeywords;
-      })
-    : [];
+
 
   const combinedSuggestions = [
     ...matchedProvinces.map((p) => ({ ...p, type: 'province' as const })),
@@ -906,7 +921,7 @@ export const Home: React.FC = () => {
               {showDestPopover && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setShowDestPopover(false)} />
-                  <div className="absolute top-full left-0 mt-2 w-full sm:w-[400px] bg-white rounded-lg shadow-2xl border border-slate-100 p-4 z-40 text-slate-800 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="absolute top-full left-0 mt-2 w-full sm:w-[400px] bg-white rounded-lg shadow-2xl border border-slate-100 p-4 z-40 text-slate-800 animate-in fade-in slide-in-from-top-2 duration-150 max-h-80 overflow-y-auto">
                     <div className="space-y-4 text-left">
                       
                       {/* Case 1: Search input is empty -> Show Recent searches and Popular destinations */}
