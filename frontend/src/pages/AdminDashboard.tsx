@@ -351,6 +351,9 @@ export const AdminDashboard: React.FC = () => {
   const handleCreateCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const endD = new Date(newEnd);
+      endD.setHours(23, 59, 59, 999);
+
       const payload = {
         code: newCode.toUpperCase(),
         description: newDesc,
@@ -358,7 +361,7 @@ export const AdminDashboard: React.FC = () => {
         discountValue: Number(newValue),
         minOrderValue: 0,
         startDate: new Date().toISOString(),
-        endDate: new Date(newEnd).toISOString(),
+        endDate: endD.toISOString(),
         usageLimit: Number(newLimit)
       };
 

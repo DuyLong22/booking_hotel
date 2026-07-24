@@ -25,17 +25,23 @@ export class CouponUseCase {
     const existing = await prisma.coupon.findUnique({ where: { code: code.toUpperCase() } });
     if (existing) throw new AppError('Mã giảm giá này đã tồn tại', 400);
 
+    const startD = startDate ? new Date(startDate) : new Date();
+    const endD = new Date(endDate);
+    if (!isNaN(endD.getTime()) && endD.getHours() === 0 && endD.getMinutes() === 0 && endD.getSeconds() === 0) {
+      endD.setHours(23, 59, 59, 999);
+    }
+
     const coupon = await prisma.coupon.create({
       data: {
         code: code.toUpperCase(),
         description,
         discountType,
         discountValue,
-        minOrderValue,
-        maxDiscountAmount,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        usageLimit,
+        minOrderValue: minOrderValue || 0,
+        maxDiscountAmount: maxDiscountAmount || null,
+        startDate: startD,
+        endDate: endD,
+        usageLimit: Number(usageLimit),
         hotelId: hotelId || null,
       },
     });

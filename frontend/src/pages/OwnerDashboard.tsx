@@ -939,6 +939,9 @@ export const OwnerDashboard: React.FC = () => {
     e.preventDefault();
     if (!hotelId) return;
     try {
+      const endD = new Date(newCouponEnd);
+      endD.setHours(23, 59, 59, 999);
+
       const payload = {
         code: newCouponCode.toUpperCase(),
         description: newCouponDesc,
@@ -946,7 +949,7 @@ export const OwnerDashboard: React.FC = () => {
         discountValue: Number(newCouponValue),
         minOrderValue: 0,
         startDate: new Date().toISOString(),
-        endDate: new Date(newCouponEnd).toISOString(),
+        endDate: endD.toISOString(),
         usageLimit: Number(newCouponLimit),
         hotelId
       };
