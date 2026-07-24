@@ -356,6 +356,7 @@ model Coupon {
   endDate           DateTime
   usageLimit        Int
   usedCount         Int           @default(0)
+  dailyUsageLimit   Int?          // Giới hạn lượt dùng tối đa mỗi ngày
   targetUserType    String        @default("ALL") // "ALL" | "NEW" | "VIP"
   isActive          Boolean       @default(true)
   createdAt         DateTime      @default(now())

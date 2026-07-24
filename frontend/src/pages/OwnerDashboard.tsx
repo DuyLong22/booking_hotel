@@ -210,6 +210,7 @@ export const OwnerDashboard: React.FC = () => {
   const [newCouponMinOrderValue, setNewCouponMinOrderValue] = useState('');
   const [newCouponMaxDiscountAmount, setNewCouponMaxDiscountAmount] = useState('');
   const [newCouponLimit, setNewCouponLimit] = useState('');
+  const [newCouponDailyLimit, setNewCouponDailyLimit] = useState('');
   const [newCouponTargetUserType, setNewCouponTargetUserType] = useState<'ALL' | 'NEW' | 'VIP'>('ALL');
   const [newCouponStart, setNewCouponStart] = useState(`${new Date().toISOString().split('T')[0]}T08:00`);
   const [newCouponEnd, setNewCouponEnd] = useState('');
@@ -953,6 +954,7 @@ export const OwnerDashboard: React.FC = () => {
         startDate: new Date(newCouponStart).toISOString(),
         endDate: new Date(newCouponEnd).toISOString(),
         usageLimit: Number(newCouponLimit),
+        dailyUsageLimit: newCouponDailyLimit ? Number(newCouponDailyLimit) : null,
         targetUserType: newCouponTargetUserType,
         hotelId
       };
@@ -966,6 +968,7 @@ export const OwnerDashboard: React.FC = () => {
       setNewCouponMinOrderValue('');
       setNewCouponMaxDiscountAmount('');
       setNewCouponLimit('');
+      setNewCouponDailyLimit('');
       setNewCouponTargetUserType('ALL');
       setNewCouponStart(`${new Date().toISOString().split('T')[0]}T08:00`);
       setNewCouponEnd('');
@@ -3485,21 +3488,21 @@ export const OwnerDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Đối tượng áp dụng *</label>
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Đối tượng *</label>
                   <select
                     value={newCouponTargetUserType}
                     onChange={(e) => setNewCouponTargetUserType(e.target.value as any)}
                     className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] transition-all font-bold cursor-pointer"
                   >
-                    <option value="ALL">🌐 Tất cả khách hàng</option>
-                    <option value="NEW">🆕 Khách hàng mới (Lần đầu đặt)</option>
-                    <option value="VIP">⭐ Khách hàng VIP / Thân thiết</option>
+                    <option value="ALL">🌐 Tất cả</option>
+                    <option value="NEW">🆕 Khách mới</option>
+                    <option value="VIP">⭐ Khách VIP</option>
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Lượt dùng tối đa *</label>
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Tổng lượt dùng *</label>
                   <input
                     type="number"
                     required
@@ -3508,6 +3511,17 @@ export const OwnerDashboard: React.FC = () => {
                     onChange={(e) => setNewCouponLimit(e.target.value)}
                     placeholder="VD: 50"
                     className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Giới hạn/Ngày</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={newCouponDailyLimit}
+                    onChange={(e) => setNewCouponDailyLimit(e.target.value)}
+                    placeholder="VD: 5 (Để trống = ∞)"
+                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] transition-all font-semibold outline-none"
                   />
                 </div>
               </div>

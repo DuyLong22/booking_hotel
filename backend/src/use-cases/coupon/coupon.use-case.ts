@@ -4,7 +4,7 @@ import { Role } from '@prisma/client';
 
 export class CouponUseCase {
   public async createCoupon(userId: string, userRole: Role, data: any) {
-    const { code, description, discountType, discountValue, minOrderValue, maxDiscountAmount, startDate, endDate, usageLimit, targetUserType, hotelId } = data;
+    const { code, description, discountType, discountValue, minOrderValue, maxDiscountAmount, startDate, endDate, usageLimit, dailyUsageLimit, targetUserType, hotelId } = data;
 
     // Phân quyền tạo coupon
     if (hotelId) {
@@ -42,6 +42,7 @@ export class CouponUseCase {
         startDate: startD,
         endDate: endD,
         usageLimit: Number(usageLimit),
+        dailyUsageLimit: dailyUsageLimit ? Number(dailyUsageLimit) : null,
         targetUserType: targetUserType || 'ALL',
         hotelId: hotelId || null,
       },
@@ -69,6 +70,28 @@ export class CouponUseCase {
 
     if (coupon.usedCount >= coupon.usageLimit) {
       throw new AppError('Mã giảm giá đã hết lượt sử dụng', 400);
+    }
+
+    // Kiểm tra giới hạn lượt dùng trong ngày hôm nay
+    if ((coupon as any).dailyUsageLimit) {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+
+      const todayUsedCount = await prisma.couponUsage.count({
+        where: {
+          couponId: coupon.id,
+          usedAt: {
+            gte: todayStart,
+            lte: todayEnd,
+          },
+        },
+      });
+
+      if (todayUsedCount >= (coupon as any).dailyUsageLimit) {
+        throw new AppError(`Mã giảm giá đã đạt giới hạn ${(coupon as any).dailyUsageLimit} lượt dùng trong ngày hôm nay. Vui lòng quay lại vào ngày mai!`, 400);
+      }
     }
 
     // Kiểm tra đối tượng sử dụng
