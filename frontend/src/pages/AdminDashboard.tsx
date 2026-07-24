@@ -106,7 +106,10 @@ export const AdminDashboard: React.FC = () => {
   const [newDesc, setNewDesc] = useState('');
   const [newType, setNewType] = useState<'PERCENTAGE' | 'FIXED'>('PERCENTAGE');
   const [newValue, setNewValue] = useState('');
+  const [newMinOrderValue, setNewMinOrderValue] = useState('');
+  const [newMaxDiscountAmount, setNewMaxDiscountAmount] = useState('');
   const [newLimit, setNewLimit] = useState('');
+  const [newStart, setNewStart] = useState(new Date().toISOString().split('T')[0]);
   const [newEnd, setNewEnd] = useState('');
 
   const [aiLogs, setAiLogs] = useState<AiLog[]>([]);
@@ -351,6 +354,7 @@ export const AdminDashboard: React.FC = () => {
   const handleCreateCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const startD = newStart ? new Date(newStart) : new Date();
       const endD = new Date(newEnd);
       endD.setHours(23, 59, 59, 999);
 
@@ -359,8 +363,9 @@ export const AdminDashboard: React.FC = () => {
         description: newDesc,
         discountType: newType,
         discountValue: Number(newValue),
-        minOrderValue: 0,
-        startDate: new Date().toISOString(),
+        minOrderValue: newMinOrderValue ? Number(newMinOrderValue) : 0,
+        maxDiscountAmount: newMaxDiscountAmount ? Number(newMaxDiscountAmount) : null,
+        startDate: startD.toISOString(),
         endDate: endD.toISOString(),
         usageLimit: Number(newLimit)
       };
@@ -371,7 +376,10 @@ export const AdminDashboard: React.FC = () => {
       setNewCode('');
       setNewDesc('');
       setNewValue('');
+      setNewMinOrderValue('');
+      setNewMaxDiscountAmount('');
       setNewLimit('');
+      setNewStart(new Date().toISOString().split('T')[0]);
       setNewEnd('');
       fetchCoupons();
     } catch (err: any) {
@@ -1655,94 +1663,143 @@ export const AdminDashboard: React.FC = () => {
       {/* ADD COUPON MODAL */}
       {showAddCoupon && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-55 flex items-center justify-center p-4">
-          <form onSubmit={handleCreateCoupon} className="bg-white border border-[#E2E8F0] p-6 rounded-2xl shadow-2xl w-full max-w-sm space-y-4 text-[#1E293B]">
-            <h3 className="font-bold text-[#0F172A] text-sm border-b border-[#E2E8F0] pb-2">Tạo mã giảm giá mới</h3>
-            
-            <div className="space-y-3 text-xs font-semibold">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-[#64748B] uppercase">Mã giảm giá (In hoa)</label>
-                <input
-                  type="text"
-                  required
-                  value={newCode}
-                  onChange={(e) => setNewCode(e.target.value.toUpperCase())}
-                  placeholder="SUMMERSAVE20"
-                  className="w-full bg-white border border-[#CBD5E1] rounded-xl p-2 text-xs focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none text-[#1E293B] placeholder-[#94A3B8]"
-                />
+          <form onSubmit={handleCreateCoupon} className="bg-white border border-[#E2E8F0] p-6 rounded-2xl shadow-2xl w-full max-w-md space-y-4 text-[#1E293B] animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex justify-between items-center border-b border-[#E2E8F0] pb-3">
+              <div>
+                <h3 className="font-extrabold text-[#0F172A] text-base">Tạo Mã Giảm Giá Toàn Sàn</h3>
+                <p className="text-[10px] text-[#64748B] font-semibold mt-0.5">Điền đầy đủ thông tin để phát hành Voucher trên hệ thống</p>
               </div>
+              <span className="text-xl">🏷️</span>
+            </div>
+            
+            <div className="space-y-3.5 text-xs font-semibold max-h-[75vh] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Mã giảm giá (In hoa) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newCode}
+                    onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+                    placeholder="VD: BANMAI2026"
+                    className="w-full bg-white border border-[#CBD5E1] rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-black text-[#1E293B] tracking-wider placeholder-[#94A3B8]"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Lượt dùng tối đa *</label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={newLimit}
+                    onChange={(e) => setNewLimit(e.target.value)}
+                    placeholder="VD: 100"
+                    className="w-full bg-white border border-[#CBD5E1] rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold text-[#1E293B] placeholder-[#94A3B8]"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-[#64748B] uppercase">Mô tả mã</label>
+                <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Mô tả chương trình ưu đãi *</label>
                 <input
                   type="text"
                   required
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
-                  placeholder="Giảm 20% đơn đặt mùa hè"
-                  className="w-full bg-white border border-[#CBD5E1] rounded-xl p-2 text-xs focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none text-[#1E293B] placeholder-[#94A3B8]"
+                  placeholder="VD: Giảm 20% tối đa 200k cho mọi đơn đặt phòng"
+                  className="w-full bg-white border border-[#CBD5E1] rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold text-[#1E293B] placeholder-[#94A3B8]"
                 />
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748B] uppercase">Loại chiết khấu</label>
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Loại chiết khấu *</label>
                   <select
                     value={newType}
                     onChange={(e) => setNewType(e.target.value as any)}
-                    className="w-full bg-white border border-[#CBD5E1] rounded-xl p-2 text-xs focus:outline-none text-[#1E293B] font-semibold"
+                    className="w-full bg-white border border-[#CBD5E1] rounded-xl p-2.5 text-xs focus:outline-none text-[#1E293B] font-bold cursor-pointer"
                   >
                     <option value="PERCENTAGE">Phần trăm (%)</option>
-                    <option value="FIXED">Giá tiền cố định (đ)</option>
+                    <option value="FIXED">Số tiền cố định (đ)</option>
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748B] uppercase">Giá trị giảm</label>
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Giá trị giảm *</label>
                   <input
                     type="number"
                     required
+                    min="1"
                     value={newValue}
                     onChange={(e) => setNewValue(e.target.value)}
-                    placeholder="20 hoặc 100000"
-                    className="w-full bg-white border border-[#CBD5E1] rounded-xl p-2 text-xs focus:outline-none text-[#1E293B] font-semibold"
+                    placeholder={newType === 'PERCENTAGE' ? 'VD: 20 (%)' : 'VD: 100000 (đ)'}
+                    className="w-full bg-white border border-[#CBD5E1] rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-black text-[#2563EB] placeholder-[#94A3B8]"
                   />
                 </div>
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748B] uppercase">Lượt sử dụng tối đa</label>
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Đơn tối thiểu (đ)</label>
                   <input
                     type="number"
-                    required
-                    value={newLimit}
-                    onChange={(e) => setNewLimit(e.target.value)}
-                    placeholder="100"
-                    className="w-full bg-white border border-[#CBD5E1] rounded-xl p-2 text-xs focus:outline-none text-[#1E293B] font-semibold"
+                    min="0"
+                    value={newMinOrderValue}
+                    onChange={(e) => setNewMinOrderValue(e.target.value)}
+                    placeholder="VD: 300000 (0 = Mọi đơn)"
+                    className="w-full bg-white border border-[#CBD5E1] rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#2563EB] transition-all font-semibold text-[#1E293B] placeholder-[#94A3B8]"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748B] uppercase">Ngày hết hạn</label>
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Giảm tối đa (đ)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    disabled={newType !== 'PERCENTAGE'}
+                    value={newMaxDiscountAmount}
+                    onChange={(e) => setNewMaxDiscountAmount(e.target.value)}
+                    placeholder={newType === 'PERCENTAGE' ? 'VD: 200000' : 'Chỉ áp dụng với %'}
+                    className="w-full bg-white border border-[#CBD5E1] rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#2563EB] transition-all font-semibold text-[#1E293B] disabled:bg-slate-100 disabled:text-slate-400 placeholder-[#94A3B8]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Ngày bắt đầu *</label>
+                  <input
+                    type="date"
+                    required
+                    value={newStart}
+                    onChange={(e) => setNewStart(e.target.value)}
+                    className="w-full bg-white border border-[#CBD5E1] rounded-xl p-2.5 text-xs focus:outline-none text-[#1E293B] font-semibold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Ngày hết hạn *</label>
                   <input
                     type="date"
                     required
                     value={newEnd}
                     onChange={(e) => setNewEnd(e.target.value)}
-                    className="w-full bg-white border border-[#CBD5E1] rounded-xl p-2 text-xs focus:outline-none text-[#1E293B] font-semibold"
+                    className="w-full bg-white border border-[#CBD5E1] rounded-xl p-2.5 text-xs focus:outline-none text-[#1E293B] font-semibold"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-2 justify-end pt-2 border-t border-[#E2E8F0]">
+            <div className="flex gap-2 justify-end pt-3 border-t border-[#E2E8F0]">
               <button
                 type="button"
                 onClick={() => setShowAddCoupon(false)}
-                className="px-4 py-2 bg-white border border-[#CBD5E1] text-[#334155] hover:bg-[#F8FAFC] rounded-xl text-xs font-bold transition-all shadow-sm"
+                className="px-4 py-2.5 bg-white border border-[#CBD5E1] text-[#334155] hover:bg-[#F8FAFC] rounded-xl text-xs font-bold transition-all shadow-sm"
               >
-                Quay lại
+                Hủy bỏ
               </button>
               <button
                 type="submit"
-                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                className="px-5 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-extrabold transition-all shadow-md active:scale-95"
               >
-                Tạo mã
+                Phát hành Mã
               </button>
             </div>
           </form>

@@ -207,7 +207,10 @@ export const OwnerDashboard: React.FC = () => {
   const [newCouponDesc, setNewCouponDesc] = useState('');
   const [newCouponType, setNewCouponType] = useState<'PERCENTAGE' | 'FIXED'>('PERCENTAGE');
   const [newCouponValue, setNewCouponValue] = useState('');
+  const [newCouponMinOrderValue, setNewCouponMinOrderValue] = useState('');
+  const [newCouponMaxDiscountAmount, setNewCouponMaxDiscountAmount] = useState('');
   const [newCouponLimit, setNewCouponLimit] = useState('');
+  const [newCouponStart, setNewCouponStart] = useState(new Date().toISOString().split('T')[0]);
   const [newCouponEnd, setNewCouponEnd] = useState('');
 
   // Owner reviews list (all reviews for owner's hotel)
@@ -939,6 +942,7 @@ export const OwnerDashboard: React.FC = () => {
     e.preventDefault();
     if (!hotelId) return;
     try {
+      const startD = newCouponStart ? new Date(newCouponStart) : new Date();
       const endD = new Date(newCouponEnd);
       endD.setHours(23, 59, 59, 999);
 
@@ -947,8 +951,9 @@ export const OwnerDashboard: React.FC = () => {
         description: newCouponDesc,
         discountType: newCouponType,
         discountValue: Number(newCouponValue),
-        minOrderValue: 0,
-        startDate: new Date().toISOString(),
+        minOrderValue: newCouponMinOrderValue ? Number(newCouponMinOrderValue) : 0,
+        maxDiscountAmount: newCouponMaxDiscountAmount ? Number(newCouponMaxDiscountAmount) : null,
+        startDate: startD.toISOString(),
         endDate: endD.toISOString(),
         usageLimit: Number(newCouponLimit),
         hotelId
@@ -960,7 +965,10 @@ export const OwnerDashboard: React.FC = () => {
       setNewCouponCode('');
       setNewCouponDesc('');
       setNewCouponValue('');
+      setNewCouponMinOrderValue('');
+      setNewCouponMaxDiscountAmount('');
       setNewCouponLimit('');
+      setNewCouponStart(new Date().toISOString().split('T')[0]);
       setNewCouponEnd('');
       fetchOwnerCoupons();
     } catch (err: any) {
@@ -3375,90 +3383,136 @@ export const OwnerDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* ADD COUPON MODAL */}
+      {/* ADD OWNER COUPON MODAL */}
       {showAddCoupon && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-55 flex items-center justify-center p-4">
-          <form onSubmit={handleCreateOwnerCoupon} className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm space-y-4 text-[#1E293B] border border-[#E2E8F0]">
-            <h3 className="font-bold text-[#0F172A] text-sm border-b border-[#E2E8F0] pb-2">Tạo khuyến mãi mới</h3>
+          <form onSubmit={handleCreateOwnerCoupon} className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md space-y-4 text-[#1E293B] border border-[#E2E8F0] animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex justify-between items-center border-b border-[#E2E8F0] pb-3">
+              <div>
+                <h3 className="font-extrabold text-[#0F172A] text-base">Tạo Mã Giảm Giá Khách Sạn</h3>
+                <p className="text-[10px] text-[#64748B] font-semibold mt-0.5">Cấu hình chi tiết mã khuyến mãi cho chỗ nghỉ của bạn</p>
+              </div>
+              <span className="text-xl">🏷️</span>
+            </div>
 
-            <div className="space-y-3 text-xs font-semibold">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-[#64748B] uppercase">Mã giảm giá</label>
-                <input
-                  type="text"
-                  required
-                  value={newCouponCode}
-                  onChange={(e) => setNewCouponCode(e.target.value)}
-                  placeholder="VD: BANMAI20"
-                  className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
-                />
+            <div className="space-y-3.5 text-xs font-semibold max-h-[75vh] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Mã giảm giá (In hoa) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newCouponCode}
+                    onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())}
+                    placeholder="VD: KHANG2026"
+                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-black tracking-wider outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Lượt dùng tối đa *</label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={newCouponLimit}
+                    onChange={(e) => setNewCouponLimit(e.target.value)}
+                    placeholder="VD: 50"
+                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-[#64748B] uppercase">Mô tả chương trình</label>
+                <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Mô tả chương trình ưu đãi *</label>
                 <input
                   type="text"
                   required
                   value={newCouponDesc}
                   onChange={(e) => setNewCouponDesc(e.target.value)}
-                  placeholder="VD: Giảm 20% đặt phòng trong tháng"
-                  className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
+                  placeholder="VD: Ưu đãi giảm 15% cho khách đặt phòng trước 3 ngày"
+                  className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748B] uppercase">Loại giảm giá</label>
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Loại giảm giá *</label>
                   <select
                     value={newCouponType}
                     onChange={(e) => setNewCouponType(e.target.value as any)}
-                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2 text-xs focus:border-[#2563EB] transition-all font-semibold cursor-pointer"
+                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] transition-all font-bold cursor-pointer"
                   >
                     <option value="PERCENTAGE">Phần trăm (%)</option>
                     <option value="FIXED">Số tiền cố định (đ)</option>
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748B] uppercase">Giá trị giảm</label>
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Giá trị giảm *</label>
                   <input
                     type="number"
                     required
+                    min="1"
                     value={newCouponValue}
                     onChange={(e) => setNewCouponValue(e.target.value)}
-                    placeholder="VD: 20 hoặc 150000"
-                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
+                    placeholder={newCouponType === 'PERCENTAGE' ? 'VD: 15 (%)' : 'VD: 100000 (đ)'}
+                    className="w-full bg-white border border-[#CBD5E1] text-[#2563EB] rounded-xl p-2.5 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-black outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748B] uppercase">Lượt dùng tối đa</label>
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Đơn tối thiểu (đ)</label>
                   <input
                     type="number"
-                    required
-                    value={newCouponLimit}
-                    onChange={(e) => setNewCouponLimit(e.target.value)}
-                    placeholder="100"
-                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
+                    min="0"
+                    value={newCouponMinOrderValue}
+                    onChange={(e) => setNewCouponMinOrderValue(e.target.value)}
+                    placeholder="VD: 500000 (0 = Mọi đơn)"
+                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] transition-all font-semibold outline-none"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748B] uppercase">Ngày hết hạn</label>
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Giảm tối đa (đ)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    disabled={newCouponType !== 'PERCENTAGE'}
+                    value={newCouponMaxDiscountAmount}
+                    onChange={(e) => setNewCouponMaxDiscountAmount(e.target.value)}
+                    placeholder={newCouponType === 'PERCENTAGE' ? 'VD: 200000' : 'Chỉ áp dụng với %'}
+                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] transition-all font-semibold disabled:bg-slate-100 disabled:text-slate-400 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Ngày bắt đầu *</label>
+                  <input
+                    type="date"
+                    required
+                    value={newCouponStart}
+                    onChange={(e) => setNewCouponStart(e.target.value)}
+                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] transition-all font-semibold outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Ngày hết hạn *</label>
                   <input
                     type="date"
                     required
                     value={newCouponEnd}
                     onChange={(e) => setNewCouponEnd(e.target.value)}
-                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
+                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] transition-all font-semibold outline-none"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-2 justify-end pt-2 border-t border-[#E2E8F0]">
-              <button type="button" onClick={() => setShowAddCoupon(false)} className="px-4 py-2 bg-white border border-[#CBD5E1] text-[#334155] hover:bg-[#F8FAFC] rounded-xl text-xs font-bold transition-all shadow-sm">Quay lại</button>
-              <button type="submit" className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm">Tạo khuyến mãi</button>
+            <div className="flex gap-2 justify-end pt-3 border-t border-[#E2E8F0]">
+              <button type="button" onClick={() => setShowAddCoupon(false)} className="px-4 py-2.5 bg-white border border-[#CBD5E1] text-[#334155] hover:bg-[#F8FAFC] rounded-xl text-xs font-bold transition-all shadow-sm">Hủy bỏ</button>
+              <button type="submit" className="px-5 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-extrabold transition-all shadow-md active:scale-95">Tạo khuyến mãi</button>
             </div>
           </form>
         </div>
