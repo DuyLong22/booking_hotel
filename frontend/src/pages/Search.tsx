@@ -475,12 +475,15 @@ export const Search: React.FC = () => {
         if (criteria.checkOutDate) params.checkOut = criteria.checkOutDate;
 
         if (criteria.searchQuery) {
+          const queryNorm = removeVietnameseTones(criteria.searchQuery.trim().toLowerCase());
           const matchedProv = provincesList.find(p =>
-            p.name.toLowerCase() === criteria.searchQuery.toLowerCase() ||
-            removeVietnameseTones(p.name.toLowerCase()) === removeVietnameseTones(criteria.searchQuery.toLowerCase())
+            p.name.toLowerCase() === criteria.searchQuery.trim().toLowerCase() ||
+            removeVietnameseTones(p.name.toLowerCase()) === queryNorm ||
+            p.keywords?.some(k => removeVietnameseTones(k.toLowerCase()) === queryNorm || queryNorm.includes(removeVietnameseTones(k.toLowerCase())))
           );
-          if (matchedProv && criteria.provinceId) {
-            // Nếu đã chọn tỉnh thành bằng ID, bỏ qua searchQuery trùng lặp
+
+          if (matchedProv) {
+            params.provinceId = matchedProv.id;
           } else {
             params.searchQuery = criteria.searchQuery;
           }

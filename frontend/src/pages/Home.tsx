@@ -551,9 +551,12 @@ export const Home: React.FC = () => {
       return;
     }
 
-    // Check if the input text matches any province exactly
+    const queryNorm = removeVietnameseTones(destInputText.trim().toLowerCase());
     const matchedProv = provincesList.find(
-      (p) => p.name.toLowerCase() === destInputText.trim().toLowerCase()
+      (p) =>
+        p.name.toLowerCase() === destInputText.trim().toLowerCase() ||
+        removeVietnameseTones(p.name.toLowerCase()) === queryNorm ||
+        p.keywords?.some((k) => removeVietnameseTones(k.toLowerCase()) === queryNorm || queryNorm.includes(removeVietnameseTones(k.toLowerCase())))
     );
 
     let finalProvinceId = provinceId;

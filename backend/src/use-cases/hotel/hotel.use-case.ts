@@ -349,12 +349,16 @@ export class HotelUseCase {
       where.starRating = parseInt(starRating);
     }
 
-    // Tìm kiếm theo từ khóa tên hoặc mô tả
-    if (searchQuery) {
+    // Tìm kiếm theo từ khóa tên, mô tả, địa chỉ, tỉnh/thành, quận/huyện, phường/xã
+    if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim() !== '') {
+      const q = searchQuery.trim();
       where.OR = [
-        { name: { contains: searchQuery, mode: 'insensitive' } },
-        { description: { contains: searchQuery, mode: 'insensitive' } },
-        { address: { contains: searchQuery, mode: 'insensitive' } },
+        { name: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+        { address: { contains: q, mode: 'insensitive' } },
+        { province: { name: { contains: q, mode: 'insensitive' } } },
+        { district: { name: { contains: q, mode: 'insensitive' } } },
+        { ward: { name: { contains: q, mode: 'insensitive' } } },
       ];
     }
 
