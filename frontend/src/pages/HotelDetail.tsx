@@ -5,6 +5,7 @@ import { setSearchCriteria } from '../store/slices/searchSlice';
 import type { RootState } from '../store';
 import apiClient from '../core/api/client';
 import { socket } from '../core/socket/socket';
+import { VIETNAM_PROVINCES, type ProvinceItem } from '../core/constants/provinces';
 import {
   MapPin,
   Waves,
@@ -510,13 +511,7 @@ const translateAddress = (address: string, district: string, province: string, l
   return uniqueParts.join(', ');
 };
 
-const PROVINCES = [
-  { id: '01', name: 'TP. Hồ Chí Minh', keywords: ['hcm', 'ho chi minh', 'sai gon', 'saigon'] },
-  { id: '48', name: 'Đà Nẵng', keywords: ['da nang', 'danang', 'dn'] },
-  { id: '56', name: 'Nha Trang', keywords: ['nha trang', 'nhatrang', 'nt'] },
-  { id: '68', name: 'Đà Lạt', keywords: ['da lat', 'dalat', 'dl'] },
-  { id: '91', name: 'Vũng Tàu', keywords: ['vung tau', 'vungtau', 'vt'] }
-];
+
 
 const translateProvinceName = (name: string, lang: string) => {
   if (!name) return '';
@@ -830,8 +825,38 @@ export const HotelDetail: React.FC = () => {
     'tháng 7', 'tháng 8', 'tháng 9', 'tháng 10', 'tháng 11', 'tháng 12'
   ];
 
+  const [provincesList, setProvincesList] = useState<ProvinceItem[]>(VIETNAM_PROVINCES);
+
+  useEffect(() => {
+    const fetchProvinces = async () => {
+      try {
+        const res = await apiClient.get('/hotels/meta/locations');
+        if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+          const apiProvinces: ProvinceItem[] = res.data.data.map((p: any) => {
+            const existing = VIETNAM_PROVINCES.find(item => item.id === p.id || item.name.toLowerCase() === p.name.toLowerCase());
+            return {
+              id: p.id || p.code || existing?.id || '',
+              name: p.name,
+              keywords: existing ? existing.keywords : [removeVietnameseTones(p.name.toLowerCase())]
+            };
+          });
+          const merged = [...apiProvinces];
+          VIETNAM_PROVINCES.forEach(vp => {
+            if (!merged.some(m => m.name.toLowerCase() === vp.name.toLowerCase())) {
+              merged.push(vp);
+            }
+          });
+          setProvincesList(merged);
+        }
+      } catch (err) {
+        console.error('Failed to fetch provinces from backend:', err);
+      }
+    };
+    fetchProvinces();
+  }, []);
+
   const getProvinceName = (id: string) => {
-    const prov = PROVINCES.find((p) => p.id === id);
+    const prov = provincesList.find((p) => p.id === id);
     return prov ? prov.name : '';
   };
 
@@ -960,7 +985,7 @@ export const HotelDetail: React.FC = () => {
     setDestInputText(val);
     setShowDestPopover(true);
 
-    const matched = PROVINCES.find((p) => p.name.toLowerCase() === val.toLowerCase());
+    const matched = provincesList.find((p) => p.name.toLowerCase() === val.toLowerCase());
     if (matched) {
       setProvinceId(matched.id);
     } else {
@@ -976,7 +1001,7 @@ export const HotelDetail: React.FC = () => {
       return;
     }
 
-    const matchedProv = PROVINCES.find(
+    const matchedProv = provincesList.find(
       (p) => p.name.toLowerCase() === destInputText.trim().toLowerCase()
     );
 
@@ -999,7 +1024,7 @@ export const HotelDetail: React.FC = () => {
   };
 
   const matchedProvinces = destInputText
-    ? PROVINCES.filter((p) => {
+    ? provincesList.filter((p) => {
       const normInput = removeVietnameseTones(destInputText.toLowerCase()).trim();
       const normName = removeVietnameseTones(p.name.toLowerCase());
       const matchesName = normName.includes(normInput);
@@ -1529,7 +1554,7 @@ export const HotelDetail: React.FC = () => {
                         <div>
                           <h4 className="font-extrabold text-xs text-slate-900 uppercase tracking-wider mb-2">{language === 'vi' ? 'Điểm đến phổ biến' : 'Popular destinations'}</h4>
                           <div className="space-y-1">
-                            {PROVINCES.map((prov) => (
+                            {provincesList.slice(0, 8).map((prov) => (
                               <div
                                 key={prov.id}
                                 onClick={() => {
