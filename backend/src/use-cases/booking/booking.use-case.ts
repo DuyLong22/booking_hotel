@@ -63,8 +63,9 @@ export class BookingUseCase {
     if (!firstRoomType) throw new AppError('Loại phòng đặt không tồn tại', 400);
     const hotelId = firstRoomType.hotelId;
 
-    // Biến lưu tổng giá trị đặt phòng trước giảm giá
+    // Biến lưu tổng giá trị đặt phòng trước giảm giá và tổng sức chứa số khách
     let totalPrice = 0;
+    let calculatedTotalGuests = 0;
     const itemsToCreate: { roomTypeId: string; quantity: number; price: number }[] = [];
 
     // Duyệt qua từng loại phòng trong đơn đặt
@@ -76,6 +77,9 @@ export class BookingUseCase {
 
       if (!rt) throw new AppError(`Không tìm thấy loại phòng ID: ${item.roomTypeId}`, 404);
       if (rt.hotelId !== hotelId) throw new AppError('Tất cả phòng đặt phải thuộc về cùng một khách sạn', 400);
+
+      // Cộng dồn sức chứa phòng
+      calculatedTotalGuests += (rt.capacity || 2) * item.quantity;
 
       // --- A. Kiểm Tra Chặn Phòng và Tình Trạng Trống ---
       
@@ -205,7 +209,7 @@ export class BookingUseCase {
           guestEmail,
           guestPhone,
           notes,
-          numGuests: numGuests ? Number(numGuests) : 1,
+          numGuests: (numGuests && Number(numGuests) > 1) ? Number(numGuests) : (calculatedTotalGuests || 1),
           bookingItems: {
             create: itemsToCreate.map((item) => ({
               roomTypeId: item.roomTypeId,
