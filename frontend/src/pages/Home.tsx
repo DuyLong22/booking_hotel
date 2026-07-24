@@ -364,6 +364,26 @@ export const Home: React.FC = () => {
     fetchProvinces();
   }, []);
 
+  const [adminCoupons, setAdminCoupons] = useState<any[]>([]);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    apiClient.get('/coupons')
+      .then(res => {
+        if (res.data.success && Array.isArray(res.data.data)) {
+          // Chỉ lấy mã giảm giá toàn sàn do Admin tạo (c.hotelId === null hoặc undefined)
+          setAdminCoupons(res.data.data.filter((c: any) => !c.hotelId));
+        }
+      })
+      .catch(err => console.error('Failed to fetch admin coupons:', err));
+  }, []);
+
+  const handleCopyAdminCoupon = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2500);
+  };
+
   const CATEGORIES = [
     { id: 'hotel', name: 'Khách sạn', slug: 'khach-san', image: '/hotel.jpg' },
     { id: 'resort', name: 'Khu nghỉ dưỡng', slug: 'resort', image: '/resort.jpg' },
@@ -1408,6 +1428,78 @@ export const Home: React.FC = () => {
 
       {/* Main body content sections with spacing */}
       <div className="space-y-16 mt-16">
+        {/* Admin Global Coupons & Promotions Section */}
+        {adminCoupons.length > 0 && (
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+              {/* Decorative background glow elements */}
+              <div className="absolute -top-12 -right-12 w-48 h-48 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-white/10 pb-4 relative z-10">
+                <div className="space-y-1 text-left">
+                  <div className="inline-flex items-center gap-1.5 text-xs font-black text-amber-300 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-300/20 uppercase tracking-wider">
+                    🔥 {language === 'vi' ? 'Ưu đãi đặc quyền toàn sàn' : 'Exclusive System Offers'}
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                    {language === 'vi' ? 'Voucher & Mã giảm giá CloudBooking' : 'CloudBooking Vouchers & Promo Codes'}
+                  </h2>
+                  <p className="text-xs text-blue-200 font-medium">
+                    {language === 'vi' ? 'Sao chép mã giảm giá của hệ thống để áp dụng cho mọi khách sạn trên toàn quốc' : 'Copy system voucher code to apply for all hotels nationwide'}
+                  </p>
+                </div>
+
+                <span className="text-xs font-extrabold text-white bg-blue-600/60 border border-blue-400/30 px-3.5 py-1.5 rounded-full shrink-0 self-start md:self-auto">
+                  {adminCoupons.length} {language === 'vi' ? 'Voucher hot' : 'Hot Vouchers'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
+                {adminCoupons.map((c: any) => {
+                  const discountLabel = c.discountType === 'PERCENTAGE'
+                    ? `Giảm ${c.discountValue}%`
+                    : `Giảm ${formatPrice(c.discountValue, language)}`;
+                  const maxText = c.maxDiscountAmount ? ` (Tối đa ${formatPrice(c.maxDiscountAmount, language)})` : '';
+                  const minText = c.minOrderValue > 0 ? `Đơn từ ${formatPrice(c.minOrderValue, language)}` : 'Mọi đơn đặt phòng';
+                  const isCopied = copiedCode === c.code;
+
+                  return (
+                    <div key={c.id} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 flex flex-col justify-between space-y-3 hover:bg-white/15 transition-all shadow-md">
+                      <div className="space-y-1.5 text-left">
+                        <div className="flex justify-between items-center">
+                          <span className="font-black text-base text-amber-300 tracking-tight">{discountLabel}</span>
+                          <span className="text-[11px] font-black bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-md uppercase tracking-wider shadow-xs">{c.code}</span>
+                        </div>
+                        <p className="text-xs font-bold text-white line-clamp-1">{c.description || minText}</p>
+                        <div className="space-y-0.5 text-[10px] text-blue-200 font-medium">
+                          <p>{minText}{maxText}</p>
+                          <p>Hạn sử dụng: {new Date(c.endDate).toLocaleDateString('vi-VN')}</p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopyAdminCoupon(c.code)}
+                        className={`w-full py-2 px-4 rounded-xl font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm ${
+                          isCopied
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-amber-400 hover:bg-amber-300 text-slate-950 hover:shadow-md'
+                        }`}
+                      >
+                        {isCopied ? (
+                          <>✓ {language === 'vi' ? 'Đã sao chép mã!' : 'Code copied!'}</>
+                        ) : (
+                          <>{language === 'vi' ? 'Sao chép mã ngay' : 'Copy code now'}</>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Categories Grid */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
           <div className="text-left space-y-1">

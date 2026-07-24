@@ -834,7 +834,8 @@ export const HotelDetail: React.FC = () => {
       apiClient.get('/coupons', { params: { hotelId: id } })
         .then(res => {
           if (res.data.success && Array.isArray(res.data.data)) {
-            setHotelCoupons(res.data.data);
+            // Chỉ lấy mã giảm giá riêng của khách sạn này (c.hotelId === id)
+            setHotelCoupons(res.data.data.filter((c: any) => c.hotelId === id));
           }
         })
         .catch(err => console.error('Failed to fetch hotel coupons:', err));
