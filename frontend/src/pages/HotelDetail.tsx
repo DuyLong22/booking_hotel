@@ -826,6 +826,26 @@ export const HotelDetail: React.FC = () => {
   ];
 
   const [provincesList, setProvincesList] = useState<ProvinceItem[]>(VIETNAM_PROVINCES);
+  const [hotelCoupons, setHotelCoupons] = useState<any[]>([]);
+  const [copiedCouponCode, setCopiedCouponCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (id) {
+      apiClient.get('/coupons', { params: { hotelId: id } })
+        .then(res => {
+          if (res.data.success && Array.isArray(res.data.data)) {
+            setHotelCoupons(res.data.data);
+          }
+        })
+        .catch(err => console.error('Failed to fetch hotel coupons:', err));
+    }
+  }, [id]);
+
+  const handleCopyCoupon = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCouponCode(code);
+    setTimeout(() => setCopiedCouponCode(null), 2500);
+  };
 
   useEffect(() => {
     const fetchProvinces = async () => {
@@ -1918,6 +1938,71 @@ export const HotelDetail: React.FC = () => {
               </span>
             </div>
           </div>
+
+          {/* Voucher & Promotion Banner */}
+          {hotelCoupons.length > 0 && (
+            <div className="bg-gradient-to-r from-red-50 via-amber-50 to-orange-50 border border-amber-200/80 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center font-black text-sm shrink-0">
+                    🎁
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-slate-900 text-sm sm:text-base">
+                      {language === 'vi' ? 'Mã giảm giá & Voucher ưu đãi của chỗ nghỉ' : 'Hotel Promotions & Special Vouchers'}
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium">
+                      {language === 'vi' ? 'Sao chép mã voucher để áp dụng giảm giá khi đặt phòng' : 'Copy voucher code to apply discount at checkout'}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-extrabold text-red-600 bg-red-100 px-2.5 py-1 rounded-full shrink-0">
+                  {hotelCoupons.length} {language === 'vi' ? 'Mã giảm giá' : 'Vouchers'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-1">
+                {hotelCoupons.map((c: any) => {
+                  const discountLabel = c.discountType === 'PERCENTAGE'
+                    ? `Giảm ${c.discountValue}%`
+                    : `Giảm ${formatPrice(c.discountValue, language)}`;
+                  const maxText = c.maxDiscountAmount ? ` (Tối đa ${formatPrice(c.maxDiscountAmount, language)})` : '';
+                  const minText = c.minOrderValue > 0 ? `Đơn từ ${formatPrice(c.minOrderValue, language)}` : 'Mọi đơn';
+                  const isCopied = copiedCouponCode === c.code;
+
+                  return (
+                    <div key={c.id} className="bg-white border-2 border-dashed border-red-300 rounded-xl p-3 flex flex-col justify-between space-y-2 relative shadow-xs hover:border-red-500 transition-colors">
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-black text-sm text-red-600 tracking-tight">{discountLabel}</span>
+                          <span className="text-[10px] font-extrabold bg-red-50 text-red-700 px-2 py-0.5 rounded border border-red-200 uppercase">{c.code}</span>
+                        </div>
+                        <p className="text-[11px] font-bold text-slate-700 line-clamp-1">{c.description || minText}</p>
+                        <p className="text-[10px] text-slate-400 font-medium">{minText}{maxText}</p>
+                        <p className="text-[10px] text-slate-400 font-medium">HSD: {new Date(c.endDate).toLocaleDateString('vi-VN')}</p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCoupon(c.code)}
+                        className={`w-full py-1.5 px-3 rounded-lg font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 ${
+                          isCopied
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-red-600 hover:bg-red-700 text-white shadow-xs'
+                        }`}
+                      >
+                        {isCopied ? (
+                          <>✓ {language === 'vi' ? 'Đã sao chép!' : 'Copied!'}</>
+                        ) : (
+                          <>{language === 'vi' ? 'Sao chép mã' : 'Copy code'}</>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Airbnb style Photo Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3 h-[350px] sm:h-[450px] rounded-2xl overflow-hidden border border-slate-100 bg-white">
