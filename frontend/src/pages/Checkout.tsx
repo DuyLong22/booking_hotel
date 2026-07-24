@@ -49,19 +49,14 @@ export const Checkout: React.FC = () => {
   const [notes, setNotes] = useState('');
 
   const [basePrice, setBasePrice] = useState(0);
-  const [discount, setDiscount] = useState(0);
+  const [discount] = useState(0);
   const [finalPrice, setFinalPrice] = useState(0);
   
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
 
-  // Voucher / Coupon states
-  const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
-  const [couponInput, setCouponInput] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
-  const [couponError, setCouponError] = useState('');
-  const [couponSuccessMsg, setCouponSuccessMsg] = useState('');
-  const [validatingCoupon, setValidatingCoupon] = useState(false);
+  // Voucher / Coupon state (transferred to Payment page)
+  const [appliedCoupon] = useState<any | null>(null);
 
   // Traveloka specific states
   const [hotelDetail, setHotelDetail] = useState<any>(null);
@@ -122,64 +117,6 @@ export const Checkout: React.FC = () => {
     };
     fetchPricePreview();
   }, [preview, navigate]);
-
-  // Fetch available coupons for this hotel
-  useEffect(() => {
-    if (preview?.hotelId) {
-      apiClient.get('/coupons', { params: { hotelId: preview.hotelId } })
-        .then(res => {
-          if (res.data.success && Array.isArray(res.data.data)) {
-            setAvailableCoupons(res.data.data);
-          }
-        })
-        .catch(err => console.error('Failed to fetch checkout coupons:', err));
-    }
-  }, [preview?.hotelId]);
-
-  const handleApplyCoupon = async (codeToApply?: string) => {
-    const targetCode = (codeToApply || couponInput).trim();
-    if (!targetCode) return;
-
-    setValidatingCoupon(true);
-    setCouponError('');
-    setCouponSuccessMsg('');
-
-    try {
-      const res = await apiClient.get('/coupons/validate', {
-        params: {
-          code: targetCode,
-          hotelId: preview.hotelId,
-          amount: basePrice
-        }
-      });
-
-      if (res.data.success && res.data.data) {
-        setAppliedCoupon(res.data.data);
-        setDiscount(res.data.data.discountAmount);
-        setCouponInput(res.data.data.code);
-        setCouponSuccessMsg(
-          language === 'vi' 
-            ? `Áp dụng thành công mã ${res.data.data.code}! Giảm ${res.data.data.discountAmount.toLocaleString('vi-VN')} đ` 
-            : `Coupon ${res.data.data.code} applied! Saved ${res.data.data.discountAmount.toLocaleString('vi-VN')} VND`
-        );
-      }
-    } catch (err: any) {
-      console.error(err);
-      setCouponError(err.response?.data?.message || (language === 'vi' ? 'Mã giảm giá không hợp lệ hoặc đã hết hạn.' : 'Invalid or expired coupon code.'));
-      setAppliedCoupon(null);
-      setDiscount(0);
-    } finally {
-      setValidatingCoupon(false);
-    }
-  };
-
-  const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
-    setDiscount(0);
-    setCouponInput('');
-    setCouponError('');
-    setCouponSuccessMsg('');
-  };
 
   const handleCheckoutSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -744,92 +681,7 @@ export const Checkout: React.FC = () => {
                 </div>
               )}
 
-              {/* Coupon / Voucher Section */}
-              <div className="bg-slate-50 border border-slate-200/80 p-3.5 rounded-xl space-y-2.5">
-                <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800">
-                  <span className="text-red-500 font-black">🏷️</span>
-                  <span>{language === 'vi' ? 'Mã giảm giá / Voucher' : 'Coupon / Voucher Code'}</span>
-                </div>
 
-                {!appliedCoupon ? (
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={couponInput}
-                        onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                        placeholder={language === 'vi' ? 'Nhập mã giảm giá...' : 'Enter voucher code...'}
-                        className="flex-grow bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-900 focus:outline-none focus:border-blue-600"
-                      />
-                      <button
-                        type="button"
-                        disabled={!couponInput.trim() || validatingCoupon}
-                        onClick={() => handleApplyCoupon()}
-                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 text-white font-extrabold text-xs px-3.5 py-1.5 rounded-lg transition-colors shrink-0"
-                      >
-                        {validatingCoupon ? '...' : (language === 'vi' ? 'Áp dụng' : 'Apply')}
-                      </button>
-                    </div>
-
-                    {couponError && (
-                      <p className="text-[11px] font-bold text-red-500">{couponError}</p>
-                    )}
-                    {couponSuccessMsg && (
-                      <p className="text-[11px] font-bold text-emerald-600">{couponSuccessMsg}</p>
-                    )}
-
-                    {/* Available coupons select list */}
-                    {availableCoupons.length > 0 && (
-                      <div className="pt-1.5 space-y-1.5">
-                        <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
-                          {language === 'vi' ? 'Mã giảm giá có sẵn cho bạn:' : 'Available vouchers for you:'}
-                        </p>
-                        <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
-                          {availableCoupons.map((c: any) => {
-                            const discountText = c.discountType === 'PERCENTAGE' 
-                              ? `Giảm ${c.discountValue}%` 
-                              : `Giảm ${c.discountValue.toLocaleString('vi-VN')} đ`;
-                            return (
-                              <div
-                                key={c.id}
-                                onClick={() => handleApplyCoupon(c.code)}
-                                className="flex items-center justify-between p-2 rounded-lg bg-white border border-dashed border-red-300 hover:border-red-500 cursor-pointer transition-colors group"
-                              >
-                                <div>
-                                  <span className="font-extrabold text-xs text-red-600 mr-2">{c.code}</span>
-                                  <span className="text-[11px] font-bold text-slate-700">{discountText}</span>
-                                </div>
-                                <span className="text-[10px] font-extrabold text-blue-600 group-hover:underline">
-                                  {language === 'vi' ? 'Dùng ngay' : 'Use'}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded-lg flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-extrabold text-xs text-emerald-800 uppercase">{appliedCoupon.code}</span>
-                        <span className="text-[10px] font-extrabold bg-emerald-600 text-white px-1.5 py-0.5 rounded">✓ Áp dụng</span>
-                      </div>
-                      <p className="text-[11px] font-bold text-emerald-700 mt-0.5">
-                        Giảm {appliedCoupon.discountAmount.toLocaleString('vi-VN')} đ
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleRemoveCoupon}
-                      className="text-xs font-extrabold text-slate-400 hover:text-red-500 underline"
-                    >
-                      {language === 'vi' ? 'Hủy' : 'Remove'}
-                    </button>
-                  </div>
-                )}
-              </div>
 
               <hr className="border-slate-50" />
 

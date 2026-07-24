@@ -81,12 +81,25 @@ export const Payment: React.FC = () => {
 
   // Discount & Loyalty states
   const [couponInput, setCouponInput] = useState('');
+  const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
   const [usePointsToggle, setUsePointsToggle] = useState(false);
   const [pointsInput, setPointsInput] = useState('0');
   const [availablePoints, setAvailablePoints] = useState(0);
   const [applyingDiscount, setApplyingDiscount] = useState(false);
   const [couponSuccessMessage, setCouponSuccessMessage] = useState('');
   const [couponErrorMessage, setCouponErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (bookingId) {
+      apiClient.get('/coupons')
+        .then(res => {
+          if (res.data.success && Array.isArray(res.data.data)) {
+            setAvailableCoupons(res.data.data);
+          }
+        })
+        .catch(err => console.error('Failed to fetch payment coupons:', err));
+    }
+  }, [bookingId]);
 
   // Fetch available loyalty points on mount
   useEffect(() => {
@@ -832,6 +845,39 @@ export const Payment: React.FC = () => {
                         )}
                         {couponErrorMessage && (
                           <p className="text-[10px] text-red-500 font-bold">⚠️ {couponErrorMessage}</p>
+                        )}
+
+                        {/* Available coupons select list */}
+                        {availableCoupons.length > 0 && (
+                          <div className="pt-2 space-y-1.5 border-t border-slate-100">
+                            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                              {language === 'vi' ? 'Gợi ý mã giảm giá cho bạn:' : 'Suggested promo codes:'}
+                            </p>
+                            <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                              {availableCoupons.map((c: any) => {
+                                const discountText = c.discountType === 'PERCENTAGE' 
+                                  ? `Giảm ${c.discountValue}%` 
+                                  : `Giảm ${c.discountValue.toLocaleString('vi-VN')} đ`;
+                                return (
+                                  <div
+                                    key={c.id}
+                                    onClick={() => {
+                                      setCouponInput(c.code);
+                                    }}
+                                    className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-dashed border-red-300 hover:border-red-500 cursor-pointer transition-colors group"
+                                  >
+                                    <div>
+                                      <span className="font-extrabold text-xs text-red-600 mr-2">{c.code}</span>
+                                      <span className="text-[11px] font-bold text-slate-700">{discountText}</span>
+                                    </div>
+                                    <span className="text-[10px] font-extrabold text-[#0194f3] group-hover:underline">
+                                      {language === 'vi' ? 'Chọn mã' : 'Select'}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
                         )}
                       </div>
 
