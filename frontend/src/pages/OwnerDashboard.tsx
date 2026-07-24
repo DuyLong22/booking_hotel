@@ -210,7 +210,8 @@ export const OwnerDashboard: React.FC = () => {
   const [newCouponMinOrderValue, setNewCouponMinOrderValue] = useState('');
   const [newCouponMaxDiscountAmount, setNewCouponMaxDiscountAmount] = useState('');
   const [newCouponLimit, setNewCouponLimit] = useState('');
-  const [newCouponStart, setNewCouponStart] = useState(new Date().toISOString().split('T')[0]);
+  const [newCouponTargetUserType, setNewCouponTargetUserType] = useState<'ALL' | 'NEW' | 'VIP'>('ALL');
+  const [newCouponStart, setNewCouponStart] = useState(`${new Date().toISOString().split('T')[0]}T08:00`);
   const [newCouponEnd, setNewCouponEnd] = useState('');
 
   // Owner reviews list (all reviews for owner's hotel)
@@ -942,10 +943,6 @@ export const OwnerDashboard: React.FC = () => {
     e.preventDefault();
     if (!hotelId) return;
     try {
-      const startD = newCouponStart ? new Date(newCouponStart) : new Date();
-      const endD = new Date(newCouponEnd);
-      endD.setHours(23, 59, 59, 999);
-
       const payload = {
         code: newCouponCode.toUpperCase(),
         description: newCouponDesc,
@@ -953,9 +950,10 @@ export const OwnerDashboard: React.FC = () => {
         discountValue: Number(newCouponValue),
         minOrderValue: newCouponMinOrderValue ? Number(newCouponMinOrderValue) : 0,
         maxDiscountAmount: newCouponMaxDiscountAmount ? Number(newCouponMaxDiscountAmount) : null,
-        startDate: startD.toISOString(),
-        endDate: endD.toISOString(),
+        startDate: new Date(newCouponStart).toISOString(),
+        endDate: new Date(newCouponEnd).toISOString(),
         usageLimit: Number(newCouponLimit),
+        targetUserType: newCouponTargetUserType,
         hotelId
       };
 
@@ -968,7 +966,8 @@ export const OwnerDashboard: React.FC = () => {
       setNewCouponMinOrderValue('');
       setNewCouponMaxDiscountAmount('');
       setNewCouponLimit('');
-      setNewCouponStart(new Date().toISOString().split('T')[0]);
+      setNewCouponTargetUserType('ALL');
+      setNewCouponStart(`${new Date().toISOString().split('T')[0]}T08:00`);
       setNewCouponEnd('');
       fetchOwnerCoupons();
     } catch (err: any) {
@@ -3488,9 +3487,36 @@ export const OwnerDashboard: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Ngày bắt đầu *</label>
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Đối tượng áp dụng *</label>
+                  <select
+                    value={newCouponTargetUserType}
+                    onChange={(e) => setNewCouponTargetUserType(e.target.value as any)}
+                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] transition-all font-bold cursor-pointer"
+                  >
+                    <option value="ALL">🌐 Tất cả khách hàng</option>
+                    <option value="NEW">🆕 Khách hàng mới (Lần đầu đặt)</option>
+                    <option value="VIP">⭐ Khách hàng VIP / Thân thiết</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Lượt dùng tối đa *</label>
                   <input
-                    type="date"
+                    type="number"
+                    required
+                    min="1"
+                    value={newCouponLimit}
+                    onChange={(e) => setNewCouponLimit(e.target.value)}
+                    placeholder="VD: 50"
+                    className="w-full bg-white border border-[#CBD5E1] text-[#1E293B] rounded-xl p-2.5 text-xs focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Thời gian bắt đầu (Ngày & Giờ) *</label>
+                  <input
+                    type="datetime-local"
                     required
                     value={newCouponStart}
                     onChange={(e) => setNewCouponStart(e.target.value)}
@@ -3498,9 +3524,9 @@ export const OwnerDashboard: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Ngày hết hạn *</label>
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Thời gian kết thúc (Ngày & Giờ) *</label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     required
                     value={newCouponEnd}
                     onChange={(e) => setNewCouponEnd(e.target.value)}

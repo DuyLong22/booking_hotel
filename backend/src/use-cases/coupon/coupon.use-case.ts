@@ -4,7 +4,7 @@ import { Role } from '@prisma/client';
 
 export class CouponUseCase {
   public async createCoupon(userId: string, userRole: Role, data: any) {
-    const { code, description, discountType, discountValue, minOrderValue, maxDiscountAmount, startDate, endDate, usageLimit, hotelId } = data;
+    const { code, description, discountType, discountValue, minOrderValue, maxDiscountAmount, startDate, endDate, usageLimit, targetUserType, hotelId } = data;
 
     // Phân quyền tạo coupon
     if (hotelId) {
@@ -31,7 +31,7 @@ export class CouponUseCase {
       endD.setHours(23, 59, 59, 999);
     }
 
-    const coupon = await prisma.coupon.create({
+    const coupon = await (prisma.coupon as any).create({
       data: {
         code: code.toUpperCase(),
         description,
@@ -42,6 +42,7 @@ export class CouponUseCase {
         startDate: startD,
         endDate: endD,
         usageLimit: Number(usageLimit),
+        targetUserType: targetUserType || 'ALL',
         hotelId: hotelId || null,
       },
     });
@@ -49,7 +50,7 @@ export class CouponUseCase {
     return coupon;
   }
 
-  public async validateCoupon(code: string, hotelId?: string, amount?: number) {
+  public async validateCoupon(code: string, hotelId?: string, amount?: number, userId?: string) {
     const coupon = await prisma.coupon.findUnique({
       where: { code: code.toUpperCase() },
     });
@@ -70,6 +71,24 @@ export class CouponUseCase {
       throw new AppError('Mã giảm giá đã hết lượt sử dụng', 400);
     }
 
+    // Kiểm tra đối tượng sử dụng
+    if ((coupon as any).targetUserType === 'NEW' && userId) {
+      const userBookings = await prisma.booking.count({
+        where: {
+          userId,
+          status: { in: ['CONFIRMED', 'CHECKED_IN', 'CHECKED_OUT', 'COMPLETED'] },
+        },
+      });
+      if (userBookings > 0) {
+        throw new AppError('Mã giảm giá này chỉ dành riêng cho khách hàng mới đặt phòng lần đầu', 400);
+      }
+    } else if ((coupon as any).targetUserType === 'VIP' && userId) {
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user || (user.loyaltyPoints < 200 && user.role !== 'ADMIN')) {
+        throw new AppError('Mã giảm giá này chỉ dành riêng cho khách hàng thân thiết / VIP', 400);
+      }
+    }
+
     // Kiểm tra tính hợp lệ về khách sạn
     if (coupon.hotelId && coupon.hotelId !== hotelId) {
       throw new AppError('Mã giảm giá này chỉ áp dụng cho một số khách sạn nhất định', 400);
@@ -77,7 +96,7 @@ export class CouponUseCase {
 
     // Kiểm tra giá trị tối thiểu của đơn hàng
     if (amount !== undefined && amount < parseFloat(coupon.minOrderValue.toString())) {
-      throw new AppError(`Mã giảm giá chỉ áp dụng cho đơn phòng từ ${coupon.minOrderValue} VNĐ`, 400);
+      throw new AppError(`Mã giảm giá chỉ áp dụng cho đơn phòng từ ${Number(coupon.minOrderValue).toLocaleString('vi-VN')} VNĐ`, 400);
     }
 
     // Tính toán số tiền được giảm

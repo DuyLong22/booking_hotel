@@ -356,6 +356,7 @@ model Coupon {
   endDate           DateTime
   usageLimit        Int
   usedCount         Int           @default(0)
+  targetUserType    String        @default("ALL") // "ALL" | "NEW" | "VIP"
   isActive          Boolean       @default(true)
   createdAt         DateTime      @default(now())
 

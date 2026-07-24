@@ -109,7 +109,8 @@ export const AdminDashboard: React.FC = () => {
   const [newMinOrderValue, setNewMinOrderValue] = useState('');
   const [newMaxDiscountAmount, setNewMaxDiscountAmount] = useState('');
   const [newLimit, setNewLimit] = useState('');
-  const [newStart, setNewStart] = useState(new Date().toISOString().split('T')[0]);
+  const [newTargetUserType, setNewTargetUserType] = useState<'ALL' | 'NEW' | 'VIP'>('ALL');
+  const [newStart, setNewStart] = useState(`${new Date().toISOString().split('T')[0]}T08:00`);
   const [newEnd, setNewEnd] = useState('');
 
   const [aiLogs, setAiLogs] = useState<AiLog[]>([]);
@@ -354,10 +355,6 @@ export const AdminDashboard: React.FC = () => {
   const handleCreateCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const startD = newStart ? new Date(newStart) : new Date();
-      const endD = new Date(newEnd);
-      endD.setHours(23, 59, 59, 999);
-
       const payload = {
         code: newCode.toUpperCase(),
         description: newDesc,
@@ -365,9 +362,10 @@ export const AdminDashboard: React.FC = () => {
         discountValue: Number(newValue),
         minOrderValue: newMinOrderValue ? Number(newMinOrderValue) : 0,
         maxDiscountAmount: newMaxDiscountAmount ? Number(newMaxDiscountAmount) : null,
-        startDate: startD.toISOString(),
-        endDate: endD.toISOString(),
-        usageLimit: Number(newLimit)
+        startDate: new Date(newStart).toISOString(),
+        endDate: new Date(newEnd).toISOString(),
+        usageLimit: Number(newLimit),
+        targetUserType: newTargetUserType
       };
 
       await apiClient.post('/coupons', payload);
@@ -379,7 +377,8 @@ export const AdminDashboard: React.FC = () => {
       setNewMinOrderValue('');
       setNewMaxDiscountAmount('');
       setNewLimit('');
-      setNewStart(new Date().toISOString().split('T')[0]);
+      setNewTargetUserType('ALL');
+      setNewStart(`${new Date().toISOString().split('T')[0]}T08:00`);
       setNewEnd('');
       fetchCoupons();
     } catch (err: any) {
@@ -1765,9 +1764,36 @@ export const AdminDashboard: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Ngày bắt đầu *</label>
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Đối tượng áp dụng *</label>
+                  <select
+                    value={newTargetUserType}
+                    onChange={(e) => setNewTargetUserType(e.target.value as any)}
+                    className="w-full bg-white border border-[#CBD5E1] rounded-xl p-2.5 text-xs focus:outline-none text-[#1E293B] font-bold cursor-pointer"
+                  >
+                    <option value="ALL">🌐 Tất cả khách hàng</option>
+                    <option value="NEW">🆕 Khách hàng mới (Lần đầu đặt)</option>
+                    <option value="VIP">⭐ Khách hàng VIP / Thân thiết</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Lượt dùng tối đa *</label>
                   <input
-                    type="date"
+                    type="number"
+                    required
+                    min="1"
+                    value={newLimit}
+                    onChange={(e) => setNewLimit(e.target.value)}
+                    placeholder="VD: 100"
+                    className="w-full bg-white border border-[#CBD5E1] rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-semibold text-[#1E293B] placeholder-[#94A3B8]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Thời gian bắt đầu (Ngày & Giờ) *</label>
+                  <input
+                    type="datetime-local"
                     required
                     value={newStart}
                     onChange={(e) => setNewStart(e.target.value)}
@@ -1775,9 +1801,9 @@ export const AdminDashboard: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Ngày hết hạn *</label>
+                  <label className="text-[10px] font-extrabold text-[#64748B] uppercase">Thời gian kết thúc (Ngày & Giờ) *</label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     required
                     value={newEnd}
                     onChange={(e) => setNewEnd(e.target.value)}

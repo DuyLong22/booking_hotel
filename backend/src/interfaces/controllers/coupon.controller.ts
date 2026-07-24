@@ -20,10 +20,12 @@ export class CouponController {
   public async validate(req: Request, res: Response, next: NextFunction) {
     try {
       const { code, hotelId, amount } = req.query;
+      const userId = (req as AuthenticatedRequest).user?.userId;
       const result = await couponUseCase.validateCoupon(
         code as string,
         hotelId as string | undefined,
-        amount ? Number(amount) : undefined
+        amount ? Number(amount) : undefined,
+        userId
       );
       res.status(200).json({
         success: true,
