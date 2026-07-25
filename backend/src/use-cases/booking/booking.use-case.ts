@@ -419,10 +419,22 @@ export class BookingUseCase {
 
   public async getMyBookings(userId: string, role?: string) {
     await this.cleanupExpiredBookings();
+
+    // Loại bỏ các đơn nháp chưa thanh toán mà bị hủy/hết hạn (status = CANCELLED và không có payment COMPLETED)
+    const notUnpaidDraftWhere = {
+      NOT: {
+        status: BookingStatus.CANCELLED,
+        OR: [
+          { payment: null },
+          { payment: { is: { status: { not: 'COMPLETED' as any } } } }
+        ]
+      }
+    };
+
     if (role === 'HOTEL_OWNER') {
       const bookings = await prisma.booking.findMany({
         where: {
-          status: { not: BookingStatus.CANCELLED },
+          ...notUnpaidDraftWhere,
           bookingItems: {
             some: {
               roomType: {
@@ -451,7 +463,7 @@ export class BookingUseCase {
     const bookings = await prisma.booking.findMany({
       where: {
         userId,
-        status: { not: BookingStatus.CANCELLED },
+        ...notUnpaidDraftWhere,
       },
       include: {
         bookingItems: {

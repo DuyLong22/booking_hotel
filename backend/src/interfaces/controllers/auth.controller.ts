@@ -202,7 +202,13 @@ export class AuthController {
       if (status && status !== 'ALL') {
         where.status = status;
       } else {
-        where.status = { not: 'CANCELLED' };
+        where.NOT = {
+          status: 'CANCELLED',
+          OR: [
+            { payment: null },
+            { payment: { is: { status: { not: 'COMPLETED' as any } } } }
+          ]
+        };
       }
       if (search) {
         where.OR = [
