@@ -199,7 +199,11 @@ export class AuthController {
       const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
 
       const where: any = {};
-      if (status && status !== 'ALL') where.status = status;
+      if (status && status !== 'ALL') {
+        where.status = status;
+      } else {
+        where.status = { not: 'CANCELLED' };
+      }
       if (search) {
         where.OR = [
           { guestName: { contains: search as string, mode: 'insensitive' } },

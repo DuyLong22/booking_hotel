@@ -422,6 +422,7 @@ export class BookingUseCase {
     if (role === 'HOTEL_OWNER') {
       const bookings = await prisma.booking.findMany({
         where: {
+          status: { not: BookingStatus.CANCELLED },
           bookingItems: {
             some: {
               roomType: {
@@ -448,7 +449,10 @@ export class BookingUseCase {
     }
 
     const bookings = await prisma.booking.findMany({
-      where: { userId },
+      where: {
+        userId,
+        status: { not: BookingStatus.CANCELLED },
+      },
       include: {
         bookingItems: {
           include: {
