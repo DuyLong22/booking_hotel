@@ -47,11 +47,12 @@ export class BookingController {
     }
   }
 
-  public async updateStatus(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  public async updateStatus(req: any, res: Response, next: NextFunction) {
     try {
       const bookingId = req.params.id;
       const { status } = req.body;
-      const { userId, role } = req.user!;
+      const userId = req.user?.userId || null;
+      const role = req.user?.role || null;
       const result = await bookingUseCase.updateBookingStatus(
         bookingId,
         status as BookingStatus,

@@ -237,6 +237,36 @@ export const Payment: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Auto-cancel booking when 10-minute timer hits 0
+  useEffect(() => {
+    if (secondsLeft === 0 && bookingId && booking && (booking.status === 'PENDING' || booking.status === 'PAYMENT_PROCESSING')) {
+      apiClient.put(`/bookings/${bookingId}/status`, { status: 'CANCELLED' })
+        .then(() => {
+          setBooking((prev) => (prev ? { ...prev, status: 'CANCELLED' } : null));
+        })
+        .catch((err) => console.error('Failed to auto-cancel expired booking:', err));
+    }
+  }, [secondsLeft, bookingId, booking?.status]);
+
+  const handleCancelBooking = async () => {
+    const confirmCancel = window.confirm(
+      language === 'vi'
+        ? 'Bạn có chắc chắn muốn hủy giữ phòng cho đơn này? Phòng đang giữ sẽ lập tức được giải phóng cho khách hàng khác.'
+        : 'Are you sure you want to cancel this booking? Held rooms will be released immediately.'
+    );
+    if (!confirmCancel || !bookingId) return;
+
+    try {
+      await apiClient.put(`/bookings/${bookingId}/status`, { status: 'CANCELLED' });
+      setBooking((prev) => (prev ? { ...prev, status: 'CANCELLED' } : null));
+      alert(language === 'vi' ? 'Đã hủy đơn đặt phòng thành công.' : 'Booking cancelled successfully.');
+      navigate('/');
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || (language === 'vi' ? 'Lỗi khi hủy đơn đặt phòng.' : 'Error cancelling booking.'));
+    }
+  };
+
   const formatTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -459,7 +489,7 @@ export const Payment: React.FC = () => {
                 <div className="border border-slate-150 rounded-2xl shadow-sm overflow-hidden flex flex-col bg-white">
 
                   {/* Integrated Countdown Alert Banner - touching payment body directly */}
-                  <div className="bg-[#0052cc] text-white py-3.5 px-5 flex justify-between items-center shadow-inner">
+                  <div className="bg-[#0052cc] text-white py-3.5 px-5 flex flex-wrap justify-between items-center gap-3 shadow-inner">
                     <p className="text-xs sm:text-sm font-bold flex items-center gap-2">
                       <span>🔔</span>
                       <span>
@@ -468,9 +498,20 @@ export const Payment: React.FC = () => {
                           : 'Do not worry, price is locked. Complete your payment in'}
                       </span>
                     </p>
-                    <div className="bg-[#003d99] px-3.5 py-1.5 rounded-lg text-sm font-black tracking-wider flex items-center gap-1.5 shrink-0">
-                      <Clock className="w-4 h-4 animate-pulse text-amber-300" />
-                      <span>{formatTime(secondsLeft)}</span>
+                    <div className="flex items-center gap-2.5">
+                      <div className="bg-[#003d99] px-3.5 py-1.5 rounded-lg text-sm font-black tracking-wider flex items-center gap-1.5 shrink-0">
+                        <Clock className="w-4 h-4 animate-pulse text-amber-300" />
+                        <span>{formatTime(secondsLeft)}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCancelBooking}
+                        className="bg-red-500/80 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1 active:scale-95 cursor-pointer"
+                        title={language === 'vi' ? 'Hủy đơn đặt phòng này' : 'Cancel this booking'}
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>{language === 'vi' ? 'Hủy phòng' : 'Cancel'}</span>
+                      </button>
                     </div>
                   </div>
 

@@ -86,6 +86,15 @@ io.on('connection', (socket) => {
   });
 });
 
+import bookingUseCase from './use-cases/booking/booking.use-case';
+
+// Tự động quét và hủy các đơn phòng PENDING hết hạn (quá 10 phút) mỗi 30 giây
+setInterval(() => {
+  bookingUseCase.cleanupExpiredBookings().catch(err => {
+    console.error('[Cron] Auto cleanup expired bookings failed:', err);
+  });
+}, 30 * 1000);
+
 server.listen(PORT, () => {
   console.log(`[System Server]: Đang chạy cổng ${PORT} dưới chế độ ${process.env.NODE_ENV || 'development'}`);
 });

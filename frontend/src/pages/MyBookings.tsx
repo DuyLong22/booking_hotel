@@ -230,12 +230,29 @@ export const MyBookings: React.FC = () => {
                   
                   <div className="flex gap-2">
                     {booking.status === 'PENDING' && (
-                      <button
-                        onClick={() => handlePayNow(booking)}
-                        className="bg-primary hover:bg-primary-dark text-white font-bold text-[10px] px-3 py-1.5 rounded-premium transition-colors shadow flex items-center gap-1"
-                      >
-                        <CreditCard className="w-3.5 h-3.5" /> Thanh toán ngay
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handlePayNow(booking)}
+                          className="bg-primary hover:bg-primary-dark text-white font-bold text-[10px] px-3 py-1.5 rounded-premium transition-colors shadow flex items-center gap-1"
+                        >
+                          <CreditCard className="w-3.5 h-3.5" /> Thanh toán ngay
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (window.confirm('Bạn có chắc chắn muốn hủy đơn đặt phòng này?')) {
+                              try {
+                                await apiClient.put(`/bookings/${booking.id}/status`, { status: 'CANCELLED' });
+                                fetchBookings();
+                              } catch (err: any) {
+                                alert(err.response?.data?.message || 'Không thể hủy đơn.');
+                              }
+                            }
+                          }}
+                          className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold text-[10px] px-3 py-1.5 rounded-premium transition-colors flex items-center gap-1"
+                        >
+                          <AlertTriangle className="w-3.5 h-3.5" /> Hủy đơn
+                        </button>
+                      </div>
                     )}
 
                     {booking.status === 'CONFIRMED' && (

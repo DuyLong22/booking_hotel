@@ -21,11 +21,22 @@ export class BookingUseCase {
         where: { id: booking.id },
         data: { status: BookingStatus.CANCELLED }
       });
+
       try {
+        const couponUsages = await prisma.couponUsage.findMany({ where: { bookingId: booking.id } });
+        for (const usage of couponUsages) {
+          await prisma.coupon.update({
+            where: { id: usage.couponId },
+            data: { usedCount: { decrement: 1 } }
+          });
+        }
+        await prisma.couponUsage.deleteMany({ where: { bookingId: booking.id } });
         await loyaltyUseCase.refundPoints(booking.id);
       } catch (err) {
-        console.error(`Failed to refund points for expired booking ${booking.id}:`, err);
+        console.error(`Failed to refund coupon/points for expired booking ${booking.id}:`, err);
       }
+
+      socketService.emitBookingStatusUpdate(booking.id, BookingStatus.CANCELLED);
     }
   }
 
@@ -312,7 +323,7 @@ export class BookingUseCase {
     return booking;
   }
 
-  public async updateBookingStatus(bookingId: string, status: BookingStatus, userId: string, userRole: string) {
+  public async updateBookingStatus(bookingId: string, status: BookingStatus, userId: string | null, userRole: string | null) {
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
       include: {
@@ -326,19 +337,27 @@ export class BookingUseCase {
 
     if (!booking) throw new AppError('Không tìm thấy đơn đặt phòng', 404);
 
-    // Phân quyền đổi trạng thái
-    const isHotelOwner = booking.bookingItems.some(
-      (item) => item.roomType.hotel.ownerId === userId
-    );
+    if (userId) {
+      const isHotelOwner = booking.bookingItems.some(
+        (item) => item.roomType.hotel.ownerId === userId
+      );
 
-    if (userRole !== Role.ADMIN && !isHotelOwner) {
-      // Khách hàng tự hủy đơn
-      if (booking.userId === userId && status === BookingStatus.CANCELLED) {
-        if (booking.status !== BookingStatus.PENDING && booking.status !== BookingStatus.CONFIRMED) {
-          throw new AppError('Không thể hủy đơn đặt phòng ở trạng thái hiện tại', 400);
+      if (userRole !== Role.ADMIN && !isHotelOwner) {
+        // Khách hàng tự hủy đơn
+        if (booking.userId === userId && status === BookingStatus.CANCELLED) {
+          if (booking.status !== BookingStatus.PENDING && booking.status !== BookingStatus.CONFIRMED && booking.status !== BookingStatus.PAYMENT_PROCESSING) {
+            throw new AppError('Không thể hủy đơn đặt phòng ở trạng thái hiện tại', 400);
+          }
+        } else {
+          throw new AppError('Bạn không có quyền thay đổi trạng thái đơn đặt phòng này', 403);
         }
+      }
+    } else {
+      // Cho phép hủy đơn phòng vãng lai nếu đang ở trạng thái PENDING
+      if (status === BookingStatus.CANCELLED && (booking.status === BookingStatus.PENDING || booking.status === BookingStatus.PAYMENT_PROCESSING)) {
+        // Hợp lệ
       } else {
-        throw new AppError('Bạn không có quyền thay đổi trạng thái đơn đặt phòng này', 403);
+        throw new AppError('Vui lòng đăng nhập để thay đổi trạng thái đơn hàng', 401);
       }
     }
 
@@ -349,16 +368,35 @@ export class BookingUseCase {
     });
 
     // Log action to AuditLog
-    await auditService.log({
-      userId,
-      action: `UPDATE_STATUS_${status}`,
-      entityName: 'Booking',
-      entityId: bookingId,
-      oldValues: { status: booking.status },
-      newValues: { status }
-    });
+    if (userId) {
+      await auditService.log({
+        userId,
+        action: `UPDATE_STATUS_${status}`,
+        entityName: 'Booking',
+        entityId: bookingId,
+        oldValues: { status: booking.status },
+        newValues: { status }
+      });
+    }
 
-    // Xử lý điểm tích lũy Loyalty
+    // Xử lý hoàn coupon & điểm tích lũy khi HỦY đơn
+    if (status === BookingStatus.CANCELLED) {
+      try {
+        const couponUsages = await prisma.couponUsage.findMany({ where: { bookingId } });
+        for (const usage of couponUsages) {
+          await prisma.coupon.update({
+            where: { id: usage.couponId },
+            data: { usedCount: { decrement: 1 } }
+          });
+        }
+        await prisma.couponUsage.deleteMany({ where: { bookingId } });
+        await loyaltyUseCase.refundPoints(bookingId);
+      } catch (err) {
+        console.error('Failed to cleanup coupon/points on cancel:', err);
+      }
+    }
+
+    // Xử lý điểm tích lũy Loyalty khi hoàn thành/xác nhận
     const allowedEarnStatuses: BookingStatus[] = [
       BookingStatus.CONFIRMED,
       BookingStatus.CHECKED_IN,
@@ -370,12 +408,6 @@ export class BookingUseCase {
         await loyaltyUseCase.earnPoints(bookingId);
       } catch (err) {
         console.error('Failed to earn points:', err);
-      }
-    } else if (status === BookingStatus.CANCELLED) {
-      try {
-        await loyaltyUseCase.refundPoints(bookingId);
-      } catch (err) {
-        console.error('Failed to refund points:', err);
       }
     }
 
