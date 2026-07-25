@@ -40,7 +40,7 @@ export const createCouponSchema = z.object({
     discountType: z.enum(['PERCENTAGE', 'FIXED']),
     discountValue: z.number().positive('Giá trị giảm giá phải lớn hơn 0'),
     minOrderValue: z.number().nonnegative().default(0),
-    maxDiscountAmount: z.number().positive().optional(),
+    maxDiscountAmount: z.number().positive().nullable().optional(),
     startDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
       message: 'Định dạng ngày bắt đầu không hợp lệ',
     }),
@@ -48,6 +48,8 @@ export const createCouponSchema = z.object({
       message: 'Định dạng ngày kết thúc không hợp lệ',
     }),
     usageLimit: z.number().int().positive('Giới hạn lượt dùng phải lớn hơn 0'),
+    dailyUsageLimit: z.number().int().positive('Giới hạn lượt dùng theo ngày phải lớn hơn 0').nullable().optional(),
+    targetUserType: z.enum(['ALL', 'NEW', 'VIP']).optional().default('ALL'),
     hotelId: z.string().uuid('ID khách sạn không hợp lệ').nullable().optional(),
   })
   .refine((data) => {
