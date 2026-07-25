@@ -164,7 +164,7 @@ export class BookingUseCase {
     let validatedCoupon = null;
 
     if (couponCode) {
-      validatedCoupon = await couponUseCase.validateCoupon(couponCode, hotelId, totalPrice);
+      validatedCoupon = await couponUseCase.validateCoupon(couponCode, hotelId, totalPrice, finalUserId);
       discountAmount = validatedCoupon.discountAmount;
     }
 
@@ -496,7 +496,7 @@ export class BookingUseCase {
     let validatedCoupon = null;
     if (couponCode && couponCode.trim() !== '') {
       const hotelId = booking.bookingItems[0]?.roomType.hotelId;
-      validatedCoupon = await couponUseCase.validateCoupon(couponCode.trim(), hotelId, Number(booking.totalPrice));
+      validatedCoupon = await couponUseCase.validateCoupon(couponCode.trim(), hotelId, Number(booking.totalPrice), booking.userId);
       discountAmount = validatedCoupon.discountAmount;
     }
 

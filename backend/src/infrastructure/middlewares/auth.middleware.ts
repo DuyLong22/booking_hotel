@@ -46,3 +46,26 @@ export const requireRole = (allowedRoles: Role[]) => {
     return next();
   };
 };
+
+export const optionalAuth = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = verifyAccessToken(token);
+    req.user = {
+      userId: decoded.userId,
+      role: decoded.role as Role,
+    };
+  } catch (error) {
+    // Bỏ qua lỗi token không hợp lệ trong optionalAuth
+  }
+  return next();
+};

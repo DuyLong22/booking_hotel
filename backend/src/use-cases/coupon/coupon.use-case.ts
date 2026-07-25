@@ -95,17 +95,23 @@ export class CouponUseCase {
     }
 
     // Kiểm tra đối tượng sử dụng
-    if ((coupon as any).targetUserType === 'NEW' && userId) {
-      const userBookings = await prisma.booking.count({
+    if ((coupon as any).targetUserType === 'NEW') {
+      if (!userId) {
+        throw new AppError('Mã giảm giá này chỉ dành riêng cho khách hàng mới. Vui lòng đăng nhập tài khoản để áp dụng mã!', 401);
+      }
+      const existingBookingsCount = await prisma.booking.count({
         where: {
           userId,
-          status: { in: ['CONFIRMED', 'CHECKED_IN', 'CHECKED_OUT', 'COMPLETED'] },
+          status: { notIn: ['CANCELLED' as any] },
         },
       });
-      if (userBookings > 0) {
+      if (existingBookingsCount > 0) {
         throw new AppError('Mã giảm giá này chỉ dành riêng cho khách hàng mới đặt phòng lần đầu', 400);
       }
-    } else if ((coupon as any).targetUserType === 'VIP' && userId) {
+    } else if ((coupon as any).targetUserType === 'VIP') {
+      if (!userId) {
+        throw new AppError('Mã giảm giá này chỉ dành riêng cho thành viên VIP. Vui lòng đăng nhập tài khoản!', 401);
+      }
       const user = await prisma.user.findUnique({ where: { id: userId } });
       if (!user || (user.loyaltyPoints < 200 && user.role !== 'ADMIN')) {
         throw new AppError('Mã giảm giá này chỉ dành riêng cho khách hàng thân thiết / VIP', 400);
