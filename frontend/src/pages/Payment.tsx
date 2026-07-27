@@ -33,9 +33,13 @@ interface BookingDetail {
   createdAt: string;
   status: string;
   bookingItems: {
+    ratePlanName?: string | null;
+    cancellationPolicySnapshot?: string | null;
+    paymentPolicySnapshot?: string | null;
     roomType: {
       name: string;
       bedCount: number;
+      includeBreakfast?: boolean;
       hotel: {
         name: string;
         address: string;
@@ -59,7 +63,7 @@ export const Payment: React.FC = () => {
   const [error, setError] = useState('');
 
   // Payment option selected (Accordion style)
-  const [activeOption, setActiveOption] = useState<'card' | 'vietqr' | 'vietinbank' | 'wallet' | 'mobile' | 'store' | 'installment'>('card');
+  const [activeOption, setActiveOption] = useState<'card' | 'vietqr' | 'vietinbank' | 'wallet' | 'mobile' | 'store' | 'hotel'>('card');
   const [subWallet, setSubWallet] = useState<'momo' | 'zalopay' | 'shopeepay' | 'vnpay'>('momo');
 
   // Form states for Credit Card
@@ -177,7 +181,6 @@ export const Payment: React.FC = () => {
       });
       if (res.data.success) {
         setBooking(res.data.data);
-        // Refresh available loyalty points
         const loyaltyRes = await apiClient.get('/loyalty/summary');
         if (loyaltyRes.data.success) {
           setAvailablePoints(loyaltyRes.data.data.pointsBalance || 0);
@@ -185,7 +188,6 @@ export const Payment: React.FC = () => {
       }
     } catch (err: any) {
       console.error(err);
-      alert(err.response?.data?.message || (language === 'vi' ? 'Lỗi cập nhật điểm thưởng.' : 'Error updating loyalty points.'));
     } finally {
       setApplyingDiscount(false);
     }
@@ -205,9 +207,19 @@ export const Payment: React.FC = () => {
         if (res.data.success) {
           const fetchedBooking = res.data.data;
           setBooking(fetchedBooking);
-          const elapsed = Math.floor((Date.now() - new Date(fetchedBooking.createdAt).getTime()) / 1000);
-          const left = Math.max(0, 600 - elapsed);
-          setSecondsLeft(left);
+          if (fetchedBooking.status === 'PENDING' || fetchedBooking.status === 'PAYMENT_PROCESSING') {
+            const elapsed = Math.floor((Date.now() - new Date(fetchedBooking.createdAt).getTime()) / 1000);
+            const left = Math.max(0, 600 - elapsed);
+            setSecondsLeft(left);
+          } else {
+            setSecondsLeft(999999);
+          }
+
+          // Tự động chọn phương thức Thanh toán tại khách sạn nếu chính sách yêu cầu
+          const firstItem = fetchedBooking.bookingItems?.[0];
+          if (firstItem?.paymentPolicySnapshot?.toLowerCase().includes('khách sạn') || firstItem?.paymentPolicySnapshot?.includes('PAY_AT_HOTEL')) {
+            setActiveOption('hotel');
+          }
         } else {
           setError(language === 'vi' ? 'Không thể tải thông tin đặt phòng.' : 'Could not load booking details.');
         }
@@ -341,6 +353,29 @@ export const Payment: React.FC = () => {
   };
 
   const handlePaymentSubmit = async () => {
+    // Nếu chọn thanh toán tại khách sạn (Pay at Hotel)
+    if (activeOption === 'hotel') {
+      setSubmitLoading(true);
+      setSubmitMessage(language === 'vi' ? 'Đang xác nhận giữ phòng tại khách sạn...' : 'Confirming pay at hotel reservation...');
+      try {
+        const res = await apiClient.put(`/bookings/${bookingId}/status`, { status: 'CONFIRMED' });
+        if (res.data.success || res.status === 200) {
+          setSubmitMessage(language === 'vi' ? 'Xác nhận thành công! Đang xuất phiếu đặt phòng...' : 'Confirmed! Generating voucher...');
+          setTimeout(() => {
+            navigate(`/my-bookings?payment=success&bookingId=${bookingId}`);
+          }, 800);
+        } else {
+          setSubmitLoading(false);
+          alert(language === 'vi' ? 'Xác nhận thất bại. Vui lòng thử lại.' : 'Confirmation failed. Please try again.');
+        }
+      } catch (err: any) {
+        console.error(err);
+        setSubmitLoading(false);
+        alert(err.response?.data?.message || (language === 'vi' ? 'Lỗi xác nhận đơn hàng.' : 'Error confirming booking.'));
+      }
+      return;
+    }
+
     // Nếu chọn ví VNPay → dùng VNPAY gateway
     if (activeOption === 'wallet' && subWallet === 'vnpay') {
       await handleVnPaySubmit();
@@ -350,8 +385,8 @@ export const Payment: React.FC = () => {
     // Các phương thức khác ngoài card → thông báo demo
     if (activeOption !== 'card') {
       alert(language === 'vi'
-        ? 'Phương thức này chỉ đang demo. Vui lòng chọn Thẻ thanh toán hoặc VNPay.'
-        : 'This method is demo only. Please use Credit Card or VNPay.');
+        ? 'Phương thức này chỉ đang demo. Vui lòng chọn Thẻ thanh toán, VNPay hoặc Thanh toán tại khách sạn.'
+        : 'This method is demo only. Please use Credit Card, VNPay or Pay at Hotel.');
       return;
     }
 
@@ -462,7 +497,7 @@ export const Payment: React.FC = () => {
 
           {/* Left Column - Payment methods */}
           <div className="lg:col-span-2 space-y-4">
-            {(secondsLeft === 0 || booking.status === 'CANCELLED') ? (
+            {((secondsLeft === 0 && (booking.status === 'PENDING' || booking.status === 'PAYMENT_PROCESSING')) || booking.status === 'CANCELLED') ? (
               <div className="bg-white border border-slate-150 p-8 rounded-2xl shadow-sm text-center space-y-5">
                 <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto">
                   <XCircle className="w-10 h-10" />
@@ -488,32 +523,34 @@ export const Payment: React.FC = () => {
 
                 <div className="border border-slate-150 rounded-2xl shadow-sm overflow-hidden flex flex-col bg-white">
 
-                  {/* Integrated Countdown Alert Banner - touching payment body directly */}
-                  <div className="bg-[#0052cc] text-white py-3.5 px-5 flex flex-wrap justify-between items-center gap-3 shadow-inner">
-                    <p className="text-xs sm:text-sm font-bold flex items-center gap-2">
-                      <span>🔔</span>
-                      <span>
-                        {language === 'vi'
-                          ? 'Đừng lo lắng, giá vẫn giữ nguyên. Hoàn tất thanh toán của bạn bằng'
-                          : 'Do not worry, price is locked. Complete your payment in'}
-                      </span>
-                    </p>
-                    <div className="flex items-center gap-2.5">
-                      <div className="bg-[#003d99] px-3.5 py-1.5 rounded-lg text-sm font-black tracking-wider flex items-center gap-1.5 shrink-0">
-                        <Clock className="w-4 h-4 animate-pulse text-amber-300" />
-                        <span>{formatTime(secondsLeft)}</span>
+                  {/* Integrated Countdown Alert Banner - only show for temporary PENDING/PAYMENT_PROCESSING bookings */}
+                  {(booking.status === 'PENDING' || booking.status === 'PAYMENT_PROCESSING') && (
+                    <div className="bg-[#0052cc] text-white py-3.5 px-5 flex flex-wrap justify-between items-center gap-3 shadow-inner">
+                      <p className="text-xs sm:text-sm font-bold flex items-center gap-2">
+                        <span>🔔</span>
+                        <span>
+                          {language === 'vi'
+                            ? 'Đừng lo lắng, giá vẫn giữ nguyên. Hoàn tất thanh toán của bạn bằng'
+                            : 'Do not worry, price is locked. Complete your payment in'}
+                        </span>
+                      </p>
+                      <div className="flex items-center gap-2.5">
+                        <div className="bg-[#003d99] px-3.5 py-1.5 rounded-lg text-sm font-black tracking-wider flex items-center gap-1.5 shrink-0">
+                          <Clock className="w-4 h-4 animate-pulse text-amber-300" />
+                          <span>{formatTime(secondsLeft)}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleCancelBooking}
+                          className="bg-red-500/80 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1 active:scale-95 cursor-pointer"
+                          title={language === 'vi' ? 'Hủy đơn đặt phòng này' : 'Cancel this booking'}
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          <span>{language === 'vi' ? 'Hủy phòng' : 'Cancel'}</span>
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleCancelBooking}
-                        className="bg-red-500/80 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1 active:scale-95 cursor-pointer"
-                        title={language === 'vi' ? 'Hủy đơn đặt phòng này' : 'Cancel this booking'}
-                      >
-                        <XCircle className="w-3.5 h-3.5" />
-                        <span>{language === 'vi' ? 'Hủy phòng' : 'Cancel'}</span>
-                      </button>
                     </div>
-                  </div>
+                  )}
 
                   <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                     <h2 className="font-extrabold text-slate-800 text-[24px]">{language === 'vi' ? 'Bạn muốn thanh toán thế nào?' : 'How would you like to pay?'}</h2>
@@ -524,6 +561,44 @@ export const Payment: React.FC = () => {
 
                   {/* Accordion List */}
                   <div className="divide-y divide-slate-100">
+
+                    {/* 0. Pay at Hotel Option */}
+                    <div className="bg-white">
+                      <button
+                        type="button"
+                        onClick={() => setActiveOption('hotel')}
+                        className="w-full px-6 py-4 flex justify-between items-center hover:bg-[#ebf3ff]/40 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="payment_opt"
+                            checked={activeOption === 'hotel'}
+                            readOnly
+                            className="w-4.5 h-4.5 text-[#0194f3]"
+                          />
+                          <span className={activeOption === 'hotel' ? "text-[18px] font-extrabold text-slate-900 flex items-center gap-2" : "text-[16px] font-bold text-slate-700 flex items-center gap-2"}>
+                            <span>🏨</span>
+                            <span>{language === 'vi' ? 'Thanh toán khi nhận phòng tại khách sạn' : 'Pay at hotel upon check-in'}</span>
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-black bg-emerald-100 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full uppercase shrink-0">
+                          {language === 'vi' ? 'Trả tại khách sạn' : 'Pay at hotel'}
+                        </span>
+                      </button>
+                      {activeOption === 'hotel' && (
+                        <div className="px-6 pb-6 pt-3 space-y-3 bg-emerald-50/40 border-t border-emerald-100 text-xs font-semibold text-slate-700">
+                          <div className="flex items-start gap-2.5 text-emerald-900 bg-white p-3.5 rounded-xl border border-emerald-200/80 shadow-xs">
+                            <span className="text-base shrink-0">👍</span>
+                            <p className="leading-relaxed">
+                              {language === 'vi'
+                                ? 'Bạn không cần phải thanh toán trực tuyến ngay bây giờ. Phòng của bạn sẽ được xác nhận giữ chỗ ngay lập tức. Bạn chỉ cần xuất trình phiếu đặt phòng và thanh toán tiền mặt/cà thẻ khi nhận phòng tại khách sạn.'
+                                : 'No online payment required now. Your reservation will be confirmed immediately. Present your voucher and pay upon check-in.'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
                     {/* 1. Credit Card Option */}
                     <div className="bg-white">
@@ -1050,15 +1125,23 @@ export const Payment: React.FC = () => {
                       type="button"
                       disabled={submitLoading || vnpayRedirecting}
                       onClick={handlePaymentSubmit}
-                      className={`text-white font-extrabold text-sm px-8 py-3.5 rounded-xl shadow-lg transition-all hover:scale-[1.01] active:scale-95 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed ${activeOption === 'wallet' && subWallet === 'vnpay'
+                      className={`text-white font-extrabold text-sm px-8 py-3.5 rounded-xl shadow-lg transition-all hover:scale-[1.01] active:scale-95 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed ${
+                        activeOption === 'hotel'
+                          ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/10'
+                          : activeOption === 'wallet' && subWallet === 'vnpay'
                           ? 'bg-[#005BAA] hover:bg-[#004a8c] shadow-blue-500/10'
                           : 'bg-[#ff5e1f] hover:bg-[#e04f16] shadow-orange-500/10'
-                        }`}
+                      }`}
                     >
                       {vnpayRedirecting ? (
                         <>
                           <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
                           <span>{language === 'vi' ? 'Đang chuyển sang VNPay...' : 'Redirecting to VNPay...'}</span>
+                        </>
+                      ) : activeOption === 'hotel' ? (
+                        <>
+                          <ShieldCheck className="w-4.5 h-4.5 text-white" />
+                          <span>{language === 'vi' ? 'Xác nhận & Thanh toán tại khách sạn' : 'Confirm & Pay at Hotel'}</span>
                         </>
                       ) : activeOption === 'wallet' && subWallet === 'vnpay' ? (
                         <>
@@ -1170,6 +1253,18 @@ export const Payment: React.FC = () => {
                 <div className="space-y-2 pt-1">
                   <p className="font-extrabold text-slate-800 text-sm">({firstItem?.quantity}x) {roomTypeName}</p>
 
+                  {/* Rate Plan & Policy Snapshots */}
+                  {(firstItem?.cancellationPolicySnapshot || firstItem?.paymentPolicySnapshot) && (
+                    <div className="bg-blue-50/60 border border-blue-100 p-2.5 rounded-xl space-y-1">
+                      {firstItem.cancellationPolicySnapshot && (
+                        <p className="text-[11px] font-bold text-emerald-700">🛡️ {firstItem.cancellationPolicySnapshot}</p>
+                      )}
+                      {firstItem.paymentPolicySnapshot && (
+                        <p className="text-[11px] font-bold text-blue-700">💳 {firstItem.paymentPolicySnapshot}</p>
+                      )}
+                    </div>
+                  )}
+
                   {/* Premium Lucide icons specifications */}
                   <div className="space-y-2.5 text-xs text-slate-500 font-bold pt-0.5 pl-0.5">
                     <p className="flex items-center gap-2.5">
@@ -1180,10 +1275,12 @@ export const Payment: React.FC = () => {
                       <Bed className="w-4.5 h-4.5 text-slate-400" />
                       <span>{firstItem?.roomType.bedCount} {language === 'vi' ? 'giường đôi' : 'double bed'}</span>
                     </p>
-                    <p className="flex items-center gap-2.5">
-                      <Utensils className="w-4.5 h-4.5 text-slate-400" />
-                      <span className="text-slate-400">{language === 'vi' ? 'Không bao gồm bữa sáng' : 'Breakfast not included'}</span>
-                    </p>
+                    {firstItem?.roomType?.includeBreakfast && (
+                      <p className="flex items-center gap-2.5">
+                        <Utensils className="w-4.5 h-4.5 text-emerald-600" />
+                        <span className="text-emerald-600 font-bold">{language === 'vi' ? 'Bao gồm bữa sáng 🍳' : 'Breakfast included 🍳'}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
 

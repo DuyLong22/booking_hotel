@@ -279,6 +279,7 @@ interface RoomTypeDetail {
   childSurcharge?: number;
   paymentPolicy?: string;
   cancellationPolicy?: string;
+  ratePlans?: any[];
 }
 
 interface ReviewDetail {
@@ -1078,33 +1079,35 @@ export const HotelDetail: React.FC = () => {
     return Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)));
   };
 
-  const getDisplayPrice = (rt: RoomTypeDetail) => {
+  const getDisplayPrice = (rt: RoomTypeDetail, customPrice?: number) => {
     const nights = getNightsCount();
+    const priceToUse = customPrice !== undefined ? customPrice : rt.calculatedPrice;
     switch (priceShowOption) {
       case 'per_night_incl':
-        return Math.round(rt.calculatedPrice * 1.15);
+        return Math.round(priceToUse * 1.15);
       case 'total_excl':
-        return rt.calculatedPrice * nights;
+        return priceToUse * nights;
       case 'total_incl':
-        return Math.round(rt.calculatedPrice * 1.15 * nights);
+        return Math.round(priceToUse * 1.15 * nights);
       case 'per_night_excl':
       default:
-        return rt.calculatedPrice;
+        return priceToUse;
     }
   };
 
-  const getDisplayBasePrice = (rt: RoomTypeDetail) => {
+  const getDisplayBasePrice = (rt: RoomTypeDetail, customBasePrice?: number) => {
     const nights = getNightsCount();
+    const baseToUse = customBasePrice !== undefined ? customBasePrice : rt.basePrice;
     switch (priceShowOption) {
       case 'per_night_incl':
-        return Math.round(rt.basePrice * 1.15);
+        return Math.round(baseToUse * 1.15);
       case 'total_excl':
-        return rt.basePrice * nights;
+        return baseToUse * nights;
       case 'total_incl':
-        return Math.round(rt.basePrice * 1.15 * nights);
+        return Math.round(baseToUse * 1.15 * nights);
       case 'per_night_excl':
       default:
-        return rt.basePrice;
+        return baseToUse;
     }
   };
 
@@ -1330,13 +1333,15 @@ export const HotelDetail: React.FC = () => {
     }
   };
 
-  const handleBookRoom = (roomTypeId: string) => {
+  const handleBookRoom = (roomTypeId: string, ratePlanId?: string) => {
+    const key = ratePlanId ? `${roomTypeId}_${ratePlanId}` : roomTypeId;
     navigate('/checkout', {
       state: {
         hotelId: hotel?.id,
         hotelName: hotel?.name,
         roomTypeId,
-        quantity: selectedQuantities[roomTypeId] || 1,
+        ratePlanId: ratePlanId || null,
+        quantity: selectedQuantities[key] || selectedQuantities[roomTypeId] || 1,
         checkInDate: checkIn,
         checkOutDate: checkOut,
         numGuests: adults + children
@@ -2257,174 +2262,154 @@ export const HotelDetail: React.FC = () => {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200 text-slate-700 font-medium bg-white text-xs sm:text-sm">
-                              {group.roomTypes.map((rt) => {
-                                const maxQty = rt.availableRooms;
-                                const qty = maxQty <= 0 ? 0 : Math.min(selectedQuantities[rt.id] || 1, maxQty);
-                                const priceQty = Math.max(1, qty);
-                                return (
-                                  <tr key={rt.id} className="hover:bg-slate-50/50 transition-colors">
-                                    {/* Option Name & Description from DB */}
-                                    <td className="px-5 py-5 w-[32%] space-y-3.5 border-r border-slate-100 break-words">
-                                      {/* Tên loại phòng */}
-                                      <p className="font-extrabold text-slate-900 text-sm sm:text-base break-words">{rt.name}</p>
+                              {group.roomTypes.flatMap((rt) => {
+                                const plans = rt.ratePlans && rt.ratePlans.length > 0 ? rt.ratePlans : [null];
+                                return plans.map((plan: any) => {
+                                  const key = plan ? `${rt.id}_${plan.id}` : rt.id;
+                                  let planPrice = rt.calculatedPrice;
+                                  if (plan) {
+                                    if (plan.priceModifierType === 'PERCENTAGE_DISCOUNT') {
+                                      planPrice = rt.calculatedPrice * (1 - parseFloat(plan.priceModifierValue.toString()) / 100);
+                                    } else if (plan.priceModifierType === 'AMOUNT_DISCOUNT') {
+                                      planPrice = Math.max(0, rt.calculatedPrice - parseFloat(plan.priceModifierValue.toString()));
+                                    } else if (plan.priceModifierType === 'FIXED_PRICE' && parseFloat(plan.priceModifierValue.toString()) > 0) {
+                                      planPrice = parseFloat(plan.priceModifierValue.toString());
+                                    }
+                                  }
 
-                                      {/* Bữa sáng */}
-                                      <p className="font-extrabold text-slate-900 text-xs sm:text-sm">
-                                        {rt.includeBreakfast 
-                                          ? (language === 'vi' ? 'Bao gồm bữa sáng' : 'Breakfast included') 
-                                          : (language === 'vi' ? 'Không gồm bữa sáng' : 'Breakfast not included')}
-                                      </p>
+                                  const maxQty = rt.availableRooms;
+                                  const qty = maxQty <= 0 ? 0 : Math.min(selectedQuantities[key] || 1, maxQty);
+                                  const priceQty = Math.max(1, qty);
 
-                                      {/* Giường của phòng */}
-                                      <div className="flex items-center gap-1.5 text-xs text-slate-700 font-semibold">
-                                        <Bed className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                                        <span>
-                                          {rt.bedCount === 1 
-                                            ? (language === 'vi' ? '1 giường đôi lớn' : '1 large double bed') 
-                                            : rt.bedCount === 2 
-                                              ? (language === 'vi' ? '1 giường cỡ queen và 1 giường đôi' : '1 queen bed and 1 double bed')
-                                              : (language === 'vi' ? `${rt.bedCount} giường` : `${rt.bedCount} beds`)}
-                                        </span>
-                                      </div>
+                                  return (
+                                    <tr key={key} className="hover:bg-slate-50/50 transition-colors border-b border-slate-100">
+                                      {/* Option Name & Description from DB */}
+                                      <td className="px-6 py-6 w-[32%] border-r border-slate-100 break-words">
+                                        <div className="space-y-2.5">
+                                          <p className="font-extrabold text-slate-900 text-sm sm:text-base leading-snug">{rt.name}</p>
 
-                                      {/* Chi phí trẻ em (nếu tìm kiếm có trẻ em) */}
-                                      {children > 0 && (
-                                        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold group relative cursor-pointer">
-                                          <Baby className="w-4 h-4 text-slate-400 shrink-0" />
-                                          <span className="underline decoration-dotted">
-                                            {language === 'vi' ? 'Chi tiết phí trẻ em tại đây' : 'Child fee details here'} ⓘ
-                                          </span>
-                                          <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block w-64 bg-slate-800 text-white text-[10px] p-2.5 rounded-lg shadow-xl z-20 font-normal leading-relaxed">
-                                            {rt.childSurcharge > 0 ? (
-                                              language === 'vi'
-                                                ? `Trẻ em đi kèm phụ thu ${rt.childSurcharge.toLocaleString()} đ/đêm.`
-                                                : `Accompanying children are surcharged ${rt.childSurcharge.toLocaleString()} VND/night.`
+                                          {/* Bữa sáng */}
+                                          {rt.includeBreakfast && (
+                                            <p className="font-extrabold text-emerald-600 text-xs sm:text-sm">
+                                              {language === 'vi' ? 'Bao gồm bữa sáng 🍳' : 'Breakfast included 🍳'}
+                                            </p>
+                                          )}
+
+                                          <div className="space-y-2 pt-0.5">
+                                            {/* Thanh Toán / Phương thức Badge */}
+                                            {plan ? (
+                                              <div className="flex items-center gap-2 text-xs text-[#006ce4] font-extrabold">
+                                                <span>💳</span>
+                                                <span>
+                                                  {plan.paymentPolicy === 'PAY_ONLINE' ? 'Thanh toán online 100%' : plan.paymentPolicy === 'DEPOSIT' ? `Đặt cọc ${plan.depositType === 'PERCENTAGE' ? plan.depositValue + '%' : Number(plan.depositValue).toLocaleString('vi-VN') + 'đ'} trước` : 'Thanh toán tại khách sạn'}
+                                                </span>
+                                              </div>
                                             ) : (
-                                              language === 'vi'
-                                                ? 'Trẻ em dưới 6 tuổi được miễn phí nếu dùng chung giường với bố mẹ.'
-                                                : 'Children under 6 stay free sharing bed.'
+                                              rt.paymentPolicy && (
+                                                <div className="flex items-center gap-2 text-xs text-[#006ce4] font-extrabold">
+                                                  <span>✓</span>
+                                                  <span>{rt.paymentPolicy === 'PAY_ONLINE' ? 'Thanh Toán Trực Tuyến' : 'Thanh Toán Tại Khách Sạn'}</span>
+                                                </div>
+                                              )
+                                            )}
+
+                                            {/* Chính sách hủy phòng Badge */}
+                                            {plan ? (
+                                              <div className="flex items-center gap-2 text-xs font-bold">
+                                                {plan.cancellationPolicy === 'NON_REFUNDABLE' ? (
+                                                  <span className="text-red-500 flex items-center gap-1.5">❌ Không hoàn tiền nếu hủy</span>
+                                                ) : (
+                                                  <span className="text-emerald-600 flex items-center gap-1.5">✓ Miễn phí hủy trước {plan.freeCancelHoursBefore || 24}h</span>
+                                                )}
+                                              </div>
+                                            ) : (
+                                              rt.cancellationPolicy && (
+                                                <div className="flex items-center gap-2 text-xs text-emerald-600 font-bold">
+                                                  <span>✓</span>
+                                                  <span>{rt.cancellationPolicy === 'NON_REFUNDABLE' ? 'Không hoàn tiền khi hủy' : 'Áp dụng chính sách hủy phòng'}</span>
+                                                </div>
+                                              )
                                             )}
                                           </div>
                                         </div>
-                                      )}
+                                      </td>
 
-                                      {/* Thanh Toán / Phương thức */}
-                                      {rt.paymentPolicy && rt.paymentPolicy !== 'NONE' && (
-                                        <div className="space-y-0.5">
-                                          <div className="flex items-center gap-1.5 text-xs text-[#006ce4] font-extrabold group relative cursor-pointer">
-                                            <span className="text-xs">✓</span>
-                                            <span className="hover:underline">
-                                              {rt.paymentPolicy === 'PAY_ONLINE' 
-                                                ? (language === 'vi' ? 'Thanh Toán Trực Tuyến' : 'Pay Online') 
-                                                : (language === 'vi' ? 'Thanh Toán Tại Khách Sạn' : 'Pay at the Hotel')} ⓘ
-                                            </span>
-                                            <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block w-64 bg-slate-800 text-white text-[10px] p-2.5 rounded-lg shadow-xl z-20 font-normal leading-relaxed">
-                                              {rt.paymentPolicy === 'PAY_ONLINE'
-                                                ? (language === 'vi' ? 'Bạn cần thanh toán toàn bộ giá trị đặt phòng trực tuyến bằng thẻ hoặc chuyển khoản.' : 'You need to pay the total booking value online using card or bank transfer.')
-                                                : (language === 'vi' ? 'Bạn có thể chọn đặt ngay và thanh toán trực tiếp khi nhận phòng tại khách sạn.' : 'You can choose to book now and pay directly at check-in.')}
-                                            </div>
-                                          </div>
-                                          <p className="text-[10px] text-slate-500 pl-4 font-normal">
-                                            {rt.paymentPolicy === 'PAY_ONLINE'
-                                              ? (language === 'vi' ? 'Yêu cầu thanh toán trước khi nhận phòng' : 'Prepayment required before check-in')
-                                              : (language === 'vi' ? 'Thanh toán khi bạn nhận phòng tại nơi ở' : 'Pay when you check-in at the property')}
-                                          </p>
+                                      {/* Capacity */}
+                                      <td className="px-3 py-6 w-[10%] border-r border-slate-100">
+                                        <div className="flex justify-center items-center gap-1 text-slate-600">
+                                          {Array.from({ length: Math.min(rt.capacity, 3) }).map((_, i) => (
+                                            <User key={i} className="w-4 h-4 text-slate-500 shrink-0 inline-block" />
+                                          ))}
+                                          {rt.capacity > 3 && <span className="text-xs font-bold">+{rt.capacity - 3}</span>}
                                         </div>
-                                      )}
+                                      </td>
 
-                                      {/* Chính sách hủy phòng */}
-                                      {rt.cancellationPolicy && rt.cancellationPolicy !== 'NONE' && (
-                                        <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold group relative cursor-pointer">
-                                          <span className="text-xs">✓</span>
-                                          <span className="hover:underline">
-                                            {rt.cancellationPolicy === 'NON_REFUNDABLE'
-                                              ? (language === 'vi' ? 'Không hoàn tiền khi hủy' : 'Non-refundable')
-                                              : (language === 'vi' ? 'Áp dụng chính sách hủy phòng' : 'Cancellation policy applies')} ⓘ
-                                          </span>
-                                          <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block w-64 bg-slate-800 text-white text-[10px] p-2.5 rounded-lg shadow-xl z-20 font-normal leading-relaxed">
-                                            {rt.cancellationPolicy === 'NON_REFUNDABLE'
-                                              ? (language === 'vi' ? 'Đơn đặt phòng này không được hoàn tiền nếu hủy hoặc thay đổi.' : 'This booking is non-refundable if cancelled or modified.')
-                                              : rt.cancellationPolicy === 'FREE_48H'
-                                                ? (language === 'vi' ? 'Hủy miễn phí trước 48 giờ kể từ ngày nhận phòng. Sau thời gian đó sẽ áp dụng phí đêm đầu tiên.' : 'Free cancellation up to 48 hours before check-in. Otherwise first night fee applies.')
-                                                : (language === 'vi' ? 'Hủy miễn phí trước 24 giờ kể từ ngày nhận phòng. Sau thời gian đó sẽ áp dụng phí đêm đầu tiên.' : 'Free cancellation up to 24 hours before check-in. Otherwise first night fee applies.')}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </td>
-
-                                    {/* Capacity */}
-                                    <td className="px-2 py-5 w-[10%] border-r border-slate-100">
-                                      <div className="flex justify-center items-center gap-0.5 text-slate-600">
-                                        {Array.from({ length: Math.min(rt.capacity, 3) }).map((_, i) => (
-                                          <User key={i} className="w-4 h-4 text-slate-500 shrink-0 inline-block" />
-                                        ))}
-                                        {rt.capacity > 3 && <span className="text-xs font-bold">+{rt.capacity - 3}</span>}
-                                      </div>
-                                    </td>
-
-                                    {/* Price per night */}
-                                    <td className="px-4 py-5 w-[25%] border-r border-slate-100 text-right">
-                                      {rt.calculatedPrice < rt.basePrice && (
-                                        <p className="text-xs text-slate-400 font-semibold line-through mb-1">
-                                          {formatPrice(getDisplayBasePrice(rt) * priceQty, currency)}
-                                        </p>
-                                      )}
-                                      <p className="font-black text-[#ff4d42] text-base sm:text-lg leading-none">
-                                        {formatPrice(getDisplayPrice(rt) * priceQty, currency)}
-                                      </p>
-                                      <p className="text-xs text-slate-500 font-normal mt-1 leading-tight">
-                                        {getPriceSubtitle()}
-                                      </p>
-                                    </td>
-
-                                    {/* Room Select Dropdown */}
-                                    <td className="px-2 py-5 w-[15%] border-r border-slate-100 font-bold text-slate-800">
-                                      <div className="flex justify-center items-center">
-                                        <select
-                                          value={qty}
-                                          disabled={maxQty <= 0}
-                                          onChange={(e) => setSelectedQuantities(prev => ({ ...prev, [rt.id]: Number(e.target.value) }))}
-                                          className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm w-16 disabled:bg-slate-50 disabled:text-slate-400"
-                                        >
-                                          {maxQty <= 0 ? (
-                                            <option value={0}>x0</option>
-                                          ) : (
-                                            Array.from({ length: maxQty }).map((_, i) => (
-                                              <option key={i + 1} value={i + 1}>x{i + 1}</option>
-                                            ))
+                                      {/* Price per night */}
+                                      <td className="px-5 py-6 w-[25%] border-r border-slate-100 text-right">
+                                        <div className="space-y-1">
+                                          {planPrice < rt.basePrice && (
+                                            <p className="text-xs text-slate-400 font-semibold line-through">
+                                              {formatPrice(getDisplayBasePrice(rt) * priceQty, currency)}
+                                            </p>
                                           )}
-                                        </select>
-                                      </div>
-                                    </td>
+                                          <p className="font-black text-[#ff4d42] text-base sm:text-lg leading-none">
+                                            {formatPrice(getDisplayPrice(rt, planPrice) * priceQty, currency)}
+                                          </p>
+                                          <p className="text-xs text-slate-500 font-normal leading-tight pt-0.5">
+                                            {getPriceSubtitle()}
+                                          </p>
+                                        </div>
+                                      </td>
 
-                                    {/* Action Button */}
-                                    <td className="px-2 py-5 w-[18%] text-center">
-                                      <div className="space-y-1.5 flex flex-col items-center justify-center">
-                                        <button
-                                          type="button"
-                                          onClick={() => handleBookRoom(rt.id)}
-                                          disabled={rt.isBlocked || rt.availableRooms <= 0}
-                                          className="bg-[#006ce4] hover:bg-[#0056b3] disabled:bg-slate-200 disabled:text-slate-400 text-white font-extrabold text-sm py-2.5 rounded-lg transition-all active:scale-[0.98] shadow-sm w-24 text-center"
-                                        >
-                                          {language === 'vi' ? 'Chọn' : 'Select'}
-                                        </button>
-                                        {rt.isBlocked ? (
-                                          <p className="text-[10px] text-slate-400 font-black whitespace-nowrap">
-                                            {t.roomClosed}
-                                          </p>
-                                        ) : rt.availableRooms <= 0 ? (
-                                          <p className="text-[10px] text-red-500 font-black whitespace-nowrap">
-                                            {t.noRoomsAvailable}
-                                          </p>
-                                        ) : rt.availableRooms <= 5 ? (
-                                          <p className="text-[10px] text-red-500 font-black whitespace-nowrap">
-                                            {language === 'vi' ? `Chỉ còn ${rt.availableRooms} phòng` : `Only ${rt.availableRooms} left`}
-                                          </p>
-                                        ) : null}
-                                      </div>
-                                    </td>
-                                  </tr>
-                                );
+                                      {/* Room Select Dropdown */}
+                                      <td className="px-3 py-6 w-[15%] border-r border-slate-100 font-bold text-slate-800">
+                                        <div className="flex justify-center items-center">
+                                          <select
+                                            value={qty}
+                                            disabled={maxQty <= 0}
+                                            onChange={(e) => setSelectedQuantities(prev => ({ ...prev, [key]: Number(e.target.value) }))}
+                                            className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm w-16 disabled:bg-slate-50 disabled:text-slate-400"
+                                          >
+                                            {maxQty <= 0 ? (
+                                              <option value={0}>x0</option>
+                                            ) : (
+                                              Array.from({ length: maxQty }).map((_, i) => (
+                                                <option key={i + 1} value={i + 1}>x{i + 1}</option>
+                                              ))
+                                            )}
+                                          </select>
+                                        </div>
+                                      </td>
+
+                                      {/* Action Button */}
+                                      <td className="px-3 py-6 w-[18%] text-center">
+                                        <div className="space-y-2 flex flex-col items-center justify-center">
+                                          <button
+                                            type="button"
+                                            onClick={() => handleBookRoom(rt.id, plan?.id)}
+                                            disabled={rt.isBlocked || rt.availableRooms <= 0}
+                                            className="bg-[#006ce4] hover:bg-[#0056b3] disabled:bg-slate-200 disabled:text-slate-400 text-white font-extrabold text-sm py-2.5 rounded-lg transition-all active:scale-[0.98] shadow-sm w-24 text-center"
+                                          >
+                                            {language === 'vi' ? 'Chọn' : 'Select'}
+                                          </button>
+                                          {rt.isBlocked ? (
+                                            <p className="text-[10px] text-slate-400 font-black whitespace-nowrap">
+                                              {t.roomClosed}
+                                            </p>
+                                          ) : rt.availableRooms <= 0 ? (
+                                            <p className="text-[10px] text-red-500 font-black whitespace-nowrap">
+                                              {t.noRoomsAvailable}
+                                            </p>
+                                          ) : rt.availableRooms <= 5 ? (
+                                            <p className="text-[10px] text-red-500 font-black whitespace-nowrap">
+                                              {language === 'vi' ? `Chỉ còn ${rt.availableRooms} phòng` : `Only ${rt.availableRooms} left`}
+                                            </p>
+                                          ) : null}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                });
                               })}
                             </tbody>
                           </table>

@@ -65,29 +65,32 @@ const AuthInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   // Quản lý kết nối Socket.io Real-time
   useEffect(() => {
+    socket.connect();
+
     if (user?.id) {
-      socket.connect();
       socket.emit('joinUser', user.id);
-
-      socket.on('bookingStatusUpdated', (data) => {
-        // Bắn Custom Event của trình duyệt để các trang đang hiển thị tự cập nhật
-        window.dispatchEvent(new CustomEvent('booking:statusUpdated', { detail: data }));
-      });
-
-      socket.on('hotelStatusUpdated', (data) => {
-        window.dispatchEvent(new CustomEvent('hotel:statusUpdated', { detail: data }));
-      });
-
-      socket.on('calendarUpdated', (data) => {
-        window.dispatchEvent(new CustomEvent('calendar:updated', { detail: data }));
-      });
     }
 
+    const handleBookingStatus = (data: any) => {
+      window.dispatchEvent(new CustomEvent('booking:statusUpdated', { detail: data }));
+    };
+
+    const handleHotelStatus = (data: any) => {
+      window.dispatchEvent(new CustomEvent('hotel:statusUpdated', { detail: data }));
+    };
+
+    const handleCalendar = (data: any) => {
+      window.dispatchEvent(new CustomEvent('calendar:updated', { detail: data }));
+    };
+
+    socket.on('bookingStatusUpdated', handleBookingStatus);
+    socket.on('hotelStatusUpdated', handleHotelStatus);
+    socket.on('calendarUpdated', handleCalendar);
+
     return () => {
-      socket.off('bookingStatusUpdated');
-      socket.off('hotelStatusUpdated');
-      socket.off('calendarUpdated');
-      socket.disconnect();
+      socket.off('bookingStatusUpdated', handleBookingStatus);
+      socket.off('hotelStatusUpdated', handleHotelStatus);
+      socket.off('calendarUpdated', handleCalendar);
     };
   }, [user]);
 

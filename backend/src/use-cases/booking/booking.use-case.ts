@@ -5,6 +5,9 @@ import couponUseCase from '../coupon/coupon.use-case';
 import loyaltyUseCase from '../user/loyalty.use-case';
 import socketService from '../../infrastructure/services/socket.service';
 import auditService from '../../infrastructure/services/audit.service';
+import PaymentService from '../../infrastructure/services/payment.service';
+
+const paymentService = new PaymentService();
 
 export class BookingUseCase {
   public async cleanupExpiredBookings() {
@@ -77,7 +80,15 @@ export class BookingUseCase {
     // Biến lưu tổng giá trị đặt phòng trước giảm giá và tổng sức chứa số khách
     let totalPrice = 0;
     let calculatedTotalGuests = 0;
-    const itemsToCreate: { roomTypeId: string; quantity: number; price: number }[] = [];
+    const itemsToCreate: {
+      roomTypeId: string;
+      ratePlanId?: string | null;
+      ratePlanName?: string;
+      cancellationPolicySnapshot?: string;
+      paymentPolicySnapshot?: string;
+      quantity: number;
+      price: number;
+    }[] = [];
 
     // Duyệt qua từng loại phòng trong đơn đặt
     for (const item of bookingItems) {
@@ -145,8 +156,12 @@ export class BookingUseCase {
         );
       }
 
-      // --- B. Tính toán giá phòng của từng loại phòng ---
+      // --- B. Tính toán giá phòng và chính sách của từng gói Rate Plan ---
       let roomTypeTotalPrice = 0;
+      let ratePlan: any = null;
+      if (item.ratePlanId) {
+        ratePlan = await (prisma.ratePlan as any).findUnique({ where: { id: item.ratePlanId } });
+      }
 
       // Cộng giá tiền từng đêm lưu trú (Check-in đến trước ngày Check-out)
       for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
@@ -155,16 +170,57 @@ export class BookingUseCase {
           (c) => c.date.toISOString().split('T')[0] === dateStr
         );
         
-        const nightPrice = override ? parseFloat(override.price.toString()) : parseFloat(rt.basePrice.toString());
-        roomTypeTotalPrice += nightPrice;
+        let nightBasePrice = override ? parseFloat(override.price.toString()) : parseFloat(rt.basePrice.toString());
+        let finalNightPrice = nightBasePrice;
+
+        if (ratePlan) {
+          if (ratePlan.priceModifierType === 'PERCENTAGE_DISCOUNT') {
+            finalNightPrice = nightBasePrice * (1 - parseFloat(ratePlan.priceModifierValue.toString()) / 100);
+          } else if (ratePlan.priceModifierType === 'AMOUNT_DISCOUNT') {
+            finalNightPrice = Math.max(0, nightBasePrice - parseFloat(ratePlan.priceModifierValue.toString()));
+          } else if (ratePlan.priceModifierType === 'FIXED_PRICE' && parseFloat(ratePlan.priceModifierValue.toString()) > 0) {
+            finalNightPrice = parseFloat(ratePlan.priceModifierValue.toString());
+          }
+        }
+
+        roomTypeTotalPrice += finalNightPrice;
       }
 
       // Tổng tiền cho loại phòng này = tổng giá tiền các đêm * số lượng phòng đặt
       const itemFinalPrice = roomTypeTotalPrice * item.quantity;
       totalPrice += itemFinalPrice;
 
+      // Build snapshots chính sách
+      let cancelSnap = 'Miễn phí hủy trước 24h';
+      let paySnap = 'Thanh toán tại khách sạn';
+
+      if (ratePlan) {
+        if (ratePlan.cancellationPolicy === 'NON_REFUNDABLE') {
+          cancelSnap = 'Không hoàn tiền nếu hủy';
+        } else if (ratePlan.cancellationPolicy === 'FREE_CANCEL') {
+          cancelSnap = `Miễn phí hủy trước ${ratePlan.freeCancelHoursBefore || 24} giờ check-in`;
+        } else if (ratePlan.cancellationPolicy === 'CANCEL_BEFORE_DAYS') {
+          cancelSnap = `Miễn phí hủy trước ${ratePlan.freeCancelDaysBefore || 1} ngày check-in`;
+        } else if (ratePlan.cancellationPolicy === 'CANCEL_BEFORE_HOURS') {
+          cancelSnap = `Miễn phí hủy trước ${ratePlan.freeCancelHoursBefore || 24} giờ check-in`;
+        }
+
+        if (ratePlan.paymentPolicy === 'PAY_ONLINE') {
+          paySnap = 'Thanh toán online 100%';
+        } else if (ratePlan.paymentPolicy === 'DEPOSIT') {
+          const depVal = ratePlan.depositType === 'PERCENTAGE' ? `${ratePlan.depositValue}%` : `${Number(ratePlan.depositValue).toLocaleString('vi-VN')}đ`;
+          paySnap = `Đặt cọc ${depVal} trước, còn lại trả tại khách sạn`;
+        } else {
+          paySnap = 'Thanh toán tại khách sạn';
+        }
+      }
+
       itemsToCreate.push({
         roomTypeId: rt.id,
+        ratePlanId: ratePlan ? ratePlan.id : null,
+        ratePlanName: ratePlan ? ratePlan.name : 'Gói Tiêu chuẩn',
+        cancellationPolicySnapshot: cancelSnap,
+        paymentPolicySnapshot: paySnap,
         quantity: item.quantity,
         price: itemFinalPrice, // Giá trị lưu lại cho item
       });
@@ -222,8 +278,12 @@ export class BookingUseCase {
           notes,
           numGuests: (numGuests && Number(numGuests) > 1) ? Number(numGuests) : (calculatedTotalGuests || 1),
           bookingItems: {
-            create: itemsToCreate.map((item) => ({
+            create: itemsToCreate.map((item: any) => ({
               roomTypeId: item.roomTypeId,
+              ratePlanId: item.ratePlanId,
+              ratePlanName: item.ratePlanName,
+              cancellationPolicySnapshot: item.cancellationPolicySnapshot,
+              paymentPolicySnapshot: item.paymentPolicySnapshot,
               quantity: item.quantity,
               price: item.price,
             })),
@@ -285,6 +345,11 @@ export class BookingUseCase {
       return newBooking;
     });
 
+    // Phát tín hiệu Real-time cho Chủ khách sạn (Owner) & Admin khi có ĐƠN ĐẶT PHÒNG MỚI!
+    socketService.emitBookingStatusUpdate(booking.id, BookingStatus.PENDING).catch(err => {
+      console.error('[Create Booking Socket Error]:', err);
+    });
+
     return booking;
   }
 
@@ -343,18 +408,30 @@ export class BookingUseCase {
       );
 
       if (userRole !== Role.ADMIN && !isHotelOwner) {
-        // Khách hàng tự hủy đơn
-        if (booking.userId === userId && status === BookingStatus.CANCELLED) {
-          if (booking.status !== BookingStatus.PENDING && booking.status !== BookingStatus.CONFIRMED && booking.status !== BookingStatus.PAYMENT_PROCESSING) {
-            throw new AppError('Không thể hủy đơn đặt phòng ở trạng thái hiện tại', 400);
+        if (booking.userId === userId) {
+          // Khách hàng chính chủ có thể:
+          // 1. Hủy đơn (CANCELLED) khi đang PENDING, CONFIRMED, PAYMENT_PROCESSING
+          if (status === BookingStatus.CANCELLED) {
+            if (booking.status !== BookingStatus.PENDING && booking.status !== BookingStatus.CONFIRMED && booking.status !== BookingStatus.PAYMENT_PROCESSING) {
+              throw new AppError('Không thể hủy đơn đặt phòng ở trạng thái hiện tại', 400);
+            }
+          } 
+          // 2. Xác nhận đơn (CONFIRMED) khi đang PENDING hoặc PAYMENT_PROCESSING (ví dụ: Thanh toán tại khách sạn)
+          else if (status === BookingStatus.CONFIRMED) {
+            if (booking.status !== BookingStatus.PENDING && booking.status !== BookingStatus.PAYMENT_PROCESSING) {
+              throw new AppError('Đơn đặt phòng không ở trạng thái chờ xác nhận', 400);
+            }
+          } else {
+            throw new AppError('Bạn không có quyền thay đổi trạng thái đơn đặt phòng này', 403);
           }
         } else {
           throw new AppError('Bạn không có quyền thay đổi trạng thái đơn đặt phòng này', 403);
         }
       }
     } else {
-      // Cho phép hủy đơn phòng vãng lai nếu đang ở trạng thái PENDING
-      if (status === BookingStatus.CANCELLED && (booking.status === BookingStatus.PENDING || booking.status === BookingStatus.PAYMENT_PROCESSING)) {
+      // Cho phép khách vãng lai chưa đăng nhập HỦY hoặc XÁC NHẬN đơn nếu đang PENDING / PAYMENT_PROCESSING
+      if ((status === BookingStatus.CANCELLED || status === BookingStatus.CONFIRMED) && 
+          (booking.status === BookingStatus.PENDING || booking.status === BookingStatus.PAYMENT_PROCESSING)) {
         // Hợp lệ
       } else {
         throw new AppError('Vui lòng đăng nhập để thay đổi trạng thái đơn hàng', 401);
@@ -379,9 +456,21 @@ export class BookingUseCase {
       });
     }
 
-    // Xử lý hoàn coupon & điểm tích lũy khi HỦY đơn
+    // Xử lý hoàn coupon, điểm tích lũy & HOÀN TIỀN khi HỦY đơn
     if (status === BookingStatus.CANCELLED) {
       try {
+        // Kiểm tra xem đơn hàng có thuộc gói Không Hoàn Tiền (Non-refundable) không
+        const firstItem = booking.bookingItems?.[0];
+        const cancelPolicy = (firstItem as any)?.cancellationPolicySnapshot || '';
+        const ratePlanName = (firstItem as any)?.ratePlanName || '';
+
+        const isNonRefundable = 
+          cancelPolicy.includes('Không hoàn tiền') || 
+          cancelPolicy.toUpperCase().includes('NON_REFUNDABLE') || 
+          ratePlanName.includes('Non-refundable') ||
+          ratePlanName.includes('Không hoàn');
+
+        // Thu hồi coupon
         const couponUsages = await prisma.couponUsage.findMany({ where: { bookingId } });
         for (const usage of couponUsages) {
           await prisma.coupon.update({
@@ -390,9 +479,58 @@ export class BookingUseCase {
           });
         }
         await prisma.couponUsage.deleteMany({ where: { bookingId } });
-        await loyaltyUseCase.refundPoints(bookingId);
+
+        const existingPayment = await prisma.payment.findUnique({ where: { bookingId } });
+
+        if (isNonRefundable) {
+          console.log(`[Cancel Booking] Booking #${bookingId} thuộc gói KHÔNG HOÀN TIỀN. Không kích hoạt hoàn tiền VNPay.`);
+          // Gửi thông báo cho khách hàng là đơn đã hủy nhưng không được hoàn tiền theo chính sách
+          if (booking.userId && existingPayment && existingPayment.status === 'COMPLETED') {
+            await prisma.notification.create({
+              data: {
+                userId: booking.userId,
+                title: 'Đã hủy đơn đặt phòng ⚠️',
+                content: `Đơn đặt phòng #${bookingId.substring(0, 8).toUpperCase()} đã hủy thành công. Lưu ý: Do đơn phòng thuộc gói "Không hoàn tiền khi hủy" nên số tiền ${Number(booking.finalPrice).toLocaleString('vi-VN')}đ không được hoàn lại theo chính sách của khách sạn.`,
+                type: 'SYSTEM'
+              }
+            });
+          }
+        } else {
+          // Hoàn điểm Loyalty cho các đơn được phép hủy
+          await loyaltyUseCase.refundPoints(bookingId);
+
+          // Nếu đơn hàng Miễn phí hủy đã thanh toán Online trước đó (COMPLETED), gọi API hoàn tiền VNPay Sandbox
+          if (existingPayment && existingPayment.status === 'COMPLETED') {
+            const refundRes = await paymentService.refundVnPayTransaction({
+              bookingId,
+              amount: Number(booking.finalPrice),
+              transactionNo: existingPayment.transactionId || undefined,
+              userEmail: booking.guestEmail || undefined,
+            });
+
+            await prisma.payment.update({
+              where: { id: existingPayment.id },
+              data: {
+                status: 'REFUNDED',
+                transactionId: refundRes.vnpayTransactionNo || existingPayment.transactionId,
+              }
+            });
+
+            // Tạo thông báo hoàn tiền tự động qua VNPay Sandbox cho khách hàng
+            if (booking.userId) {
+              await prisma.notification.create({
+                data: {
+                  userId: booking.userId,
+                  title: 'Hoàn tiền VNPay Sandbox thành công 💸',
+                  content: `Đơn đặt phòng #${bookingId.substring(0, 8).toUpperCase()} đã hủy thành công. Cổng VNPay Sandbox đã gửi lệnh hoàn trả 100% số tiền ${Number(booking.finalPrice).toLocaleString('vi-VN')}đ về tài khoản ngân hàng/ví VNPay của bạn. Mã giao dịch hoàn tiền: ${refundRes.vnpayTransactionNo}`,
+                  type: 'SYSTEM'
+                }
+              });
+            }
+          }
+        }
       } catch (err) {
-        console.error('Failed to cleanup coupon/points on cancel:', err);
+        console.error('Failed to cleanup coupon/points/refund on cancel:', err);
       }
     }
 
@@ -420,21 +558,9 @@ export class BookingUseCase {
   public async getMyBookings(userId: string, role?: string) {
     await this.cleanupExpiredBookings();
 
-    // Loại bỏ các đơn nháp chưa thanh toán mà bị hủy/hết hạn (status = CANCELLED và không có payment COMPLETED)
-    const notUnpaidDraftWhere = {
-      NOT: {
-        status: BookingStatus.CANCELLED,
-        OR: [
-          { payment: null },
-          { payment: { is: { status: { not: 'COMPLETED' as any } } } }
-        ]
-      }
-    };
-
     if (role === 'HOTEL_OWNER') {
       const bookings = await prisma.booking.findMany({
         where: {
-          ...notUnpaidDraftWhere,
           bookingItems: {
             some: {
               roomType: {
@@ -463,7 +589,6 @@ export class BookingUseCase {
     const bookings = await prisma.booking.findMany({
       where: {
         userId,
-        ...notUnpaidDraftWhere,
       },
       include: {
         bookingItems: {

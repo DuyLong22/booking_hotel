@@ -15,10 +15,14 @@ const server = http.createServer(app);
 // Khởi tạo Socket.io Server
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+      // Cho phép tất cả origin kết nối ở local / dev
+      callback(null, true);
+    },
     methods: ['GET', 'POST'],
     credentials: true,
   },
+  transports: ['polling', 'websocket'],
 });
 
 socketService.init(io);

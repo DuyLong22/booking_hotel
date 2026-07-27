@@ -72,6 +72,20 @@ export class CouponUseCase {
       throw new AppError('Mã giảm giá đã hết lượt sử dụng', 400);
     }
 
+    // Kiểm tra giới hạn 1 lượt sử dụng / 1 tài khoản
+    if (userId) {
+      const userUsage = await prisma.couponUsage.findFirst({
+        where: {
+          couponId: coupon.id,
+          userId: userId,
+        },
+      });
+
+      if (userUsage) {
+        throw new AppError('Bạn đã sử dụng mã giảm giá này rồi. Mỗi tài khoản chỉ được áp dụng mã 1 lần!', 400);
+      }
+    }
+
     // Kiểm tra giới hạn lượt dùng trong ngày hôm nay
     if ((coupon as any).dailyUsageLimit) {
       const todayStart = new Date();

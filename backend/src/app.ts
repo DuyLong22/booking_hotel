@@ -74,6 +74,8 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date() });
 });
 
+import ratePlanRoutes from './interfaces/routes/rate-plan.routes';
+
 // Định tuyến API các modules
 app.use('/api/auth', authRoutes);
 app.use('/api/hotels', hotelRoutes);
@@ -83,6 +85,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/loyalty', loyaltyRoutes);
+app.use('/api/rate-plans', ratePlanRoutes);
 
 
 

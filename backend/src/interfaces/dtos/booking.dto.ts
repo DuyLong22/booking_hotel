@@ -18,6 +18,7 @@ export const createBookingSchema = z.object({
       .array(
         z.object({
           roomTypeId: z.string().uuid('ID loại phòng không hợp lệ'),
+          ratePlanId: z.string().uuid('ID gói đặt phòng không hợp lệ').optional().nullable(),
           quantity: z.number().int().positive('Số lượng phòng phải lớn hơn 0'),
         })
       )

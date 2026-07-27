@@ -29,6 +29,7 @@ import {
 interface BookingItem {
   id: string;
   price: number;
+  paymentPolicySnapshot?: string;
   roomType: {
     name: string;
     hotel: {
@@ -51,6 +52,11 @@ interface Booking {
   guestEmail: string;
   guestPhone: string;
   bookingItems: BookingItem[];
+  payment?: {
+    id: string;
+    method: string;
+    status: string;
+  };
 }
 
 interface PaymentCard {
@@ -203,6 +209,21 @@ export const Profile: React.FC = () => {
     fetchNotifications();
   }, [user]);
 
+  // Real-time listener for Profile page booking auto refresh
+  useEffect(() => {
+    const handleBookingUpdated = () => {
+      fetchBookings();
+      fetchLoyaltyData();
+      fetchNotifications();
+    };
+
+    window.addEventListener('booking:statusUpdated', handleBookingUpdated);
+
+    return () => {
+      window.removeEventListener('booking:statusUpdated', handleBookingUpdated);
+    };
+  }, []);
+
   // Sync profile details when redux user changes (e.g. after update or login)
   useEffect(() => {
     if (user) {
@@ -313,22 +334,57 @@ export const Profile: React.FC = () => {
   };
 
   // Get status badge for bookings
-  const getBookingStatusBadge = (status: string) => {
+  const getBookingStatusBadge = (status: string, booking?: Booking) => {
+    const isPayAtHotel = booking?.bookingItems[0]?.paymentPolicySnapshot?.includes('khách sạn') || booking?.payment?.method === 'hotel';
+    const isPaid = booking?.payment?.status === 'COMPLETED';
+
     switch (status) {
       case 'PENDING':
         return <span className="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-extrabold text-[10px] sm:text-xs flex items-center gap-1.5 border border-amber-200/50 shadow-sm"><Clock className="w-3.5 h-3.5 shrink-0" /> {language === 'vi' ? 'Chờ thanh toán' : 'Pending payment'}</span>;
       case 'PAYMENT_PROCESSING':
         return <span className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-extrabold text-[10px] sm:text-xs flex items-center gap-1.5 border border-blue-200/50 shadow-sm"><Clock className="w-3.5 h-3.5 shrink-0" /> {language === 'vi' ? 'Đang xử lý' : 'Processing'}</span>;
       case 'CONFIRMED':
-        return <span className="bg-green-50 text-green-700 px-2.5 py-1 rounded-full font-extrabold text-[10px] sm:text-xs flex items-center gap-1.5 border border-green-200/50 shadow-sm"><CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> {language === 'vi' ? 'Đã thanh toán' : 'Paid'}</span>;
+        return (
+          <div className="flex flex-col items-end gap-1">
+            <span className="bg-green-50 text-green-700 px-2.5 py-1 rounded-full font-extrabold text-[10px] sm:text-xs flex items-center gap-1.5 border border-green-200/50 shadow-sm">
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> {language === 'vi' ? 'Đã giữ phòng' : 'Confirmed'}
+            </span>
+            {isPaid ? (
+              <span className="bg-emerald-100 text-emerald-800 text-[9px] px-2 py-0.5 rounded-full font-bold">
+                {language === 'vi' ? 'Đã TT Online' : 'Paid Online'}
+              </span>
+            ) : isPayAtHotel ? (
+              <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[9px] px-2 py-0.5 rounded-full font-bold">
+                🏨 {language === 'vi' ? 'Thanh toán tại khách sạn' : 'Pay at Hotel'}
+              </span>
+            ) : (
+              <span className="bg-slate-100 text-slate-600 text-[9px] px-2 py-0.5 rounded-full font-bold">
+                {language === 'vi' ? 'Chưa TT' : 'Unpaid'}
+              </span>
+            )}
+          </div>
+        );
       case 'CHECKED_IN':
         return <span className="bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full font-extrabold text-[10px] sm:text-xs border border-emerald-200/50 shadow-sm">{language === 'vi' ? 'Đã nhận phòng' : 'Checked In'}</span>;
       case 'CHECKED_OUT':
         return <span className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full font-extrabold text-[10px] sm:text-xs border border-slate-200/30">{language === 'vi' ? 'Đã trả phòng' : 'Checked Out'}</span>;
       case 'COMPLETED':
         return <span className="bg-green-50 text-green-700 px-2.5 py-1 rounded-full font-extrabold text-[10px] sm:text-xs border border-green-200/50 shadow-sm">{language === 'vi' ? 'Hoàn thành' : 'Completed'}</span>;
-      case 'CANCELLED':
-        return <span className="bg-red-50 text-red-700 px-2.5 py-1 rounded-full font-extrabold text-[10px] sm:text-xs flex items-center gap-1.5 border border-red-200/50 shadow-sm"><AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {language === 'vi' ? 'Đã hủy' : 'Cancelled'}</span>;
+      case 'CANCELLED': {
+        const isRefunded = booking?.payment?.status === 'REFUNDED';
+        return (
+          <div className="flex flex-col items-end gap-1">
+            <span className="bg-red-50 text-red-700 px-2.5 py-1 rounded-full font-extrabold text-[10px] sm:text-xs flex items-center gap-1.5 border border-red-200/50 shadow-sm">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {language === 'vi' ? 'Đã hủy' : 'Cancelled'}
+            </span>
+            {isRefunded && (
+              <span className="bg-amber-100 text-amber-800 border border-amber-300 text-[9px] px-2 py-0.5 rounded-full font-bold">
+                💸 {language === 'vi' ? 'Đã hoàn tiền (VNPay)' : 'Refunded (VNPay)'}
+              </span>
+            )}
+          </div>
+        );
+      }
       default:
         return null;
     }
@@ -336,16 +392,7 @@ export const Profile: React.FC = () => {
 
   // Payment checkout navigation
   const handlePayNow = (booking: Booking) => {
-    const item = booking.bookingItems[0];
-    if (!item) return;
-    navigate('/checkout', {
-      state: {
-        hotelName: item.roomType.hotel.name,
-        roomTypeId: item.roomType.name,
-        checkInDate: booking.checkInDate,
-        checkOutDate: booking.checkOutDate
-      }
-    });
+    navigate(`/payment?bookingId=${booking.id}`);
   };
 
   // Review submission
@@ -671,7 +718,7 @@ export const Profile: React.FC = () => {
                               <span className="line-clamp-1">{item?.roomType.hotel.address}</span>
                             </div>
                           </div>
-                          {getBookingStatusBadge(booking.status)}
+                          {getBookingStatusBadge(booking.status, booking)}
                         </div>
 
                         {/* Middle Specs grid */}
@@ -698,7 +745,7 @@ export const Profile: React.FC = () => {
                         <div className="flex justify-between items-center pt-3 border-t border-slate-55 text-[10px] font-bold text-slate-400">
                           <span>{language === 'vi' ? 'Mã đặt phòng:' : 'Booking ID:'} {booking.id.substring(0, 8).toUpperCase()}</span>
                           
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             {booking.status === 'PENDING' && (
                               <button
                                 onClick={() => handlePayNow(booking)}
@@ -709,11 +756,43 @@ export const Profile: React.FC = () => {
                             )}
 
                             {booking.status === 'CONFIRMED' && (
+                              <>
+                                <button
+                                  onClick={() => setSelectedQrBooking(booking)}
+                                  className="bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-[10px] px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5 shadow-sm"
+                                >
+                                  <QrCode className="w-3.5 h-3.5" /> {language === 'vi' ? 'Xem vé QR' : 'QR Ticket'}
+                                </button>
+
+                                {booking.payment?.status !== 'COMPLETED' && (
+                                  <button
+                                    onClick={() => handlePayNow(booking)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[10px] px-3.5 py-2 rounded-xl transition-colors shadow flex items-center gap-1"
+                                  >
+                                    <CreditCard className="w-3.5 h-3.5" /> {language === 'vi' ? 'Thanh toán Online ngay' : 'Pay Online Now'}
+                                  </button>
+                                )}
+                              </>
+                            )}
+
+                            {(booking.status === 'PENDING' || booking.status === 'PAYMENT_PROCESSING' || booking.status === 'CONFIRMED') && (
                               <button
-                                onClick={() => setSelectedQrBooking(booking)}
-                                className="bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-[10px] px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5 shadow-sm"
+                                onClick={async () => {
+                                  if (window.confirm(language === 'vi' ? 'Bạn có chắc chắn muốn hủy đơn đặt phòng này? Đặt phòng của bạn sẽ bị hủy và phòng sẽ được giải phóng.' : 'Are you sure you want to cancel this booking?')) {
+                                    try {
+                                      const res = await apiClient.put(`/bookings/${booking.id}/status`, { status: 'CANCELLED' });
+                                      if (res.data.success || res.status === 200) {
+                                        triggerToast(language === 'vi' ? 'Hủy đơn đặt phòng thành công!' : 'Booking cancelled successfully!');
+                                        fetchBookings();
+                                      }
+                                    } catch (err: any) {
+                                      triggerToast(err.response?.data?.message || 'Không thể hủy đơn.', 'error');
+                                    }
+                                  }
+                                }}
+                                className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-extrabold text-[10px] px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5 shadow-sm"
                               >
-                                <QrCode className="w-3.5 h-3.5" /> {language === 'vi' ? 'Xem vé QR' : 'QR Ticket'}
+                                <AlertTriangle className="w-3.5 h-3.5" /> {language === 'vi' ? 'Hủy phòng' : 'Cancel Stay'}
                               </button>
                             )}
 

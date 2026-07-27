@@ -30,6 +30,7 @@ interface BookingPreview {
   hotelId: string;
   hotelName: string;
   roomTypeId: string;
+  ratePlanId?: string | null;
   checkInDate: string;
   checkOutDate: string;
   quantity?: number;
@@ -158,6 +159,7 @@ export const Checkout: React.FC = () => {
         bookingItems: [
           {
             roomTypeId: preview.roomTypeId,
+            ratePlanId: preview.ratePlanId || undefined,
             quantity: preview.quantity || 1
           }
         ]

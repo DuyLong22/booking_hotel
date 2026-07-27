@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../store';
@@ -59,6 +59,30 @@ export const Navbar: React.FC = () => {
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [currDropdownOpen, setCurrDropdownOpen] = useState(false);
   const { language, currency } = useSelector((state: RootState) => state.settings);
+
+  // Refs for click outside handling
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const langMenuRef = useRef<HTMLDivElement>(null);
+  const currMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+      if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
+        setLangDropdownOpen(false);
+      }
+      if (currMenuRef.current && !currMenuRef.current.contains(event.target as Node)) {
+        setCurrDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const currencies: { id: CurrencyType; label: string }[] = [
     { id: 'VND', label: 'VND (đ)' },
@@ -125,7 +149,7 @@ export const Navbar: React.FC = () => {
             </Link>
 
             {/* Currency Switcher (No borders/box outlines) */}
-            <div className="relative">
+            <div ref={currMenuRef} className="relative">
               <button
                 type="button"
                 onClick={() => {
@@ -140,30 +164,27 @@ export const Navbar: React.FC = () => {
                 <ChevronDown className="w-3.5 h-3.5 opacity-70" />
               </button>
               {currDropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setCurrDropdownOpen(false)}></div>
-                  <div className="absolute right-0 mt-2 w-36 rounded-premium bg-white border border-slate-100 shadow-lg py-1 z-20 text-slate-700 animate-in fade-in slide-in-from-top-2 duration-150">
-                    {currencies.map((curr) => (
-                      <button
-                        key={curr.id}
-                        type="button"
-                        onClick={() => {
-                          dispatch(setCurrency(curr.id));
-                          setCurrDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 flex items-center justify-between ${currency === curr.id ? 'text-primary' : 'text-slate-650'}`}
-                      >
-                        <span>{curr.label}</span>
-                        {currency === curr.id && <span>✓</span>}
-                      </button>
-                    ))}
-                  </div>
-                </>
+                <div className="absolute right-0 mt-2 w-36 rounded-premium bg-white border border-slate-100 shadow-lg py-1 z-50 text-slate-700 animate-in fade-in slide-in-from-top-2 duration-150">
+                  {currencies.map((curr) => (
+                    <button
+                      key={curr.id}
+                      type="button"
+                      onClick={() => {
+                        dispatch(setCurrency(curr.id));
+                        setCurrDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 flex items-center justify-between ${currency === curr.id ? 'text-primary' : 'text-slate-650'}`}
+                    >
+                      <span>{curr.label}</span>
+                      {currency === curr.id && <span>✓</span>}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
 
             {/* Language Switcher (No borders/box outlines) */}
-            <div className="relative">
+            <div ref={langMenuRef} className="relative">
               <button
                 type="button"
                 onClick={() => {
@@ -183,38 +204,35 @@ export const Navbar: React.FC = () => {
                 <ChevronDown className="w-3.5 h-3.5 opacity-70" />
               </button>
               {langDropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setLangDropdownOpen(false)}></div>
-                  <div className="absolute right-0 mt-2 w-36 rounded-premium bg-white border border-slate-100 shadow-lg py-1 z-20 text-slate-700 animate-in fade-in slide-in-from-top-2 duration-150">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        dispatch(setLanguage('vi'));
-                        setLangDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 flex items-center gap-2 ${language === 'vi' ? 'text-primary' : 'text-slate-650'}`}
-                    >
-                      <span className="inline-flex items-center justify-center w-5 h-5 bg-red-600 rounded-full text-yellow-300 font-black text-[9px] shadow-sm select-none border border-white/20 shrink-0">★</span>
-                      <span>Tiếng Việt</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        dispatch(setLanguage('en'));
-                        setLangDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 flex items-center gap-2 ${language === 'en' ? 'text-primary' : 'text-slate-650'}`}
-                    >
-                      <span className="inline-flex items-center justify-center w-5 h-5 bg-blue-800 rounded-full text-white font-black text-[8px] shadow-sm select-none border border-white/20 shrink-0">EN</span>
-                      <span>English</span>
-                    </button>
-                  </div>
-                </>
+                <div className="absolute right-0 mt-2 w-36 rounded-premium bg-white border border-slate-100 shadow-lg py-1 z-50 text-slate-700 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      dispatch(setLanguage('vi'));
+                      setLangDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 flex items-center gap-2 ${language === 'vi' ? 'text-primary' : 'text-slate-650'}`}
+                  >
+                    <span className="inline-flex items-center justify-center w-5 h-5 bg-red-600 rounded-full text-yellow-300 font-black text-[9px] shadow-sm select-none border border-white/20 shrink-0">★</span>
+                    <span>Tiếng Việt</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      dispatch(setLanguage('en'));
+                      setLangDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 flex items-center gap-2 ${language === 'en' ? 'text-primary' : 'text-slate-650'}`}
+                  >
+                    <span className="inline-flex items-center justify-center w-5 h-5 bg-blue-800 rounded-full text-white font-black text-[8px] shadow-sm select-none border border-white/20 shrink-0">EN</span>
+                    <span>English</span>
+                  </button>
+                </div>
               )}
             </div>
             
             {isAuthenticated ? (
-              <div className="relative">
+              <div ref={userMenuRef} className="relative">
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className={`flex items-center gap-2 p-1.5 rounded-full transition-colors focus:outline-none ${
@@ -240,9 +258,7 @@ export const Navbar: React.FC = () => {
 
                 {/* Dropdown Menu */}
                 {dropdownOpen && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)}></div>
-                    <div className="absolute right-0 mt-2 w-56 rounded-premium bg-white border border-slate-100 shadow-lg py-1 z-20 text-slate-700 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="absolute right-0 mt-2 w-56 rounded-premium bg-white border border-slate-100 shadow-xl py-1 z-50 text-slate-700 animate-in fade-in slide-in-from-top-2 duration-150">
                       <div className="px-4 py-2 border-b border-slate-50">
                         <p className="text-xs text-slate-400 font-medium">{t.loginAs}</p>
                         <p className="text-sm font-semibold text-slate-700">
@@ -314,7 +330,6 @@ export const Navbar: React.FC = () => {
                         {t.logout}
                       </button>
                     </div>
-                  </>
                 )}
               </div>
             ) : (

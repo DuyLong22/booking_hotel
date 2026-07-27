@@ -1,5 +1,6 @@
 import prisma from '../../config/database';
 import { AppError } from '../../infrastructure/middlewares/error.middleware';
+import ratePlanUseCase from './rate-plan.use-case';
 
 export class RoomUseCase {
   // --- Quản lý Loại Phòng (RoomType) ---
@@ -49,12 +50,20 @@ export class RoomUseCase {
       await prisma.room.createMany({ data: roomsData });
     }
 
+    // Tự động tạo 2 gói Rate Plan mặc định (Flexible & Non-refundable)
+    try {
+      await ratePlanUseCase.createDefaultRatePlans(roomType.id, parseFloat(basePrice.toString()));
+    } catch (err) {
+      console.error('Failed to create default rate plans:', err);
+    }
+
     // Load lại hạng phòng kèm danh sách phòng vừa tạo
     const result = await prisma.roomType.findUnique({
       where: { id: roomType.id },
       include: {
         images: true,
         rooms: true,
+        ratePlans: true,
       }
     });
 

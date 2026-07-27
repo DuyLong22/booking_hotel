@@ -40,6 +40,9 @@ interface Booking {
     price: number;
     quantity: number;
     roomNumbers?: string;
+    ratePlanName?: string;
+    cancellationPolicySnapshot?: string;
+    paymentPolicySnapshot?: string;
     roomType: {
       id: string;
       name: string;
@@ -77,6 +80,7 @@ interface RoomType {
   childSurcharge?: number;
   cancellationPolicy?: string;
   paymentPolicy?: string;
+  ratePlans?: any[];
 }
 
 interface Conversation {
@@ -214,6 +218,25 @@ export const OwnerDashboard: React.FC = () => {
   const [newCouponTargetUserType, setNewCouponTargetUserType] = useState<'ALL' | 'NEW' | 'VIP'>('ALL');
   const [newCouponStart, setNewCouponStart] = useState(`${new Date().toISOString().split('T')[0]}T08:00`);
   const [newCouponEnd, setNewCouponEnd] = useState('');
+
+  // Rate Plan States
+  const [selectedRoomTypeForRatePlans, setSelectedRoomTypeForRatePlans] = useState<any | null>(null);
+  const [ratePlansList, setRatePlansList] = useState<any[]>([]);
+  const [loadingRatePlans, setLoadingRatePlans] = useState(false);
+  const [showAddRatePlanForm, setShowAddRatePlanForm] = useState(false);
+  const [editingRatePlan, setEditingRatePlan] = useState<any | null>(null);
+  const [newRatePlan, setNewRatePlan] = useState({
+    name: '',
+    description: '',
+    priceModifierType: 'FIXED_PRICE',
+    priceModifierValue: 0,
+    paymentPolicy: 'PAY_AT_HOTEL',
+    cancellationPolicy: 'FREE_CANCEL',
+    freeCancelDaysBefore: 1,
+    freeCancelHoursBefore: 24,
+    cancellationFeeType: 'FIRST_NIGHT',
+    noShowPolicy: 'PERCENT_100'
+  });
 
   // Owner reviews list (all reviews for owner's hotel)
   const [allReviews, setAllReviews] = useState<any[]>([]);
@@ -487,6 +510,27 @@ export const OwnerDashboard: React.FC = () => {
 
     return () => {
       socketRef.current?.disconnect();
+    };
+  }, []);
+
+  // Real-time listener for Owner Dashboard auto refresh
+  useEffect(() => {
+    const handleBookingUpdated = () => {
+      fetchAllBookings();
+      fetchOwnerStats();
+    };
+
+    const handleHotelUpdated = () => {
+      fetchAllBookings();
+      fetchOwnerStats();
+    };
+
+    window.addEventListener('booking:statusUpdated', handleBookingUpdated);
+    window.addEventListener('hotel:statusUpdated', handleHotelUpdated);
+
+    return () => {
+      window.removeEventListener('booking:statusUpdated', handleBookingUpdated);
+      window.removeEventListener('hotel:statusUpdated', handleHotelUpdated);
     };
   }, []);
 
@@ -2107,9 +2151,26 @@ export const OwnerDashboard: React.FC = () => {
 
                           {/* Action buttons */}
                           <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                            <span className="text-[#334155] bg-slate-50 border border-slate-200 text-[10px] font-black px-3.5 py-1.5 rounded-xl flex items-center gap-1 shadow-sm">
-                              Số lượng: {rt.rooms?.length || 0} phòng
-                            </span>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                setSelectedRoomTypeForRatePlans(rt);
+                                setLoadingRatePlans(true);
+                                try {
+                                  const res = await apiClient.get(`/rate-plans/room-type/${rt.id}`);
+                                  if (res.data.success) {
+                                    setRatePlansList(res.data.data);
+                                  }
+                                } catch (err) {
+                                  console.error('Failed to fetch rate plans:', err);
+                                } finally {
+                                  setLoadingRatePlans(false);
+                                }
+                              }}
+                              className="text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[10px] font-black px-3 py-1.5 rounded-xl flex items-center gap-1 transition-all shadow-xs"
+                            >
+                              ⚙️ Quản lý Gói ({rt.ratePlans?.length || 2} gói)
+                            </button>
 
                             <div className="flex gap-2">
                               <button
@@ -2519,17 +2580,28 @@ export const OwnerDashboard: React.FC = () => {
                                       b.status === 'CHECKED_OUT' ? 'bg-[#F5F3FF] text-[#5B21B6]' :
                                       b.status === 'COMPLETED' ? 'bg-[#F3F4F6] text-[#374151]' : 'bg-[#FFF7ED] text-[#9A3412]'
                                     }`}>
-                                      {b.status}
+                                      {b.status === 'CONFIRMED' ? 'GIỮ PHÒNG' : b.status}
                                     </span>
                                   </div>
                                   {/* Thanh toán status */}
                                   <div>
-                                    <span className={`px-1.5 py-0.5 rounded font-bold text-[8px] ${
-                                      hasPaid ? 'bg-emerald-100 text-emerald-800' :
-                                      refundStatus ? 'bg-orange-100 text-orange-850' : 'bg-slate-100 text-slate-500'
-                                    }`}>
-                                      {hasPaid ? 'ĐÃ TT' : refundStatus ? 'HOÀN TIỀN' : 'CHƯA TT'}
-                                    </span>
+                                    {hasPaid ? (
+                                      <span className="px-1.5 py-0.5 rounded font-bold text-[8px] bg-emerald-100 text-emerald-800">
+                                        ĐÃ TT ONLINE
+                                      </span>
+                                    ) : refundStatus ? (
+                                      <span className="px-1.5 py-0.5 rounded font-bold text-[8px] bg-orange-100 text-orange-850">
+                                        HOÀN TIỀN
+                                      </span>
+                                    ) : b.bookingItems?.[0]?.paymentPolicySnapshot?.includes('khách sạn') ? (
+                                      <span className="px-1.5 py-0.5 rounded font-bold text-[8px] bg-amber-100 text-amber-800 border border-amber-200">
+                                        TRẢ TẠI KHÁCH SẠN
+                                      </span>
+                                    ) : (
+                                      <span className="px-1.5 py-0.5 rounded font-bold text-[8px] bg-slate-100 text-slate-500">
+                                        CHƯA TT
+                                      </span>
+                                    )}
                                   </div>
                                 </td>
                                 <td className="px-4 py-3">
@@ -3927,6 +3999,254 @@ export const OwnerDashboard: React.FC = () => {
               >
                 Xác nhận
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RATE PLANS MANAGEMENT MODAL */}
+      {selectedRoomTypeForRatePlans && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-100 rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+              <div>
+                <h3 className="font-extrabold text-slate-800 text-base">
+                  Quản lý Gói đặt phòng (Rate Plans) — {selectedRoomTypeForRatePlans.name}
+                </h3>
+                <p className="text-[11px] text-slate-400 font-semibold">Thiết lập các gói giá, chính sách thanh toán & hủy phòng linh hoạt</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedRoomTypeForRatePlans(null)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-full hover:bg-slate-200 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-6 flex-1">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-black text-slate-700 uppercase">Danh sách Rate Plan hiện có</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (showAddRatePlanForm) {
+                      setShowAddRatePlanForm(false);
+                      setEditingRatePlan(null);
+                    } else {
+                      setEditingRatePlan(null);
+                      setNewRatePlan({
+                        name: '',
+                        description: '',
+                        priceModifierType: 'FIXED_PRICE',
+                        priceModifierValue: 0,
+                        paymentPolicy: 'PAY_AT_HOTEL',
+                        cancellationPolicy: 'FREE_CANCEL',
+                        freeCancelDaysBefore: 1,
+                        freeCancelHoursBefore: 24,
+                        cancellationFeeType: 'FIRST_NIGHT',
+                        noShowPolicy: 'PERCENT_100'
+                      });
+                      setShowAddRatePlanForm(true);
+                    }
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all shadow-sm"
+                >
+                  <Plus className="w-4 h-4" /> {showAddRatePlanForm ? 'Đóng form' : 'Thêm Gói Mới'}
+                </button>
+              </div>
+
+              {/* Form thêm / sửa Rate Plan */}
+              {showAddRatePlanForm && (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    try {
+                      let res;
+                      if (editingRatePlan) {
+                        res = await apiClient.put(`/rate-plans/${editingRatePlan.id}`, newRatePlan);
+                      } else {
+                        res = await apiClient.post('/rate-plans', {
+                          roomTypeId: selectedRoomTypeForRatePlans.id,
+                          ...newRatePlan
+                        });
+                      }
+                      if (res.data.success) {
+                        triggerToast(editingRatePlan ? 'Cập nhật gói thành công!' : 'Tạo gói đặt phòng mới thành công!');
+                        setShowAddRatePlanForm(false);
+                        setEditingRatePlan(null);
+                        const refresh = await apiClient.get(`/rate-plans/room-type/${selectedRoomTypeForRatePlans.id}`);
+                        setRatePlansList(refresh.data.data);
+                      }
+                    } catch (err: any) {
+                      alert(err.response?.data?.message || 'Thao tác thất bại');
+                    }
+                  }}
+                  className="bg-blue-50/50 border border-blue-100 p-4 rounded-2xl space-y-4 animate-in slide-in-from-top-2 duration-150"
+                >
+                  <h4 className="font-extrabold text-xs text-blue-900 uppercase">
+                    {editingRatePlan ? `Chỉnh sửa gói: ${editingRatePlan.name}` : 'Tạo gói đặt phòng mới'}
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-bold">
+                    <div>
+                      <label className="text-slate-600 block mb-1">Tên gói (Ví dụ: Early Bird / Flexible / Flash Sale)</label>
+                      <input
+                        type="text"
+                        required
+                        value={newRatePlan.name}
+                        onChange={(e) => setNewRatePlan({ ...newRatePlan, name: e.target.value })}
+                        placeholder="Tên gói..."
+                        className="w-full bg-white border border-slate-200 rounded-lg p-2 font-bold text-slate-800"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-slate-600 block mb-1">Loại điều chỉnh giá</label>
+                      <select
+                        value={newRatePlan.priceModifierType}
+                        onChange={(e) => setNewRatePlan({ ...newRatePlan, priceModifierType: e.target.value })}
+                        className="w-full bg-white border border-slate-200 rounded-lg p-2 font-bold text-slate-800"
+                      >
+                        <option value="FIXED_PRICE">Giá cố định = BasePrice</option>
+                        <option value="PERCENTAGE_DISCOUNT">Giảm theo % (%)</option>
+                        <option value="AMOUNT_DISCOUNT">Giảm theo số tiền cụ thể (VNĐ)</option>
+                      </select>
+                    </div>
+
+                    {newRatePlan.priceModifierType !== 'FIXED_PRICE' && (
+                      <div>
+                        <label className="text-slate-600 block mb-1">Mức giảm ({newRatePlan.priceModifierType === 'PERCENTAGE_DISCOUNT' ? '%' : 'VNĐ'})</label>
+                        <input
+                          type="number"
+                          required
+                          value={newRatePlan.priceModifierValue}
+                          onChange={(e) => setNewRatePlan({ ...newRatePlan, priceModifierValue: Number(e.target.value) })}
+                          className="w-full bg-white border border-slate-200 rounded-lg p-2 font-bold text-slate-800"
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="text-slate-600 block mb-1">Chính sách thanh toán</label>
+                      <select
+                        value={newRatePlan.paymentPolicy}
+                        onChange={(e) => setNewRatePlan({ ...newRatePlan, paymentPolicy: e.target.value })}
+                        className="w-full bg-white border border-slate-200 rounded-lg p-2 font-bold text-slate-800"
+                      >
+                        <option value="PAY_AT_HOTEL">Thanh toán tại khách sạn</option>
+                        <option value="PAY_ONLINE">Thanh toán online 100% khi đặt</option>
+                        <option value="DEPOSIT">Đặt cọc trước (ví dụ 30%)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-slate-600 block mb-1">Chính sách hủy phòng</label>
+                      <select
+                        value={newRatePlan.cancellationPolicy}
+                        onChange={(e) => setNewRatePlan({ ...newRatePlan, cancellationPolicy: e.target.value })}
+                        className="w-full bg-white border border-slate-200 rounded-lg p-2 font-bold text-slate-800"
+                      >
+                        <option value="FREE_CANCEL">Miễn phí hủy trước thời hạn</option>
+                        <option value="NON_REFUNDABLE">Không hoàn tiền nếu hủy (Non-refundable)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    {editingRatePlan && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAddRatePlanForm(false);
+                          setEditingRatePlan(null);
+                        }}
+                        className="bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2 rounded-xl hover:bg-slate-300 transition-all"
+                      >
+                        Hủy
+                      </button>
+                    )}
+                    <button
+                      type="submit"
+                      className="bg-blue-600 text-white font-black text-xs px-5 py-2 rounded-xl shadow-md hover:bg-blue-700 transition-all"
+                    >
+                      {editingRatePlan ? 'Lưu cập nhật gói' : 'Lưu Rate Plan Mới'}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Danh sách Rate Plans */}
+              {loadingRatePlans ? (
+                <p className="text-center text-xs text-slate-400 font-bold py-6">Đang tải các gói đặt phòng...</p>
+              ) : ratePlansList.length === 0 ? (
+                <p className="text-center text-xs text-slate-400 font-bold py-6">Chưa có gói nào. Nhấn "Thêm Gói Mới" ở trên.</p>
+              ) : (
+                <div className="space-y-3">
+                  {ratePlansList.map((plan) => (
+                    <div key={plan.id} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex items-center justify-between gap-4 hover:border-blue-300 transition-colors">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h5 className="font-extrabold text-sm text-slate-800">{plan.name}</h5>
+                          <span className="text-[10px] font-black text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                            {plan.priceModifierType === 'PERCENTAGE_DISCOUNT' ? `Giảm ${plan.priceModifierValue}%` : plan.priceModifierType === 'AMOUNT_DISCOUNT' ? `Giảm ${Number(plan.priceModifierValue).toLocaleString()}đ` : 'Giá chuẩn'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 font-semibold">{plan.description || 'Chính sách tiêu chuẩn.'}</p>
+                        <div className="flex items-center gap-4 text-[11px] font-bold text-slate-600 pt-1">
+                          <span>💳 {plan.paymentPolicy === 'PAY_ONLINE' ? 'Thanh toán Online' : 'Trả tại khách sạn'}</span>
+                          <span>🛡️ {plan.cancellationPolicy === 'NON_REFUNDABLE' ? 'Không hoàn tiền' : `Miễn phí hủy trước ${plan.freeCancelHoursBefore || 24}h`}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingRatePlan(plan);
+                            setNewRatePlan({
+                              name: plan.name || '',
+                              description: plan.description || '',
+                              priceModifierType: plan.priceModifierType || 'FIXED_PRICE',
+                              priceModifierValue: Number(plan.priceModifierValue || 0),
+                              paymentPolicy: plan.paymentPolicy || 'PAY_AT_HOTEL',
+                              cancellationPolicy: plan.cancellationPolicy || 'FREE_CANCEL',
+                              freeCancelDaysBefore: plan.freeCancelDaysBefore || 1,
+                              freeCancelHoursBefore: plan.freeCancelHoursBefore || 24,
+                              cancellationFeeType: plan.cancellationFeeType || 'FIRST_NIGHT',
+                              noShowPolicy: plan.noShowPolicy || 'PERCENT_100'
+                            });
+                            setShowAddRatePlanForm(true);
+                          }}
+                          className="text-[#0194f3] hover:text-blue-700 p-2 hover:bg-blue-50 rounded-xl transition-all"
+                          title="Chỉnh sửa gói"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!confirm(`Bạn có chắc chắn muốn xóa gói "${plan.name}"?`)) return;
+                            try {
+                              const res = await apiClient.delete(`/rate-plans/${plan.id}`);
+                              if (res.data.success) {
+                                triggerToast('Xóa gói đặt phòng thành công!');
+                                const refresh = await apiClient.get(`/rate-plans/room-type/${selectedRoomTypeForRatePlans.id}`);
+                                setRatePlansList(refresh.data.data);
+                              }
+                            } catch (err: any) {
+                              alert(err.response?.data?.message || 'Xóa gói thất bại');
+                            }
+                          }}
+                          className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-xl transition-all"
+                          title="Xóa gói"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

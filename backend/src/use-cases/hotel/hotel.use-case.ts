@@ -174,6 +174,7 @@ export class HotelUseCase {
           include: {
             images: true,
             rooms: true,
+            ratePlans: true,
           },
         },
         reviews: {
@@ -280,6 +281,7 @@ export class HotelUseCase {
           childSurcharge: rt.childSurcharge,
           cancellationPolicy: rt.cancellationPolicy,
           paymentPolicy: rt.paymentPolicy,
+          ratePlans: (rt as any).ratePlans || [],
         };
       })
     );

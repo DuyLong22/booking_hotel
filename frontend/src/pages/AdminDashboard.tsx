@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import type { RootState } from '../store';
@@ -74,6 +74,30 @@ export const AdminDashboard: React.FC = () => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
+
+  // Refs for click outside handling
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const notificationsMenuRef = useRef<HTMLDivElement>(null);
+  const messagesMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setProfileDropdownOpen(false);
+      }
+      if (notificationsMenuRef.current && !notificationsMenuRef.current.contains(event.target as Node)) {
+        setNotificationsOpen(false);
+      }
+      if (messagesMenuRef.current && !messagesMenuRef.current.contains(event.target as Node)) {
+        setMessagesOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Common UI states
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -262,6 +286,27 @@ export const AdminDashboard: React.FC = () => {
       console.error(err);
     }
   };
+
+  // Real-time listener for Admin Dashboard auto refresh
+  useEffect(() => {
+    const handleBookingUpdated = () => {
+      fetchAllBookings();
+      fetchAdminStats();
+    };
+
+    const handleHotelUpdated = () => {
+      fetchHotels();
+      fetchAdminStats();
+    };
+
+    window.addEventListener('booking:statusUpdated', handleBookingUpdated);
+    window.addEventListener('hotel:statusUpdated', handleHotelUpdated);
+
+    return () => {
+      window.removeEventListener('booking:statusUpdated', handleBookingUpdated);
+      window.removeEventListener('hotel:statusUpdated', handleHotelUpdated);
+    };
+  }, []);
 
   // Sync state on tab change
   useEffect(() => {
@@ -496,7 +541,7 @@ export const AdminDashboard: React.FC = () => {
           </button>
 
           {/* Bell Notification */}
-          <div className="relative">
+          <div ref={notificationsMenuRef} className="relative">
             <button 
               onClick={() => setNotificationsOpen(!notificationsOpen)}
               className="p-2.5 rounded-xl hover:bg-slate-100 relative transition-colors text-[#64748B] hover:text-[#2563EB]"
@@ -526,7 +571,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
 
           {/* Messages */}
-          <div className="relative">
+          <div ref={messagesMenuRef} className="relative">
             <button 
               onClick={() => setMessagesOpen(!messagesOpen)}
               className="p-2.5 rounded-xl hover:bg-slate-100 relative transition-colors text-[#64748B] hover:text-[#2563EB]"
@@ -551,7 +596,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
 
           {/* Avatar Dropdown */}
-          <div className="relative">
+          <div ref={profileMenuRef} className="relative">
             <button 
               onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
               className="flex items-center gap-2 focus:outline-none"

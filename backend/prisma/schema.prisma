@@ -217,6 +217,37 @@ model RoomType {
   rooms         Room[]
   priceCalendar RoomPriceCalendar[]
   bookingItems  BookingItem[]
+  ratePlans     RatePlan[]
+}
+
+model RatePlan {
+  id                    String        @id @default(uuid())
+  roomTypeId            String
+  name                  String        // VD: "Flexible (Linh hoạt)", "Non-refundable", "Early Bird"
+  description           String?       // Mô tả ưu đãi gói
+  priceModifierType     String        @default("FIXED_PRICE") // "FIXED_PRICE", "PERCENTAGE_DISCOUNT", "AMOUNT_DISCOUNT"
+  priceModifierValue    Decimal       @default(0) @db.Decimal(10, 2)
+  
+  // 1. Chính sách thanh toán
+  paymentPolicy         String        @default("PAY_AT_HOTEL") // "PAY_ONLINE", "PAY_AT_HOTEL", "DEPOSIT"
+  depositType           String?       // "PERCENTAGE", "FIXED_AMOUNT"
+  depositValue          Decimal?      @db.Decimal(10, 2)
+
+  // 2. Chính sách hủy
+  cancellationPolicy    String        @default("FREE_CANCEL") // "FREE_CANCEL", "NON_REFUNDABLE", "CANCEL_BEFORE_DAYS", "CANCEL_BEFORE_HOURS"
+  freeCancelDaysBefore  Int?          @default(1)
+  freeCancelHoursBefore Int?          @default(24)
+  cancellationFeeType   String        @default("FIRST_NIGHT") // "FIRST_NIGHT", "PERCENT_100", "PERCENT_50"
+
+  // 3. Chính sách No-Show
+  noShowPolicy          String        @default("PERCENT_100") // "NO_FEE", "FIRST_NIGHT", "PERCENT_100"
+
+  isActive              Boolean       @default(true)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  roomType              RoomType      @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+  bookingItems          BookingItem[]
 }
 
 model RoomImage {
@@ -282,14 +313,19 @@ model Booking {
 }
 
 model BookingItem {
-  id          String   @id @default(uuid())
-  bookingId   String
-  roomTypeId  String
-  quantity    Int      @default(1)
-  price       Decimal  @db.Decimal(10, 2) // Giá tại thời điểm đặt (tính tổng từ calendar)
-  roomNumbers String?  // Các số phòng đã gán thực tế (VD: "101, 102")
-  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  roomType    RoomType @relation(fields: [roomTypeId], references: [id])
+  id                         String    @id @default(uuid())
+  bookingId                  String
+  roomTypeId                 String
+  ratePlanId                 String?
+  ratePlanName               String?
+  cancellationPolicySnapshot String?
+  paymentPolicySnapshot      String?
+  quantity                   Int       @default(1)
+  price                      Decimal   @db.Decimal(10, 2) // Giá tại thời điểm đặt (tính tổng từ calendar/rateplan)
+  roomNumbers                String?   // Các số phòng đã gán thực tế (VD: "101, 102")
+  booking                    Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  roomType                   RoomType  @relation(fields: [roomTypeId], references: [id])
+  ratePlan                   RatePlan? @relation(fields: [ratePlanId], references: [id], onDelete: SetNull)
 }
 
 model Payment {

@@ -118,13 +118,15 @@ export class PaymentUseCase {
       update: {
         amount: booking.finalPrice,
         method: 'VNPAY',
-        status: PaymentStatus.PENDING
+        status: PaymentStatus.PENDING,
+        transactionId: bookingId,
       },
       create: {
         bookingId,
         amount: booking.finalPrice,
         method: 'VNPAY',
-        status: PaymentStatus.PENDING
+        status: PaymentStatus.PENDING,
+        transactionId: bookingId,
       }
     });
 
@@ -135,9 +137,25 @@ export class PaymentUseCase {
     const isValid = this.paymentService.validateVnPayHash(queryParams);
     if (!isValid) throw new Error('Chữ ký Hash của VNPay không hợp lệ');
 
-    const bookingId = queryParams['vnp_TxnRef'];
+    const txnRef = queryParams['vnp_TxnRef'];
     const responseCode = queryParams['vnp_ResponseCode']; // '00' là thành công
-    const transactionId = queryParams['vnp_TransactionNo'];
+
+    // Tìm đơn phòng theo ID đầy đủ hoặc 8 ký tự mã đơn hiển thị
+    let booking = await this.prisma.booking.findUnique({
+      where: { id: txnRef }
+    });
+    if (!booking) {
+      booking = await this.prisma.booking.findFirst({
+        where: {
+          id: { startsWith: txnRef, mode: 'insensitive' }
+        }
+      });
+    }
+
+    if (!booking) throw new Error(`Không tìm thấy đơn đặt phòng cho mã VNPay: ${txnRef}`);
+
+    const bookingId = booking.id;
+    const transactionId = txnRef; // Mã đơn hàng 8 ký tự hiển thị trên trang web (ví dụ: 69C7DDC0)
 
     if (responseCode === '00') {
       await this.confirmBookingPayment(bookingId, 'VNPAY', transactionId);
@@ -158,6 +176,8 @@ export class PaymentUseCase {
   }
 
   private async confirmBookingPayment(bookingId: string, method: string, transactionId: string) {
+    const finalTransactionId = (method === 'VNPAY' || !transactionId) ? bookingId : transactionId;
+
     // 1. Cập nhật booking sang CONFIRMED và payment sang COMPLETED
     const booking = await this.prisma.booking.update({
       where: { id: bookingId },
@@ -181,7 +201,7 @@ export class PaymentUseCase {
       where: { bookingId },
       data: {
         status: PaymentStatus.COMPLETED,
-        transactionId,
+        transactionId: finalTransactionId,
         paidAt: new Date()
       }
     });

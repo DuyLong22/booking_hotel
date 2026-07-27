@@ -36,25 +36,27 @@ class SocketService {
 
       if (!booking) return;
 
+      const payload = {
+        bookingId,
+        status,
+        hotelId: booking.bookingItems[0]?.roomType?.hotelId,
+        userId: booking.userId,
+        message: `Đơn đặt phòng #${bookingId.substring(0, 8).toUpperCase()} vừa thay đổi trạng thái: ${status}`,
+      };
+
       // 1. Gửi cho khách đặt phòng (khách hàng)
       if (booking.userId) {
-        this.io.to(`user-${booking.userId}`).emit('bookingStatusUpdated', {
-          bookingId,
-          status,
-          message: `Đơn đặt phòng của bạn đã được chuyển sang trạng thái: ${status}`,
-        });
+        this.io.to(`user-${booking.userId}`).emit('bookingStatusUpdated', payload);
       }
 
       // 2. Gửi cho chủ khách sạn (owner)
       if (booking.bookingItems[0]) {
         const hotelId = booking.bookingItems[0].roomType.hotelId;
-        this.io.to(`hotel-${hotelId}`).emit('bookingStatusUpdated', {
-          bookingId,
-          status,
-          hotelId,
-          message: `Đơn đặt phòng mới của khách sạn đã được cập nhật: ${status}`,
-        });
+        this.io.to(`hotel-${hotelId}`).emit('bookingStatusUpdated', payload);
       }
+
+      // 3. Phát toàn mạng cho tất cả Admin / Owner / Customer đang sử dụng
+      this.io.emit('bookingStatusUpdated', payload);
     } catch (err) {
       console.error('[SocketService Error]: Lỗi emit trạng thái đơn đặt phòng:', err);
     }
